@@ -3,6 +3,7 @@
 Step 6 — Compare baseline vs fine-tuned vs fine-tuned+RAG.
 
 Reports quality metrics and CUDA vs CPU device info for each approach.
+Each approach uses one MLflow parent run + GenAI evaluate.
 """
 
 from __future__ import annotations
@@ -11,17 +12,15 @@ import json
 import logging
 import os
 import sys
-import time
 
 import mlflow
 import yaml
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.evaluator import Evaluator
+from src.eval_prompts import load_evaluation_prompts
+from src.eval_runner import run_stage_evaluation
 from src.hardware import detect_hardware
-from src.latency import attach_latency_metrics
-from src.mlflow_tracker import MLflowTracker
 from src.rag_pipeline import RAGPipeline
 from src.run_results import export_run
 
@@ -48,33 +47,6 @@ def load_config() -> dict:
     return config
 
 
-def load_evaluation_prompts() -> list[dict]:
-    """Parse question|answer lines; join continuation lines into the prior answer."""
-    prompts: list[dict] = []
-    current: dict | None = None
-    with open(PROMPTS_PATH, encoding="utf-8") as f:
-        for raw in f:
-            line = raw.rstrip("\n")
-            stripped = line.strip()
-            if not stripped or stripped.startswith("#"):
-                continue
-            if "|" in line:
-                if current:
-                    prompts.append(current)
-                question, ground_truth = line.split("|", 1)
-                current = {
-                    "question": question.strip(),
-                    "ground_truth": " ".join(ground_truth.split()),
-                }
-            elif current:
-                current["ground_truth"] = " ".join(
-                    f"{current['ground_truth']} {stripped}".split()
-                )
-        if current:
-            prompts.append(current)
-    return prompts
-
-
 def run_approach(
     label: str,
     config: dict,
@@ -90,59 +62,25 @@ def run_approach(
     pipeline = RAGPipeline(run_config, hardware=hardware)
     use_judge = config.get("evaluation", {}).get("llm_judge", False)
     judge_fn = (lambda p: pipeline.generate_response(p)) if use_judge and use_rag else None
-    evaluator = Evaluator(
-        judge_fn=judge_fn,
-        enable_bertscore=config.get("evaluation", {}).get("bertscore", True),
-    )
-    tracker = MLflowTracker(f"comparison_{label}", hardware=hardware)
-    results = []
     k = config.get("vector_store", {}).get("top_k", 4)
 
     if use_rag:
         pipeline.ensure_vector_store(papers_dir)
 
-    for i, prompt_data in enumerate(test_prompts):
-        logger.info("%s — prompt %d/%d [%s]", label, i + 1, len(test_prompts), hardware.device)
-        context = ""
-        retrieval_time = 0.0
-
-        if use_rag:
-            t0 = time.time()
-            context = pipeline.retrieve_context(prompt_data["question"], k=k)
-            retrieval_time = time.time() - t0
-
-        response = pipeline.generate_response(
-            prompt_data["question"],
-            context=context if use_rag else None,
-        )
-        gen = float(pipeline.last_generation_meta.get("generation_time", 0.0))
-
-        metrics = evaluator.evaluate_response(
-            question=prompt_data["question"],
-            response=response,
-            ground_truth=prompt_data["ground_truth"],
-            context=context if use_rag else None,
-            k=k,
-        )
-        attach_latency_metrics(
-            metrics,
-            generation_time=gen,
-            retrieval_time=retrieval_time if use_rag else 0.0,
-            response_chars=float(len(response)),
-        )
-        metrics.update(hardware.as_metrics())
-
-        tracker.log_evaluation(
-            approach=label,
-            question=prompt_data["question"],
-            response=response,
-            metrics=metrics,
-            params={"use_rag": use_rag},
-            model_name=run_config["llm"].get("fine_tuned_path") or run_config["llm"]["model"],
-            context=context if use_rag else None,
-        )
-        results.append({"question": prompt_data["question"], "response": response, "metrics": metrics})
-
+    model_name = run_config["llm"].get("fine_tuned_path") or run_config["llm"]["model"]
+    results = run_stage_evaluation(
+        approach=label,
+        pipeline=pipeline,
+        hardware=hardware,
+        config=run_config,
+        prompts=test_prompts,
+        use_rag=use_rag,
+        stage=f"comparison_{label}",
+        params={"use_rag": use_rag},
+        model_name=model_name,
+        k=k,
+        judge_fn=judge_fn,
+    )
     pipeline.cleanup()
     return results
 
@@ -163,7 +101,7 @@ def aggregate(results: list[dict]) -> dict[str, float]:
 def main() -> None:
     hardware = detect_hardware()
     config = load_config()
-    test_prompts = load_evaluation_prompts()
+    test_prompts = load_evaluation_prompts(PROMPTS_PATH)
     if not test_prompts:
         raise SystemExit(f"No valid prompts in {PROMPTS_PATH}")
 

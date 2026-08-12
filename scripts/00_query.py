@@ -23,7 +23,11 @@ from src.evaluator import Evaluator
 from src.hardware import detect_hardware
 from src.latency import attach_latency_metrics
 from src.mlflow_tracker import MLflowTracker
+from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
+
+import mlflow
+from mlflow.entities import SpanType
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -61,49 +65,61 @@ def main() -> None:
 
     use_rag = not args.no_rag
     approach = "rag" if use_rag else "baseline"
+    lineage = resolve_model_lineage(config, approach=approach)
     logger.info("Mode: %s | %s", approach, hardware.summary())
 
-    start = time.time()
-    context = ""
-    retrieval_time = 0.0
-
-    if use_rag:
-        papers_dir = os.path.dirname(os.path.abspath(args.pdf))
-        pipeline.ensure_vector_store(papers_dir)
-        t0 = time.time()
-        context = pipeline.retrieve_context(args.prompt, k=args.k)
-        retrieval_time = time.time() - t0
-        response = pipeline.generate_response(args.prompt, context=context)
-    else:
-        response = pipeline.generate_response(args.prompt)
-
-    elapsed = time.time() - start
-    gen = float(pipeline.last_generation_meta.get("generation_time", elapsed))
-
-    metrics = evaluator.evaluate_response(
-        question=args.prompt,
-        response=response,
-        ground_truth=args.ground_truth,
-        context=context if use_rag else None,
-        k=args.k,
-    )
-    attach_latency_metrics(
-        metrics,
-        generation_time=gen,
-        retrieval_time=retrieval_time if use_rag else 0.0,
-        response_chars=float(len(response)),
-    )
-    metrics.update(hardware.as_metrics())
-
-    tracker.log_evaluation(
-        approach=approach,
-        question=args.prompt,
-        response=response,
-        metrics=metrics,
-        params={"pdf": args.pdf, "use_rag": use_rag},
+    with tracker.stage_run(
+        approach,
+        params={"pdf": args.pdf, "use_rag": use_rag, "k": args.k},
+        lineage=lineage,
         model_name=config["llm"]["model"],
-        context=context if use_rag else None,
-    )
+        run_name=f"query-{approach}@{hardware.device}",
+    ):
+        start = time.time()
+        context = ""
+        retrieval_time = 0.0
+
+        with mlflow.start_span(name=f"eval.{approach}", span_type=SpanType.CHAIN) as root:
+            root.set_inputs({"question": args.prompt})
+            if use_rag:
+                papers_dir = os.path.dirname(os.path.abspath(args.pdf))
+                pipeline.ensure_vector_store(papers_dir)
+                t0 = time.time()
+                context = pipeline.retrieve_context(args.prompt, k=args.k)
+                retrieval_time = time.time() - t0
+                response = pipeline.generate_response(args.prompt, context=context)
+            else:
+                response = pipeline.generate_response(args.prompt)
+            root.set_outputs({"answer": response})
+
+            elapsed = time.time() - start
+            gen = float(pipeline.last_generation_meta.get("generation_time", elapsed))
+
+            metrics = evaluator.evaluate_response(
+                question=args.prompt,
+                response=response,
+                ground_truth=args.ground_truth,
+                context=context if use_rag else None,
+                k=args.k,
+            )
+            attach_latency_metrics(
+                metrics,
+                generation_time=gen,
+                retrieval_time=retrieval_time if use_rag else 0.0,
+                response_chars=float(len(response)),
+            )
+            metrics.update(hardware.as_metrics())
+
+            # Attach assessments while the chain span is still active
+            tracker.log_evaluation(
+                approach=approach,
+                question=args.prompt,
+                response=response,
+                metrics=metrics,
+                params={"pdf": args.pdf, "use_rag": use_rag},
+                model_name=config["llm"]["model"],
+                context=context if use_rag else None,
+            )
 
     print("\n" + "=" * 72)
     print("HARDWARE")

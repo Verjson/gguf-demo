@@ -12,12 +12,14 @@ import os
 import time
 from typing import Dict, List, Optional
 
+import mlflow
 import torch
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import PGVector
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from mlflow.entities import SpanType
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 
 from src.hardware import HardwareInfo, detect_hardware
@@ -275,6 +277,7 @@ class RAGPipeline:
 
         self.create_vector_store(documents_dir, replace=True)
 
+    @mlflow.trace(name="retrieve", span_type=SpanType.RETRIEVER)
     def retrieve_context(self, query: str, k: int = 4) -> str:
         """Semantic search: embed query, find k nearest chunks, concatenate text."""
         if not self.vector_store:
@@ -298,6 +301,7 @@ class RAGPipeline:
                 logger.warning("chat_template failed (%s); using raw prompt", exc)
         return user_text
 
+    @mlflow.trace(name="generate", span_type=SpanType.LLM)
     def generate_response(self, prompt: str, context: Optional[str] = None) -> str:
         """
         Generate text with the local LLM.
@@ -308,6 +312,8 @@ class RAGPipeline:
         `cuda_used` here means CUDA was available for this process (same as hardware
         detection). Timing uses CUDA synchronize when available so wall time reflects
         GPU compute, not just CPU-side queueing.
+
+        Live ``@mlflow.trace`` so GenAI spans match real retrieve/generate timing.
         """
         if context:
             user_text = self.config["prompts"]["rag_template"].format(

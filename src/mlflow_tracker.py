@@ -1,14 +1,16 @@
 """
 Experiment tracking (MLflow), operational metrics (Prometheus), and Postgres persistence.
 
-MLflow UI has two modes:
-  - **GenAI** — traces (question → retrieve → generate → score). This is the primary
-    view for RAG / LLM evaluation.
-  - **Model Training** — classic runs with params/metrics/artifacts (also logged).
+MLflow layout (one parent evaluation run per stage×device):
 
-Open http://localhost:5000 → GenAI → Experiments → **gguf-demo** (override with
-MLFLOW_EXPERIMENT_NAME). Prometheus scrapes the persistent metrics server on
-app:8000. Rows also land in evaluation_metrics for Grafana SQL panels.
+  Experiment: gguf-demo
+  └── Evaluation run  (e.g. baseline@cuda)
+      ├── Aggregated metrics + registry lineage tags
+      └── Traces (one per question; live retrieve/generate spans)
+           └── Assessments (rougeL, faithfulness, quality_score, …)
+
+Prometheus scrapes the persistent metrics server on app:8000. Rows also land in
+evaluation_metrics for Grafana SQL panels.
 """
 
 from __future__ import annotations
@@ -16,10 +18,10 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Any, Dict
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List
 
 import mlflow
-from mlflow.entities import SpanType
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 from src.hardware import HardwareInfo, detect_hardware
@@ -86,6 +88,25 @@ FAITHFULNESS = Gauge(
 
 _PROMETHEUS_HTTP_STARTED = False
 
+# Metrics surfaced as GenAI assessments (skip bulky hardware gauges).
+_ASSESSMENT_KEYS = (
+    "quality_score",
+    "rouge1",
+    "rouge2",
+    "rougeL",
+    "bert_score",
+    "faithfulness",
+    "retrieval_hit_at_k",
+    "judge_groundedness",
+    "answer_relevancy",
+    "domain_relevance",
+    "context_utilization",
+    "coherence",
+    "generation_time",
+    "retrieval_time",
+    "time_to_response",
+)
+
 
 def _ensure_prometheus_http() -> None:
     """Start an in-process :8000 only when no persistent multiproc server is configured."""
@@ -109,8 +130,47 @@ def _numeric_metrics(metrics: Dict[str, Any]) -> Dict[str, float]:
     }
 
 
+def calculate_quality_score(metrics: Dict[str, float]) -> float:
+    """
+    Weighted blend of available metrics into a single 0–1 score for Grafana.
+
+    Reference / RAG metrics dominate. Heuristics are lightly weighted.
+    """
+    weights = {
+        "rouge1": 0.10,
+        "rouge2": 0.10,
+        "rougeL": 0.18,
+        "bert_score": 0.18,
+        "retrieval_hit_at_k": 0.14,
+        "faithfulness": 0.14,
+        "judge_groundedness": 0.08,
+        "answer_relevancy": 0.04,
+        "domain_relevance": 0.02,
+        "context_utilization": 0.01,
+        "coherence": 0.01,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+    }
+
+    score = 0.0
+    total_weight = 0.0
+    for metric, weight in weights.items():
+        if weight <= 0:
+            continue
+        if metric in metrics:
+            score += metrics[metric] * weight
+            total_weight += weight
+
+    return score / total_weight if total_weight > 0 else 0.0
+
+
 class MLflowTracker:
-    """Dual-write evaluation results to MLflow (GenAI traces + classic runs), Prometheus, Postgres."""
+    """
+    Parent evaluation run + GenAI assessments + Prometheus/Postgres.
+
+    Use ``stage_run()`` around a batch of questions, then ``log_evaluation()``
+    (or ``eval_runner``) so traces nest under one run and scores become assessments.
+    """
 
     def __init__(
         self,
@@ -126,6 +186,9 @@ class MLflowTracker:
         self.hardware = hardware or detect_hardware()
         self.metrics_store = MetricsStore()
         self._mlflow_ok = False
+        self._parent_run_id: str | None = None
+        self._question_metrics: List[Dict[str, float]] = []
+        self._lineage: Dict[str, str] = {}
 
         tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
         mlflow.set_tracking_uri(tracking_uri)
@@ -149,12 +212,11 @@ class MLflowTracker:
             else:
                 self.experiment_id = exp.experiment_id
             mlflow.set_experiment(self.experiment_name)
-            # GenAI UI reads traces from the active experiment
             if hasattr(mlflow, "tracing") and hasattr(mlflow.tracing, "enable"):
                 mlflow.tracing.enable()
             self._mlflow_ok = True
             logger.info(
-                "MLflow ready: experiment=%s id=%s — GenAI traces + Model Training runs "
+                "MLflow ready: experiment=%s id=%s — parent runs + GenAI traces "
                 "(http://localhost:5000 → GenAI → %s)",
                 self.experiment_name,
                 self.experiment_id,
@@ -165,6 +227,71 @@ class MLflowTracker:
             self.experiment_id = None
             self._mlflow_ok = False
 
+    @contextmanager
+    def stage_run(
+        self,
+        approach: str,
+        *,
+        params: Dict[str, Any] | None = None,
+        lineage: Dict[str, str] | None = None,
+        model_name: str | None = None,
+        run_name: str | None = None,
+    ) -> Iterator["MLflowTracker"]:
+        """
+        One classic Model Training run for the whole stage; traces nest under it.
+
+        ``mlflow.genai.evaluate`` reuses this active run when called inside the block.
+        """
+        self._question_metrics = []
+        self._lineage = dict(lineage or {})
+        name = run_name or f"{approach}@{self.hardware.device}"
+
+        if not self._mlflow_ok or self.experiment_id is None:
+            logger.warning("stage_run without MLflow — ops metrics only")
+            try:
+                yield self
+            finally:
+                self._parent_run_id = None
+            return
+
+        with mlflow.start_run(experiment_id=self.experiment_id, run_name=name) as run:
+            self._parent_run_id = run.info.run_id
+            mlflow.set_tag("stage", self.stage)
+            mlflow.set_tag("approach", approach)
+            mlflow.set_tag("device", self.hardware.device)
+            mlflow.set_tag("cuda_available", str(self.hardware.cuda_available))
+            mlflow.set_tag("mlflow.ui.mode", "evaluation_parent")
+            if self.hardware.cuda_device_name:
+                mlflow.set_tag("cuda_device_name", self.hardware.cuda_device_name)
+            if model_name:
+                mlflow.set_tag("model_name", model_name)
+
+            for key, value in self._lineage.items():
+                if value is not None and str(value):
+                    mlflow.set_tag(key, str(value)[:250])
+
+            # Link LoggedModel / registry when possible (MLflow 3)
+            reg = self._lineage.get("registered_model")
+            ver = self._lineage.get("model_version")
+            if reg and ver and ver not in {"", "unregistered"}:
+                try:
+                    mlflow.set_active_model(name=f"{reg}/{ver}")
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("set_active_model skipped: %s", exc)
+
+            run_params = {**(params or {}), **self.hardware.as_params()}
+            if model_name:
+                run_params["model_name"] = model_name
+            for key, value in self._lineage.items():
+                run_params[f"lineage_{key}"] = value
+            mlflow.log_params({str(k)[:250]: str(v)[:250] for k, v in run_params.items()})
+
+            try:
+                yield self
+            finally:
+                self._log_parent_aggregates()
+                self._parent_run_id = None
+
     def log_evaluation(
         self,
         approach: str,
@@ -174,16 +301,24 @@ class MLflowTracker:
         params: Dict[str, Any] | None = None,
         model_name: str | None = None,
         context: str | None = None,
+        *,
+        skip_assessments: bool = False,
     ) -> None:
-        """Log one Q&A evaluation to MLflow (trace + run), Prometheus, and Postgres."""
+        """
+        Log one Q&A to Prometheus, Postgres, and (when under a parent run) GenAI assessments.
+
+        Does **not** create a new classic run per question. Live retrieve/generate spans
+        come from ``RAGPipeline``; this method attaches scores as feedback on the last trace.
+        """
         device = self.hardware.device
         EVALUATION_REQUESTS.labels(device=device, approach=approach).inc()
 
         merged = dict(metrics)
         merged.update(self.hardware.as_metrics())
-        quality_score = self._calculate_quality_score(merged)
+        quality_score = calculate_quality_score(merged)
         merged["quality_score"] = quality_score
         numeric = _numeric_metrics(merged)
+        self._question_metrics.append(numeric)
 
         RESPONSE_QUALITY.labels(device=device).set(quality_score)
         if "domain_relevance" in merged:
@@ -199,26 +334,27 @@ class MLflowTracker:
             if duration is not None:
                 EVALUATION_DURATION.labels(device=device, approach=approach).observe(duration)
 
-        if self._mlflow_ok and self.experiment_id is not None:
-            self._log_genai_trace(
-                approach=approach,
-                question=question,
-                response=response,
-                context=context,
-                numeric=numeric,
-                quality_score=quality_score,
-                model_name=model_name,
-            )
-            self._log_training_run(
-                approach=approach,
-                question=question,
-                response=response,
-                numeric=numeric,
-                params=params,
-                model_name=model_name,
-            )
-        else:
-            logger.debug("Skipping MLflow write (not connected)")
+        if self._mlflow_ok:
+            if not skip_assessments:
+                self._attach_trace_assessments(
+                    approach=approach,
+                    question=question,
+                    response=response,
+                    context=context,
+                    numeric=numeric,
+                    quality_score=quality_score,
+                    model_name=model_name,
+                )
+            # Single-question CLI without stage_run: still open a short parent
+            if self._parent_run_id is None:
+                self._log_orphan_parent_snapshot(
+                    approach=approach,
+                    question=question,
+                    response=response,
+                    numeric=numeric,
+                    params=params,
+                    model_name=model_name,
+                )
 
         self.metrics_store.insert(
             approach=approach,
@@ -230,7 +366,27 @@ class MLflowTracker:
             model_name=model_name,
         )
 
-    def _log_genai_trace(
+    def record_row_metrics(self, metrics: Dict[str, float]) -> None:
+        """Append numeric metrics for parent-run aggregation (used by eval_runner)."""
+        numeric = _numeric_metrics(metrics)
+        if "quality_score" not in numeric:
+            numeric["quality_score"] = calculate_quality_score(numeric)
+        self._question_metrics.append(numeric)
+
+    def _resolve_trace_id(self) -> str | None:
+        """Prefer the in-progress root span's id (needed for buffered assessments)."""
+        try:
+            span = mlflow.get_current_active_span()
+            if span is not None and getattr(span, "trace_id", None):
+                return str(span.trace_id)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            return mlflow.get_last_active_trace_id()
+        except Exception:  # noqa: BLE001
+            return None
+
+    def _attach_trace_assessments(
         self,
         *,
         approach: str,
@@ -241,71 +397,57 @@ class MLflowTracker:
         quality_score: float,
         model_name: str | None,
     ) -> None:
-        """Emit an OpenTelemetry-style trace for the GenAI Experiments UI."""
         try:
-            with mlflow.start_span(name=f"eval.{approach}", span_type=SpanType.CHAIN) as root:
-                root.set_inputs(
-                    {
-                        "question": question,
-                        "approach": approach,
-                        "stage": self.stage,
-                        "device": self.hardware.device,
-                    }
-                )
-                root.set_attributes(
-                    {
-                        "stage": self.stage,
-                        "approach": approach,
-                        "device": self.hardware.device,
-                        "cuda_available": str(self.hardware.cuda_available),
-                        "model_name": model_name or "",
-                        "quality_score": quality_score,
-                    }
-                )
+            trace_id = self._resolve_trace_id()
+            tags = {
+                "stage": self.stage,
+                "approach": approach,
+                "device": self.hardware.device,
+                "question_preview": question[:120],
+            }
+            if model_name:
+                tags["model_name"] = model_name
+            for key, value in self._lineage.items():
+                if value:
+                    tags[key] = str(value)[:250]
 
-                if context:
-                    with mlflow.start_span(name="retrieve", span_type=SpanType.RETRIEVER) as ret:
-                        ret.set_inputs({"query": question})
-                        ret.set_outputs(
-                            {
-                                "context_preview": context[:2000],
-                                "context_chars": float(len(context)),
-                            }
-                        )
-
-                with mlflow.start_span(name="generate", span_type=SpanType.LLM) as gen:
-                    gen.set_inputs(
-                        {
-                            "question": question,
-                            "has_context": bool(context),
-                            "model_name": model_name or "",
-                        }
+            if hasattr(mlflow, "update_current_trace"):
+                try:
+                    mlflow.update_current_trace(
+                        tags=tags,
+                        request_preview=question[:200],
+                        response_preview=response[:200],
                     )
-                    gen.set_outputs({"response": response})
-                    if "generation_time" in numeric:
-                        gen.set_attributes({"generation_time": numeric["generation_time"]})
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("update_current_trace: %s", exc)
+                    if trace_id:
+                        try:
+                            client = mlflow.MlflowClient()
+                            for k, v in tags.items():
+                                client.set_trace_tag(trace_id, k, str(v)[:250])
+                        except Exception as tag_exc:  # noqa: BLE001
+                            logger.debug("set_trace_tag: %s", tag_exc)
 
-                with mlflow.start_span(name="score", span_type=SpanType.TOOL) as score:
-                    score.set_inputs({"metric_names": sorted(numeric.keys())})
-                    score.set_outputs(numeric)
+            if not trace_id:
+                logger.debug("No trace id — assessments skipped")
+                return
 
-                highlight = {
-                    k: numeric[k]
-                    for k in (
-                        "quality_score",
-                        "rougeL",
-                        "bert_score",
-                        "faithfulness",
-                        "retrieval_hit_at_k",
-                        "time_to_response",
+            for key in _ASSESSMENT_KEYS:
+                if key not in numeric:
+                    continue
+                try:
+                    mlflow.log_feedback(
+                        trace_id=trace_id,
+                        name=key,
+                        value=float(numeric[key]),
+                        rationale=f"stage={self.stage} approach={approach}",
                     )
-                    if k in numeric
-                }
-                root.set_outputs({"response": response, **highlight})
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("log_feedback %s failed: %s", key, exc)
         except Exception as exc:  # noqa: BLE001
-            logger.error("MLflow GenAI trace failed: %s", exc)
+            logger.error("Trace assessment attach failed: %s", exc)
 
-    def _log_training_run(
+    def _log_orphan_parent_snapshot(
         self,
         *,
         approach: str,
@@ -315,67 +457,53 @@ class MLflowTracker:
         params: Dict[str, Any] | None,
         model_name: str | None,
     ) -> None:
-        """Classic run for the Model Training UI toggle."""
+        """One-off query without ``stage_run``: single parent run for that Q&A."""
         try:
-            with mlflow.start_run(experiment_id=self.experiment_id):
+            with mlflow.start_run(
+                experiment_id=self.experiment_id,
+                run_name=f"{approach}@{self.hardware.device}-adhoc",
+            ):
                 mlflow.set_tag("stage", self.stage)
                 mlflow.set_tag("approach", approach)
-                mlflow.set_tag("question", question[:100])
                 mlflow.set_tag("device", self.hardware.device)
-                mlflow.set_tag("cuda_available", str(self.hardware.cuda_available))
-                mlflow.set_tag("mlflow.ui.mode", "model_training")
-                if self.hardware.cuda_device_name:
-                    mlflow.set_tag("cuda_device_name", self.hardware.cuda_device_name)
-
+                mlflow.set_tag("question", question[:100])
+                mlflow.set_tag("adhoc", "true")
                 run_params = {**(params or {}), **self.hardware.as_params()}
                 if model_name:
                     run_params["model_name"] = model_name
                 mlflow.log_params({str(k)[:250]: str(v)[:250] for k, v in run_params.items()})
                 mlflow.log_metrics(numeric)
-
                 with tempfile.TemporaryDirectory() as tmp:
-                    artifact_path = os.path.join(tmp, "response.txt")
-                    with open(artifact_path, "w", encoding="utf-8") as f:
-                        f.write(
-                            f"Device: {self.hardware.summary()}\n"
-                            f"Stage: {self.stage}\n"
-                            f"Approach: {approach}\n"
-                            f"Question: {question}\n\n"
-                            f"Response: {response}\n"
-                        )
-                    mlflow.log_artifact(artifact_path)
+                    path = os.path.join(tmp, "response.txt")
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(f"Question: {question}\n\nResponse: {response}\n")
+                    mlflow.log_artifact(path)
         except Exception as exc:  # noqa: BLE001
-            logger.error("MLflow Model Training run failed: %s", exc)
+            logger.error("Ad-hoc parent run failed: %s", exc)
+
+    def _log_parent_aggregates(self) -> None:
+        if not self._question_metrics or not mlflow.active_run():
+            return
+        keys: set[str] = set()
+        for row in self._question_metrics:
+            keys.update(row.keys())
+        aggregates: Dict[str, float] = {}
+        for key in sorted(keys):
+            values = [row[key] for row in self._question_metrics if key in row]
+            if values:
+                aggregates[key] = sum(values) / len(values)
+        try:
+            mlflow.log_metrics(aggregates)
+            mlflow.log_metric("n_questions", float(len(self._question_metrics)))
+            logger.info(
+                "Parent run aggregates (%d questions): quality_score=%.4f rougeL=%s",
+                len(self._question_metrics),
+                aggregates.get("quality_score", 0.0),
+                f"{aggregates['rougeL']:.4f}" if "rougeL" in aggregates else "n/a",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Failed to log parent aggregates: %s", exc)
 
     def _calculate_quality_score(self, metrics: Dict[str, float]) -> float:
-        """
-        Weighted blend of available metrics into a single 0–1 score for Grafana.
-
-        Reference / RAG metrics dominate. Heuristics are lightly weighted.
-        """
-        weights = {
-            "rouge1": 0.10,
-            "rouge2": 0.10,
-            "rougeL": 0.18,
-            "bert_score": 0.18,
-            "retrieval_hit_at_k": 0.14,
-            "faithfulness": 0.14,
-            "judge_groundedness": 0.08,
-            "answer_relevancy": 0.04,
-            "domain_relevance": 0.02,
-            "context_utilization": 0.01,
-            "coherence": 0.01,
-            "factual_density": 0.0,
-            "technical_accuracy": 0.0,
-        }
-
-        score = 0.0
-        total_weight = 0.0
-        for metric, weight in weights.items():
-            if weight <= 0:
-                continue
-            if metric in metrics:
-                score += metrics[metric] * weight
-                total_weight += weight
-
-        return score / total_weight if total_weight > 0 else 0.0
+        """Back-compat alias for older callers."""
+        return calculate_quality_score(metrics)

@@ -194,3 +194,82 @@ def register_lora_adapter(
             name,
         )
         return str(mv.version)
+
+
+def resolve_model_lineage(
+    config: dict | None = None,
+    *,
+    approach: str = "baseline",
+) -> dict[str, str]:
+    """
+    Resolve registry name/version for tagging runs and traces.
+
+    - baseline / rag → alias ``base`` (v1) when present, else HF id only
+    - fine_tuned* → alias ``champion`` / ``latest-lora``, else train_info.json
+    """
+    cfg = config or {}
+    name = registered_model_name(cfg)
+    base_id = (
+        (cfg.get("llm") or {}).get("model")
+        or (cfg.get("fine_tuning") or {}).get("base_model")
+        or "microsoft/Phi-3-mini-4k-instruct"
+    )
+    lineage = {
+        "registered_model": name,
+        "model_version": "",
+        "model_alias": "",
+        "base_model_id": str(base_id),
+        "model_role": "base",
+    }
+
+    client = _client()
+    want_lora = approach.startswith("fine_tuned")
+    aliases = ("champion", "latest-lora") if want_lora else ("base",)
+
+    for alias in aliases:
+        try:
+            mv = client.get_model_version_by_alias(name, alias)
+            lineage["model_version"] = str(mv.version)
+            lineage["model_alias"] = alias
+            lineage["model_role"] = "lora_adapter" if want_lora else "base"
+            return lineage
+        except Exception:  # noqa: BLE001
+            continue
+
+    if want_lora:
+        for path in (
+            (cfg.get("llm") or {}).get("fine_tuned_path"),
+            os.path.join(
+                (cfg.get("paths") or {}).get("models_dir", "models"),
+                "fine_tuned",
+                "adapter",
+                "train_info.json",
+            ),
+            "/app/models/fine_tuned/adapter/train_info.json",
+        ):
+            if not path:
+                continue
+            info_path = (
+                path
+                if str(path).endswith(".json")
+                else os.path.join(str(path), "train_info.json")
+            )
+            if os.path.isfile(info_path):
+                try:
+                    import json
+
+                    info = json.loads(open(info_path, encoding="utf-8").read())
+                    if info.get("registered_version"):
+                        lineage["model_version"] = str(info["registered_version"])
+                        lineage["registered_model"] = str(
+                            info.get("registered_model") or name
+                        )
+                        lineage["model_role"] = "lora_adapter"
+                        lineage["model_alias"] = "local-train-info"
+                        return lineage
+                except Exception:  # noqa: BLE001
+                    pass
+
+    lineage["model_version"] = "unregistered"
+    lineage["model_alias"] = "hf-id"
+    return lineage
