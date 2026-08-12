@@ -27,7 +27,10 @@ results/
 
 ## How to read results
 
-**Best for visualization:** open `by_question.md`. Each question is a section; columns are `baseline|cpu`, `baseline|cuda`, `rag|cpu`, etc.
+**Best for visualization:** open `by_question.md` or `summary.md` in an HTML-capable
+Markdown preview. Per-row cells are tinted 🟢 best / 🟡 mid / 🔴 worst (latency metrics
+use lower-is-better). Emoji markers remain visible on GitHub even when background
+colors are stripped.
 
 **Storage** (MLflow / Postgres) remains one row per question × approach × device so Grafana can filter and chart freely.
 

@@ -20,6 +20,7 @@ import psycopg2
 import yaml
 
 from src.hardware import HardwareInfo, detect_hardware
+from src.score_colors import SKIP_RANK, html_table, ranked_metric_row
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,7 @@ def export_metrics_csv(dest: Path) -> int:
 
 
 def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
-    """Markdown table: baseline vs rag vs fine_tuned vs fine_tuned_with_rag."""
+    """HTML table with green / yellow / red cells for best / mid / worst per metric."""
     approaches = list(comparison.keys())
     if not approaches:
         return "_No comparison data._\n"
@@ -161,31 +162,36 @@ def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
     metrics = [k for k in highlight if k in all_keys]
     metrics += sorted(k for k in all_keys if k not in metrics)
 
-    lines = ["| Metric | " + " | ".join(approaches) + " |", "|" + "---|" * (len(approaches) + 1)]
-    baseline = comparison.get("baseline", {})
+    rows: list[list[str]] = []
     for metric in metrics:
-        cells = []
-        for approach in approaches:
-            val = comparison[approach].get(metric)
-            cells.append(f"{val:.4f}" if val is not None else "—")
-        lines.append(f"| {metric} | " + " | ".join(cells) + " |")
+        values = [comparison[approach].get(metric) for approach in approaches]
+        rows.append(ranked_metric_row(metric, values, precision=4))
 
-    # Add improvement row for quality_score vs baseline
+    legend = (
+        "_Cell colors (per row): "
+        "🟢 best · 🟡 mid · 🔴 worst "
+        f"(latency metrics lower-is-better; skipped for {', '.join(sorted(SKIP_RANK))}). "
+        "Colors show in HTML-capable Markdown previews._\n"
+    )
+    body = html_table(["Metric", *approaches], rows, metric_col=0)
+
+    extras: list[str] = []
     if "baseline" in comparison and "rag" in comparison:
         b = comparison["baseline"].get("quality_score", 0)
         r = comparison["rag"].get("quality_score", 0)
         if b:
             pct = (r - b) / b * 100
-            lines.append(f"\n**RAG quality_score vs baseline:** {pct:+.1f}%")
+            extras.append(f"**RAG quality_score vs baseline:** {pct:+.1f}%")
 
     if "baseline" in comparison and "fine_tuned_with_rag" in comparison:
         b = comparison["baseline"].get("quality_score", 0)
         f = comparison["fine_tuned_with_rag"].get("quality_score", 0)
         if b:
             pct = (f - b) / b * 100
-            lines.append(f"\n**Fine-tuned+RAG quality_score vs baseline:** {pct:+.1f}%")
+            extras.append(f"**Fine-tuned+RAG quality_score vs baseline:** {pct:+.1f}%")
 
-    return "\n".join(lines) + "\n"
+    return legend + "\n" + body + ("\n".join(extras) + "\n" if extras else "")
+
 
 
 def _write_summary_md(
@@ -206,8 +212,11 @@ def _write_summary_md(
         "## How to read improvements",
         "",
         "Higher is better for quality metrics (ROUGE, BERTScore, faithfulness, quality_score).",
-        "Lower is better for `generation_time` (latency).",
+        "Lower is better for `generation_time` / `time_to_response` (latency).",
         "`retrieval_hit_at_k` shows whether retrieved chunks contain the ground-truth answer.",
+        "",
+        "Per-metric cells are colored **green (best) / yellow (mid) / red (worst)** "
+        "across approaches (open in an HTML-capable Markdown preview).",
         "",
         "## Comparison by approach",
         "",

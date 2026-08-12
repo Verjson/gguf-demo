@@ -18,6 +18,13 @@ from typing import Any
 
 import psycopg2
 
+from src.score_colors import (
+    format_ranked_cell,
+    html_table,
+    lower_is_better,
+    rank_scores,
+)
+
 logger = logging.getLogger(__name__)
 
 # Preferred column order for the pivot
@@ -229,6 +236,9 @@ def pivot_by_question(cells: list[dict[str, Any]]) -> dict[str, Any]:
         if device in {"gpu", "cuda"}:
             device = "cuda"
         key = f"{approach}|{device}"
+        # Keep demo approaches only (drop ad-hoc smoke / verify rows from Postgres).
+        if approach not in APPROACH_ORDER and not approach.startswith("fine_tuned"):
+            continue
         column_keys.add(key)
 
         metrics = {
@@ -271,29 +281,35 @@ def pivot_by_question(cells: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _fmt(val: Any) -> str:
+def _fmt(val: Any, *, precision: int = 3) -> str:
     if val is None:
         return "—"
     if isinstance(val, float):
-        return f"{val:.3f}"
+        return f"{val:.{precision}f}"
     return str(val)
 
 
 def _overview_table(pivot: dict[str, Any], metric: str) -> list[str]:
     columns: list[str] = pivot.get("columns", [])
-    lines = [
-        f"| Question | " + " | ".join(f"`{c}`" for c in columns) + " |",
-        "|----------|" + "|".join(["------"] * len(columns)) + "|",
-    ]
+    header = ["Question", *[f"<code>{c}</code>" for c in columns]]
+    rows: list[list[Any]] = []
     for item in pivot.get("questions", []):
         q = item["question"]
         q_short = q if len(q) <= 60 else q[:57] + "..."
-        cells = []
+        values = []
         for col in columns:
             metrics = item["cells"].get(col, {}).get("metrics", {})
-            cells.append(_fmt(metrics.get(metric)))
-        lines.append(f"| {q_short} | " + " | ".join(cells) + " |")
-    return lines
+            raw = metrics.get(metric)
+            values.append(float(raw) if isinstance(raw, (int, float)) else None)
+        ranks = rank_scores(values, lower_is_better=lower_is_better(metric))
+        row: list[Any] = [q_short]
+        for val, rank in zip(values, ranks):
+            row.append(format_ranked_cell(val, rank, precision=3, html=True))
+        rows.append(row)
+    return [
+        html_table(header, rows, metric_col=0).rstrip(),
+        "",
+    ]
 
 
 def _speedup_lines_for_question(item: dict[str, Any], columns: list[str]) -> list[str]:
@@ -332,6 +348,8 @@ def render_by_question_markdown(pivot: dict[str, Any], primary_metric: str = "qu
         "- **Quality:** higher `quality_score` / `rougeL` is better",
         "- **Time to response:** `retrieval_time` + `generation_time` (seconds) — **lower is better**",
         "- **GPU speedup:** CPU time ÷ GPU time (values **> 1×** mean GPU was faster)",
+        "- **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row "
+        "(HTML Markdown preview; emoji also visible on GitHub)",
         "",
         f"_Generated: {pivot.get('generated_at', '')}_",
         "",
@@ -347,24 +365,44 @@ def render_by_question_markdown(pivot: dict[str, Any], primary_metric: str = "qu
         q = item["question"]
         lines.append(f"## Q{i}. {q}")
         lines.append("")
-        lines.append("| Approach × Device | " + " | ".join(DISPLAY_METRICS) + " |")
-        lines.append("|-------------------|" + "|".join(["---"] * len(DISPLAY_METRICS)) + "|")
 
-        for col in columns:
-            cell = item["cells"].get(col)
-            if not cell:
-                continue
-            metrics = cell.get("metrics", {})
-            vals = [_fmt(metrics.get(m)) for m in DISPLAY_METRICS]
-            lines.append(f"| `{col}` | " + " | ".join(vals) + " |")
+        # Rank each metric column across approaches (row = approach×device).
+        header = ["Approach × Device", *DISPLAY_METRICS]
+        detail_rows: list[list[Any]] = []
+        # Collect values per metric for ranking across columns present
+        col_present = [col for col in columns if item["cells"].get(col)]
+        metric_values: dict[str, list[float | None]] = {m: [] for m in DISPLAY_METRICS}
+        for col in col_present:
+            metrics = item["cells"][col].get("metrics", {})
+            for m in DISPLAY_METRICS:
+                raw = metrics.get(m)
+                metric_values[m].append(
+                    float(raw) if isinstance(raw, (int, float)) else None
+                )
+        metric_ranks = {
+            m: rank_scores(vals, lower_is_better=lower_is_better(m))
+            for m, vals in metric_values.items()
+        }
+
+        for row_i, col in enumerate(col_present):
+            metrics = item["cells"][col].get("metrics", {})
+            row: list[Any] = [f"<code>{col}</code>"]
+            for m in DISPLAY_METRICS:
+                raw = metrics.get(m)
+                val = float(raw) if isinstance(raw, (int, float)) else None
+                rank = metric_ranks[m][row_i]
+                row.append(format_ranked_cell(val, rank, precision=3, html=True))
+            detail_rows.append(row)
+
+        lines.append(html_table(header, detail_rows, metric_col=0).rstrip())
+        lines.append("")
 
         speedups = _speedup_lines_for_question(item, columns)
         if speedups:
-            lines.append("")
             lines.append("**CPU → GPU speedup (time_to_response):**")
             lines.extend(speedups)
+            lines.append("")
 
-        lines.append("")
         lines.append("<details><summary>Sample answers</summary>")
         lines.append("")
         for col in columns:
