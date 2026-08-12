@@ -1,0 +1,84 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Large ML artifacts — reproducible via scripts; too big for git
+models/
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+
+# Downloaded PDF corpus — re-fetch with 01_download_papers.py
+data/papers/*
+!data/papers/.gitkeep
+!data/papers/papers_metadata.json
+
+# Ephemeral working data — snapshot to results/ with 07_export_results.py
+data/processed/*
+!data/processed/.gitkeep
+
+# Hugging Face / PyTorch caches
+.cache/
+.huggingface/
+
+# MLflow local file store (container uses Postgres backend)
+mlruns/
+
+# Docker named volumes (not in repo, but ignore if bind-mounted locally)
+postgres_data/
+prometheus_data/
+grafana_data/
+mlflow_data/
+huggingface_cache/
+
+# Temp evaluation artifacts
+response_*.txt
+
+# IDE / editor / local tooling
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.serena/
+.tokensave/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Keep committed run results (results/ is tracked intentionally)
+# Do NOT add results/ here — export with scripts/07_export_results.py

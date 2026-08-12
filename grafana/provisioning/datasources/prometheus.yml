@@ -1,0 +1,21 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    uid: Prometheus
+  - name: Postgres
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    user: raguser
+    uid: Postgres
+    jsonData:
+      database: rag_eval
+      sslmode: disable
+      postgresVersion: 1500
+    secureJsonData:
+      password: ragpass

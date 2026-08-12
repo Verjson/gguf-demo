@@ -1,0 +1,115 @@
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: rag-postgres
+    environment:
+      POSTGRES_DB: rag_eval
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raguser -d rag_eval"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: rag-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: rag-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: rag-mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://raguser:ragpass@postgres:5432/rag_eval
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow-artifacts
+    volumes:
+      - mlflow_data:/mlflow-artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri postgresql://raguser:ragpass@postgres:5432/rag_eval
+      --default-artifact-root /mlflow-artifacts
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+      args:
+        # Default: CUDA 11.8 wheels (GPU hosts). Override with …/cpu for CPU-only builds.
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
+        PRELOAD_MODELS: ${PRELOAD_MODELS:-false}
+        LLM_MODEL: ${LLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
+        EMBED_MODEL: ${EMBED_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+    container_name: rag-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./config:/app/config
+      - ./prompts:/app/prompts
+      - ./results:/app/results
+      - ./pyproject.toml:/app/pyproject.toml
+      - huggingface_cache:/root/.cache/huggingface
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: rag_eval
+      POSTGRES_USER: raguser
+      POSTGRES_PASSWORD: ragpass
+      PROMETHEUS_URL: http://prometheus:9090
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    # Requires NVIDIA Container Toolkit / Docker Desktop GPU. For CPU-only hosts:
+    #   docker compose up -d --scale app=0  # then use a cpu override, or comment gpus
+    gpus: all
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    stdin_open: true
+    tty: true
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  mlflow_data:
+  huggingface_cache:

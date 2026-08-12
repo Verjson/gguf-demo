@@ -1,0 +1,136 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": ["gguf-demo"],
+      "title": "gguf-demo dashboards",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "options": {
+        "mode": "markdown",
+        "content": "## By question (visualization layout)\nOne row per **question × approach × device** (latest answer). Sort/filter the table by `question` to compare baseline|cpu, baseline|cuda, rag|cpu, etc. side by side. Matches `results/latest/by_question.md`."
+      }
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "filterable": true, "inspect": true },
+          "mappings": []
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "quality" },
+            "properties": [
+              { "id": "decimals", "value": 3 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "basic" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "transparent", "value": null },
+                    { "color": "red", "value": 0 },
+                    { "color": "yellow", "value": 0.3 },
+                    { "color": "green", "value": 0.5 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "time_to_response_sec" },
+            "properties": [
+              { "id": "unit", "value": "s" },
+              { "id": "decimals", "value": 2 },
+              {
+                "id": "custom.cellOptions",
+                "value": { "type": "color-background", "mode": "basic" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "transparent", "value": null },
+                    { "color": "green", "value": 0 },
+                    { "color": "yellow", "value": 2 },
+                    { "color": "red", "value": 5 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 3 },
+      "id": 20,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "sortBy": [{ "displayName": "question", "desc": false }]
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT LEFT(question, 100) AS question,\n       approach,\n       COALESCE(device, 'unknown') AS device,\n       ROUND(quality_score::numeric, 3) AS quality,\n       ROUND(\"rougeL\"::numeric, 3) AS rouge_l,\n       ROUND(bert_score::numeric, 3) AS bert,\n       ROUND(faithfulness::numeric, 3) AS faithfulness,\n       ROUND(retrieval_hit_at_k::numeric, 3) AS hit_at_k,\n       ROUND(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))::numeric, 2) AS time_to_response_sec,\n       ROUND(generation_time::numeric, 2) AS gen_sec,\n       ROUND(COALESCE(retrieval_time, 0)::numeric, 3) AS retrieval_sec,\n       ROUND(COALESCE(speed_chars_per_sec, 0)::numeric, 1) AS chars_per_sec,\n       LEFT(REPLACE(COALESCE(response, ''), E'\\n', ' '), 120) AS answer_preview\nFROM (\n  SELECT DISTINCT ON (question, approach, COALESCE(device, 'unknown'))\n         question, approach, device, quality_score, \"rougeL\", bert_score, faithfulness,\n         retrieval_hit_at_k, time_to_response, generation_time, retrieval_time,\n         speed_chars_per_sec, response, timestamp\n  FROM evaluation_metrics\n  WHERE question IS NOT NULL\n  ORDER BY question, approach, COALESCE(device, 'unknown'), timestamp DESC\n) t\nORDER BY question, approach, device",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest answers — question × approach × device",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "custom": { "align": "auto", "filterable": true }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "id": 21,
+      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH latest AS (\n  SELECT DISTINCT ON (question, approach, COALESCE(device, 'unknown'))\n         question, approach, COALESCE(device, 'unknown') AS device,\n         COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0)) AS ttr\n  FROM evaluation_metrics\n  WHERE question IS NOT NULL AND generation_time IS NOT NULL\n  ORDER BY question, approach, COALESCE(device, 'unknown'), timestamp DESC\n),\npivot AS (\n  SELECT question, approach,\n         MAX(ttr) FILTER (WHERE device = 'cpu') AS cpu_sec,\n         MAX(ttr) FILTER (WHERE device IN ('cuda', 'gpu')) AS gpu_sec\n  FROM latest\n  GROUP BY question, approach\n)\nSELECT LEFT(question, 80) AS question,\n       approach,\n       ROUND(cpu_sec::numeric, 2) AS cpu_time_to_response,\n       ROUND(gpu_sec::numeric, 2) AS gpu_time_to_response,\n       ROUND((cpu_sec / NULLIF(gpu_sec, 0))::numeric, 2) AS gpu_speedup_x\nFROM pivot\nWHERE cpu_sec IS NOT NULL AND gpu_sec IS NOT NULL\nORDER BY question, approach",
+          "refId": "A"
+        }
+      ],
+      "title": "Per-question GPU speedup (time_to_response)",
+      "type": "table"
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["gguf-demo", "questions", "postgres"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "timezone": "browser",
+  "title": "gguf-demo · By Question",
+  "uid": "gguf-by-question",
+  "version": 1
+}
