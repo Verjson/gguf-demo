@@ -49,14 +49,29 @@ def load_config() -> dict:
 
 
 def load_evaluation_prompts() -> list[dict]:
-    prompts = []
+    """Parse question|answer lines; join continuation lines into the prior answer."""
+    prompts: list[dict] = []
+    current: dict | None = None
     with open(PROMPTS_PATH, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "|" not in line:
+        for raw in f:
+            line = raw.rstrip("\n")
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
                 continue
-            question, ground_truth = line.split("|", 1)
-            prompts.append({"question": question.strip(), "ground_truth": ground_truth.strip()})
+            if "|" in line:
+                if current:
+                    prompts.append(current)
+                question, ground_truth = line.split("|", 1)
+                current = {
+                    "question": question.strip(),
+                    "ground_truth": " ".join(ground_truth.split()),
+                }
+            elif current:
+                current["ground_truth"] = " ".join(
+                    f"{current['ground_truth']} {stripped}".split()
+                )
+        if current:
+            prompts.append(current)
     return prompts
 
 

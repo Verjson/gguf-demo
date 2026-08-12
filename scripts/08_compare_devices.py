@@ -134,7 +134,7 @@ def main() -> None:
         raise SystemExit(f"CUDA run not found: {cuda_dir}")
 
     # Prefer run-folder JSON when both device dirs are provided (avoids mixing old DB rows)
-    prefer_pg = not (cpu_run_dir and cuda_run_dir)
+    prefer_pg = not (cpu_dir and cuda_dir)
     pivot = build_question_view(
         out_dir=out_dir,
         cpu_run_dir=cpu_dir,

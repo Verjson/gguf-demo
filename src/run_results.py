@@ -114,7 +114,7 @@ def export_metrics_csv(dest: Path) -> int:
     """Dump evaluation_metrics table to CSV; return row count."""
     sql = """
         SELECT timestamp, approach, device, cuda_available, model_name, question,
-               rouge1, rouge2, rougeL, bert_score, retrieval_hit_at_k, faithfulness,
+               rouge1, rouge2, "rougeL", bert_score, retrieval_hit_at_k, faithfulness,
                context_utilization, answer_relevancy, judge_groundedness, quality_score,
                generation_time, retrieval_time, time_to_response, speed_chars_per_sec,
                cuda_used, domain_relevance, coherence

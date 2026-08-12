@@ -84,8 +84,9 @@ def write_prompts_file(test_pairs: list[dict], prompts_path: str) -> None:
         "",
     ]
     for row in test_pairs:
-        q = row["question"].replace("|", "/")
-        a = row["answer"].replace("|", "/")
+        # Collapse whitespace so each pair is one physical line (loaders split on \n)
+        q = " ".join(row["question"].replace("|", "/").split())
+        a = " ".join(row["answer"].replace("|", "/").split())
         # Keep lines readable
         if len(a) > 400:
             a = a[:400].rstrip() + "..."
