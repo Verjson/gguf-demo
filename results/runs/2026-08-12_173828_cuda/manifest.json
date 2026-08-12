@@ -1,0 +1,25 @@
+{
+  "run_id": "2026-08-12_173828_cuda",
+  "exported_at": "2026-08-12T17:50:47.532839+00:00",
+  "hardware": {
+    "cuda_available": true,
+    "device": "cuda",
+    "cuda_device_count": 1,
+    "cuda_device_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "cuda_capability": "8.9",
+    "torch_version": "2.7.1+cu118",
+    "cuda_version": "11.8"
+  },
+  "llm_model": "microsoft/Phi-3-mini-4k-instruct",
+  "artifacts_copied": [
+    "comparison_report.json",
+    "baseline_results.json",
+    "rag_results.json",
+    "doc_stats.json",
+    "qa_pairs.jsonl",
+    "config.yaml",
+    "evaluation_prompts.txt",
+    "evaluation_metrics.csv"
+  ],
+  "postgres_rows": 75
+}

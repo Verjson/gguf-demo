@@ -1,0 +1,347 @@
+{
+  "stage": "baseline",
+  "exported_at": "2026-08-12T17:43:16.686749+00:00",
+  "hardware": {
+    "cuda_available": true,
+    "device": "cuda",
+    "cuda_device_count": 1,
+    "cuda_device_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "cuda_capability": "8.9",
+    "torch_version": "2.7.1+cu118",
+    "cuda_version": "11.8"
+  },
+  "aggregate": {
+    "rougeL": 0.0804183832128645,
+    "answer_relevancy": 0.487999037999038,
+    "speed_chars_per_sec": 131.55984716114548,
+    "rouge2": 0.014554995637850435,
+    "generation_time": 3.022351121000065,
+    "cuda_device_count": 1.0,
+    "factual_density": 0.016240032319425717,
+    "coherence": 0.14229731245756277,
+    "time_to_response": 3.022351121000065,
+    "domain_relevance": 0.01794871794871795,
+    "cuda_used": 1.0,
+    "rouge1": 0.11471237646127676,
+    "bert_score": 0.8191964626312256,
+    "technical_accuracy": 0.0,
+    "retrieval_time": 0.0
+  },
+  "results": [
+    {
+      "question": "What limitation or future work is mentioned in this text?",
+      "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?",
+      "metrics": {
+        "rouge1": 0.06153846153846155,
+        "rouge2": 0.0,
+        "rougeL": 0.06153846153846155,
+        "bert_score": 0.8212810158729553,
+        "domain_relevance": 0.0,
+        "coherence": 0.1111111111111111,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.0,
+        "generation_time": 1.8701903439996386,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.8701903439996386,
+        "speed_chars_per_sec": 68.97693617865505,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses.",
+      "metrics": {
+        "rouge1": 0.07407407407407407,
+        "rouge2": 0.0,
+        "rougeL": 0.07407407407407407,
+        "bert_score": 0.8033912181854248,
+        "domain_relevance": 0.0,
+        "coherence": 0.13636363636363635,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.4444444444444444,
+        "generation_time": 1.2140353900003902,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.2140353900003902,
+        "speed_chars_per_sec": 137.5577692178696,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.",
+      "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience by providing more relevant results. This methodology is particularly beneficial in generative information retrieval, where the system not only retrieves information but also generates new content based on the query, ensuring that the generated content is both relevant and useful.",
+      "metrics": {
+        "rouge1": 0.2111801242236025,
+        "rouge2": 0.025157232704402517,
+        "rougeL": 0.12422360248447202,
+        "bert_score": 0.8410255908966064,
+        "domain_relevance": 0.15384615384615385,
+        "coherence": 0.12771739130434784,
+        "factual_density": 0.009615384615384616,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.8571428571428571,
+        "generation_time": 5.235854527000811,
+        "retrieval_time": 0.0,
+        "time_to_response": 5.235854527000811,
+        "speed_chars_per_sec": 147.0629094122425,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What method or approach is described in this excerpt?",
+      "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid.",
+      "metrics": {
+        "rouge1": 0.10638297872340424,
+        "rouge2": 0.021739130434782608,
+        "rougeL": 0.06382978723404256,
+        "bert_score": 0.8179185390472412,
+        "domain_relevance": 0.0,
+        "coherence": 0.20357142857142857,
+        "factual_density": 0.05084745762711865,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.7777777777777778,
+        "generation_time": 2.8998112090002905,
+        "retrieval_time": 0.0,
+        "time_to_response": 2.8998112090002905,
+        "speed_chars_per_sec": 137.5951643891863,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What experimental result or finding is reported here?",
+      "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to.",
+      "metrics": {
+        "rouge1": 0.16216216216216214,
+        "rouge2": 0.0,
+        "rougeL": 0.08108108108108107,
+        "bert_score": 0.832678496837616,
+        "domain_relevance": 0.0,
+        "coherence": 0.10714285714285714,
+        "factual_density": 0.05263157894736842,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.375,
+        "generation_time": 1.6711712219994297,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.6711712219994297,
+        "speed_chars_per_sec": 137.0296454279645,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "According to this passage, what is the main claim or contribution?",
+      "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?",
+      "metrics": {
+        "rouge1": 0.09374999999999999,
+        "rouge2": 0.0,
+        "rougeL": 0.0625,
+        "bert_score": 0.8178672790527344,
+        "domain_relevance": 0.0,
+        "coherence": 0.1111111111111111,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.18181818181818182,
+        "generation_time": 1.1581503730003533,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.1581503730003533,
+        "speed_chars_per_sec": 116.56517421849401,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What is the paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' about?",
+      "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a specialized knowledge base.\n\nThe main goal of the paper is to create a system that can accurately answer questions about musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve this, the authors propose a novel approach that combines the strengths of retrieval-augmented generation (RAG) with a specialized knowledge base containing information about musical concepts, instruments, and other relevant data.\n\nThe system works by first retrieving relevant information from the knowledge base using a query generated from the input question. This information is then used to augment the generation process, helping the model to generate more accurate and contextually relevant answers. The authors evaluate their system on a dataset of musical text questions and demonstrate that it outperforms existing methods in terms of accuracy and efficiency.\n\nIn summary, the paper presents a novel approach to answering questions about musical texts by combining retrieval-augmented generation with a specialized knowledge base. This approach allows the system to generate more accurate and contextually relevant answers, making it a valuable tool for researchers, educators, and enthusiasts in the field of music.",
+      "metrics": {
+        "rouge1": 0.15602836879432624,
+        "rouge2": 0.028571428571428574,
+        "rougeL": 0.0851063829787234,
+        "bert_score": 0.8303196430206299,
+        "domain_relevance": 0.07692307692307693,
+        "coherence": 0.2111525471432592,
+        "factual_density": 0.02702702702702703,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.7142857142857143,
+        "generation_time": 11.321233527999539,
+        "retrieval_time": 0.0,
+        "time_to_response": 11.321233527999539,
+        "speed_chars_per_sec": 134.26098810176066,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses.",
+      "metrics": {
+        "rouge1": 0.09836065573770493,
+        "rouge2": 0.0,
+        "rougeL": 0.09836065573770493,
+        "bert_score": 0.8212721943855286,
+        "domain_relevance": 0.0,
+        "coherence": 0.13636363636363635,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.4444444444444444,
+        "generation_time": 1.1759648790002757,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.1759648790002757,
+        "speed_chars_per_sec": 142.01104385189794,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses.",
+      "metrics": {
+        "rouge1": 0.14545454545454545,
+        "rouge2": 0.0,
+        "rougeL": 0.10909090909090909,
+        "bert_score": 0.8349843621253967,
+        "domain_relevance": 0.0,
+        "coherence": 0.13636363636363635,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.4444444444444444,
+        "generation_time": 1.1810615220001637,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.1810615220001637,
+        "speed_chars_per_sec": 141.39822260671096,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What experimental result or finding is reported here?",
+      "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to.",
+      "metrics": {
+        "rouge1": 0.030303030303030304,
+        "rouge2": 0.0,
+        "rougeL": 0.015151515151515152,
+        "bert_score": 0.7755041718482971,
+        "domain_relevance": 0.0,
+        "coherence": 0.10714285714285714,
+        "factual_density": 0.05263157894736842,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.375,
+        "generation_time": 1.706828843999574,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.706828843999574,
+        "speed_chars_per_sec": 134.16693818191484,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses.",
+      "metrics": {
+        "rouge1": 0.058823529411764705,
+        "rouge2": 0.0,
+        "rougeL": 0.058823529411764705,
+        "bert_score": 0.8086450695991516,
+        "domain_relevance": 0.0,
+        "coherence": 0.13636363636363635,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.4444444444444444,
+        "generation_time": 1.188853554999696,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.188853554999696,
+        "speed_chars_per_sec": 140.47146454471655,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "According to this passage, what is the main claim or contribution?",
+      "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?",
+      "metrics": {
+        "rouge1": 0.04878048780487805,
+        "rouge2": 0.0,
+        "rougeL": 0.04878048780487805,
+        "bert_score": 0.8130505681037903,
+        "domain_relevance": 0.0,
+        "coherence": 0.1111111111111111,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.18181818181818182,
+        "generation_time": 1.1610960389998581,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.1610960389998581,
+        "speed_chars_per_sec": 116.26945185024138,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses.",
+      "metrics": {
+        "rouge1": 0.05,
+        "rouge2": 0.0,
+        "rougeL": 0.05,
+        "bert_score": 0.8033280968666077,
+        "domain_relevance": 0.0,
+        "coherence": 0.13636363636363635,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.4444444444444444,
+        "generation_time": 1.180930589000127,
+        "retrieval_time": 0.0,
+        "time_to_response": 1.180930589000127,
+        "speed_chars_per_sec": 141.41389981387132,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "Summarize the contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation'.",
+      "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data from scholarly articles, books, and other academic resources. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system can not only identify relevant literature based on specific queries but also generate summaries and insights that highlight key findings, methodologies, and gaps in the existing research. This approach significantly reduces the time and effort required for manual literature review, enabling researchers to focus more on analysis and synthesis of the collected information. The system's ability to provide comprehensive and contextually relevant summaries also aids in the discovery of interdisciplinary connections and fosters a more holistic understanding of complex research topics. Overall, this contribution represents a significant advancement in the field of academic research, offering a powerful tool for enhancing the efficiency and effectiveness of literature reviews.",
+      "metrics": {
+        "rouge1": 0.3185840707964602,
+        "rouge2": 0.14285714285714285,
+        "rougeL": 0.20353982300884957,
+        "bert_score": 0.8705034255981445,
+        "domain_relevance": 0.038461538461538464,
+        "coherence": 0.1590096618357488,
+        "factual_density": 0.0,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.8571428571428571,
+        "generation_time": 9.577633034000428,
+        "retrieval_time": 0.0,
+        "time_to_response": 9.577633034000428,
+        "speed_chars_per_sec": 135.7329097267585,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    },
+    {
+      "question": "What method or approach is described in this excerpt?",
+      "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid.",
+      "metrics": {
+        "rouge1": 0.10526315789473685,
+        "rouge2": 0.0,
+        "rougeL": 0.07017543859649122,
+        "bert_score": 0.7961772680282593,
+        "domain_relevance": 0.0,
+        "coherence": 0.20357142857142857,
+        "factual_density": 0.05084745762711865,
+        "technical_accuracy": 0.0,
+        "answer_relevancy": 0.7777777777777778,
+        "generation_time": 2.7924517600004037,
+        "retrieval_time": 0.0,
+        "time_to_response": 2.7924517600004037,
+        "speed_chars_per_sec": 142.88518989489808,
+        "cuda_used": 1.0,
+        "cuda_device_count": 1.0
+      }
+    }
+  ]
+}
