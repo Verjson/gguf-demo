@@ -1,31 +1,32 @@
 {
   "stage": "baseline",
-  "exported_at": "2026-08-12T17:43:16.686749+00:00",
+  "exported_at": "2026-08-12T21:33:09.495949+00:00",
   "hardware": {
     "cuda_available": true,
     "device": "cuda",
     "cuda_device_count": 1,
     "cuda_device_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
     "cuda_capability": "8.9",
-    "torch_version": "2.7.1+cu118",
-    "cuda_version": "11.8"
+    "torch_version": "2.13.0+cu130",
+    "cuda_version": "13.0"
   },
   "aggregate": {
-    "rougeL": 0.0804183832128645,
+    "quality_score": 0.3117343535352595,
+    "rouge1": 0.11584894674678321,
+    "bert_score": 0.8189790487289429,
     "answer_relevancy": 0.487999037999038,
-    "speed_chars_per_sec": 131.55984716114548,
-    "rouge2": 0.014554995637850435,
-    "generation_time": 3.022351121000065,
-    "cuda_device_count": 1.0,
-    "factual_density": 0.016240032319425717,
-    "coherence": 0.14229731245756277,
-    "time_to_response": 3.022351121000065,
-    "domain_relevance": 0.01794871794871795,
-    "cuda_used": 1.0,
-    "rouge1": 0.11471237646127676,
-    "bert_score": 0.8191964626312256,
+    "generation_time": 194.93945570439948,
     "technical_accuracy": 0.0,
-    "retrieval_time": 0.0
+    "cuda_used": 1.0,
+    "domain_relevance": 0.01794871794871795,
+    "factual_density": 0.016606252197840718,
+    "rouge2": 0.015660986421260573,
+    "retrieval_time": 0.0,
+    "rougeL": 0.08072753033052225,
+    "time_to_response": 194.93945570439948,
+    "speed_chars_per_sec": 1.7742710139087263,
+    "coherence": 0.14155293007695752,
+    "cuda_device_count": 1.0
   },
   "results": [
     {
@@ -41,12 +42,13 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.0,
-        "generation_time": 1.8701903439996386,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.8701903439996386,
-        "speed_chars_per_sec": 68.97693617865505,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.2093702254592629,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.2637658146016068
       }
     },
     {
@@ -62,12 +64,13 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.4444444444444444,
-        "generation_time": 1.2140353900003902,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.2140353900003902,
-        "speed_chars_per_sec": 137.5577692178696,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.5656188190054023,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.29284535580243065
       }
     },
     {
@@ -77,18 +80,19 @@
         "rouge1": 0.2111801242236025,
         "rouge2": 0.025157232704402517,
         "rougeL": 0.12422360248447202,
-        "bert_score": 0.8410255908966064,
+        "bert_score": 0.8410255312919617,
         "domain_relevance": 0.15384615384615385,
         "coherence": 0.12771739130434784,
         "factual_density": 0.009615384615384616,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.8571428571428571,
-        "generation_time": 5.235854527000811,
+        "generation_time": 306.41021423599886,
         "retrieval_time": 0.0,
-        "time_to_response": 5.235854527000811,
-        "speed_chars_per_sec": 147.0629094122425,
+        "time_to_response": 306.41021423599886,
+        "speed_chars_per_sec": 2.5129710571819963,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3746323667432371
       }
     },
     {
@@ -104,12 +108,13 @@
         "factual_density": 0.05084745762711865,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.7777777777777778,
-        "generation_time": 2.8998112090002905,
+        "generation_time": 261.2762620329995,
         "retrieval_time": 0.0,
-        "time_to_response": 2.8998112090002905,
-        "speed_chars_per_sec": 137.5951643891863,
+        "time_to_response": 261.2762620329995,
+        "speed_chars_per_sec": 1.5271192143341588,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3248789445131351
       }
     },
     {
@@ -119,18 +124,19 @@
         "rouge1": 0.16216216216216214,
         "rouge2": 0.0,
         "rougeL": 0.08108108108108107,
-        "bert_score": 0.832678496837616,
+        "bert_score": 0.8326783776283264,
         "domain_relevance": 0.0,
         "coherence": 0.10714285714285714,
         "factual_density": 0.05263157894736842,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.375,
-        "generation_time": 1.6711712219994297,
+        "generation_time": 218.25056793099793,
         "retrieval_time": 0.0,
-        "time_to_response": 1.6711712219994297,
-        "speed_chars_per_sec": 137.0296454279645,
+        "time_to_response": 218.25056793099793,
+        "speed_chars_per_sec": 1.0492527106385383,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.312324360881489
       }
     },
     {
@@ -146,33 +152,35 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.18181818181818182,
-        "generation_time": 1.1581503730003533,
+        "generation_time": 108.64738546900116,
         "retrieval_time": 0.0,
-        "time_to_response": 1.1581503730003533,
-        "speed_chars_per_sec": 116.56517421849401,
+        "time_to_response": 108.64738546900116,
+        "speed_chars_per_sec": 1.2425517596879279,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.2797221406560802
       }
     },
     {
       "question": "What is the paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' about?",
-      "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a specialized knowledge base.\n\nThe main goal of the paper is to create a system that can accurately answer questions about musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve this, the authors propose a novel approach that combines the strengths of retrieval-augmented generation (RAG) with a specialized knowledge base containing information about musical concepts, instruments, and other relevant data.\n\nThe system works by first retrieving relevant information from the knowledge base using a query generated from the input question. This information is then used to augment the generation process, helping the model to generate more accurate and contextually relevant answers. The authors evaluate their system on a dataset of musical text questions and demonstrate that it outperforms existing methods in terms of accuracy and efficiency.\n\nIn summary, the paper presents a novel approach to answering questions about musical texts by combining retrieval-augmented generation with a specialized knowledge base. This approach allows the system to generate more accurate and contextually relevant answers, making it a valuable tool for researchers, educators, and enthusiasts in the field of music.",
+      "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve this, the authors propose a novel approach that combines the strengths of retrieval-augmented generation and pre-trained language models.\n\nThe system works by first retrieving relevant musical texts from a large corpus using a retrieval model. Then, it uses a pre-trained language model to generate an answer based on the retrieved texts and the input question. The retrieval model helps to narrow down the search space and provide relevant context for the language model, which improves the accuracy of the generated answers.\n\nThe authors evaluate their system on a dataset of musical text questions and demonstrate that it outperforms existing methods in terms of accuracy and efficiency. They also discuss potential applications of their system, such as in music education, music information retrieval, and music recommendation systems.\n\nIn summary, the paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" presents a novel approach for answering questions about musical texts by combining retrieval-augmented generation and pre-trained language models. The system shows promising results and has potential applications in various music-related domains.",
       "metrics": {
-        "rouge1": 0.15602836879432624,
-        "rouge2": 0.028571428571428574,
-        "rougeL": 0.0851063829787234,
-        "bert_score": 0.8303196430206299,
+        "rouge1": 0.17307692307692304,
+        "rouge2": 0.04516129032258064,
+        "rougeL": 0.08974358974358974,
+        "bert_score": 0.8269315958023071,
         "domain_relevance": 0.07692307692307693,
-        "coherence": 0.2111525471432592,
-        "factual_density": 0.02702702702702703,
+        "coherence": 0.19998681143417985,
+        "factual_density": 0.032520325203252036,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.7142857142857143,
-        "generation_time": 11.321233527999539,
+        "generation_time": 425.5704003119972,
         "retrieval_time": 0.0,
-        "time_to_response": 11.321233527999539,
-        "speed_chars_per_sec": 134.26098810176066,
+        "time_to_response": 425.5704003119972,
+        "speed_chars_per_sec": 3.9687910596266756,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3475160523213392
       }
     },
     {
@@ -188,12 +196,13 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.4444444444444444,
-        "generation_time": 1.1759648790002757,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.1759648790002757,
-        "speed_chars_per_sec": 142.01104385189794,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.5656188190054023,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3087482424402645
       }
     },
     {
@@ -209,12 +218,13 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.4444444444444444,
-        "generation_time": 1.1810615220001637,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.1810615220001637,
-        "speed_chars_per_sec": 141.39822260671096,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.5656188190054023,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3232070119139741
       }
     },
     {
@@ -230,12 +240,13 @@
         "factual_density": 0.05263157894736842,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.375,
-        "generation_time": 1.706828843999574,
+        "generation_time": 218.25056793099793,
         "retrieval_time": 0.0,
-        "time_to_response": 1.706828843999574,
-        "speed_chars_per_sec": 134.16693818191484,
+        "time_to_response": 218.25056793099793,
+        "speed_chars_per_sec": 1.0492527106385383,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.25622183374872665
       }
     },
     {
@@ -245,18 +256,19 @@
         "rouge1": 0.058823529411764705,
         "rouge2": 0.0,
         "rougeL": 0.058823529411764705,
-        "bert_score": 0.8086450695991516,
+        "bert_score": 0.8086450099945068,
         "domain_relevance": 0.0,
         "coherence": 0.13636363636363635,
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.4444444444444444,
-        "generation_time": 1.188853554999696,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.188853554999696,
-        "speed_chars_per_sec": 140.47146454471655,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.5656188190054023,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.2875684193265388
       }
     },
     {
@@ -272,12 +284,13 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.18181818181818182,
-        "generation_time": 1.1610960389998581,
+        "generation_time": 108.64738546900116,
         "retrieval_time": 0.0,
-        "time_to_response": 1.1610960389998581,
-        "speed_chars_per_sec": 116.26945185024138,
+        "time_to_response": 108.64738546900116,
+        "speed_chars_per_sec": 1.2425517596879279,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.2672880590918833
       }
     },
     {
@@ -293,33 +306,35 @@
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.4444444444444444,
-        "generation_time": 1.180930589000127,
+        "generation_time": 106.66708778199973,
         "retrieval_time": 0.0,
-        "time_to_response": 1.180930589000127,
-        "speed_chars_per_sec": 141.41389981387132,
+        "time_to_response": 106.66708778199973,
+        "speed_chars_per_sec": 1.5656188190054023,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.28212773266254526
       }
     },
     {
       "question": "Summarize the contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation'.",
-      "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data from scholarly articles, books, and other academic resources. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system can not only identify relevant literature based on specific queries but also generate summaries and insights that highlight key findings, methodologies, and gaps in the existing research. This approach significantly reduces the time and effort required for manual literature review, enabling researchers to focus more on analysis and synthesis of the collected information. The system's ability to provide comprehensive and contextually relevant summaries also aids in the discovery of interdisciplinary connections and fosters a more holistic understanding of complex research topics. Overall, this contribution represents a significant advancement in the field of academic research, offering a powerful tool for enhancing the efficiency and effectiveness of literature reviews.",
+      "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data from scholarly articles, books, and other academic resources. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system can not only identify relevant literature based on specific queries but also generate summaries and insights that highlight key findings, methodologies, and gaps in the existing research. This approach significantly reduces the time and effort required for manual literature review, enabling researchers to focus more on analysis and synthesis of the collected information. The system's ability to provide comprehensive and contextually relevant summaries also aids in the discovery of interdisciplinary connections and fosters a more holistic understanding of the research landscape. Overall, this contribution represents a significant advancement in the field of academic research, offering a powerful tool for enhancing the efficiency and effectiveness of literature reviews.",
       "metrics": {
         "rouge1": 0.3185840707964602,
         "rouge2": 0.14285714285714285,
         "rougeL": 0.20353982300884957,
-        "bert_score": 0.8705034255981445,
+        "bert_score": 0.8706305027008057,
         "domain_relevance": 0.038461538461538464,
         "coherence": 0.1590096618357488,
         "factual_density": 0.0,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.8571428571428571,
-        "generation_time": 9.577633034000428,
+        "generation_time": 375.7602634600007,
         "retrieval_time": 0.0,
-        "time_to_response": 9.577633034000428,
-        "speed_chars_per_sec": 135.7329097267585,
+        "time_to_response": 375.7602634600007,
+        "speed_chars_per_sec": 3.4569914020146975,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.43831717724825514
       }
     },
     {
@@ -335,12 +350,13 @@
         "factual_density": 0.05084745762711865,
         "technical_accuracy": 0.0,
         "answer_relevancy": 0.7777777777777778,
-        "generation_time": 2.7924517600004037,
+        "generation_time": 261.2762620329995,
         "retrieval_time": 0.0,
-        "time_to_response": 2.7924517600004037,
-        "speed_chars_per_sec": 142.88518989489808,
+        "time_to_response": 261.2762620329995,
+        "speed_chars_per_sec": 1.5271192143341588,
         "cuda_used": 1.0,
-        "cuda_device_count": 1.0
+        "cuda_device_count": 1.0,
+        "quality_score": 0.3168517910773875
       }
     }
   ]

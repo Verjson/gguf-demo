@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T17:50:47.543872+00:00",
+  "generated_at": "2026-08-12T22:09:49.076211+00:00",
   "columns": [
     "baseline|cpu",
     "baseline|cuda",
@@ -22,10 +22,10 @@
             "rougeL": 0.04878048780487805,
             "bert_score": 0.8130505681037903,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 1.3332258139998885,
+            "generation_time": 106.7504289790013,
             "retrieval_time": 0.0,
-            "time_to_response": 1.3332258139998885,
-            "speed_chars_per_sec": 101.25816540783788,
+            "time_to_response": 106.7504289790013,
+            "speed_chars_per_sec": 1.2646319203696654,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.1111111111111111
@@ -40,52 +40,31 @@
             "rougeL": 0.04878048780487805,
             "bert_score": 0.8130505681037903,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 1.2310433040001953,
+            "generation_time": 110.66793691500061,
             "retrieval_time": 0.0,
-            "time_to_response": 1.2310433040001953,
-            "speed_chars_per_sec": 109.66307973190403,
+            "time_to_response": 110.66793691500061,
+            "speed_chars_per_sec": 1.2198655162758463,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.1111111111111111
           },
           "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
         },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.2998029636273951,
-            "rouge1": 0.13333333333333333,
-            "rouge2": 0.0,
-            "rougeL": 0.06666666666666667,
-            "bert_score": 0.8105810284614563,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.625,
-            "context_utilization": 0.24242424242424243,
-            "answer_relevancy": 0.2727272727272727,
-            "generation_time": 6.008277010000711,
-            "retrieval_time": 0.016031503677368164,
-            "time_to_response": 6.024308513678079,
-            "speed_chars_per_sec": 91.37394948438555,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.0,
-            "coherence": 0.3747474747474747
-          },
-          "response": "1. What are the assumptions regarding the nature of the RAG documents in the setup?\n2. What are the failure cases observed during the attack?\n3. What are the financial costs involved in launching the attack?\n4. What potential countermeasures against the attack are discussed, and what are their limitations?\n5. What are the antagonistic IC(50) values for flavones and flavonols?\n6. How do the IC(50) values for flavones and flavonols compare?\n7. What is the significance of the IC(50) values for flav"
-        },
         "rag|cuda": {
           "metrics": {
-            "quality_score": 0.2904317122969894,
+            "quality_score": 0.29043170063521107,
             "rouge1": 0.12962962962962965,
             "rouge2": 0.0,
             "rougeL": 0.0925925925925926,
-            "bert_score": 0.8140823245048523,
+            "bert_score": 0.8140822649002075,
             "retrieval_hit_at_k": 0.0,
             "faithfulness": 0.5142857142857142,
             "context_utilization": 0.176,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 2.832864884000628,
-            "retrieval_time": 0.013965129852294922,
-            "time_to_response": 2.846830013852923,
-            "speed_chars_per_sec": 124.25583796389844,
+            "generation_time": 333.01322932399853,
+            "retrieval_time": 0.6180329322814941,
+            "time_to_response": 333.63126225628,
+            "speed_chars_per_sec": 1.05701506428001,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 1.0
@@ -103,12 +82,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 1.1581503730003533,
+            "generation_time": 108.64738546900116,
             "retrieval_time": 0.0,
-            "time_to_response": 1.1581503730003533,
-            "speed_chars_per_sec": 116.56517421849401,
+            "time_to_response": 108.64738546900116,
+            "speed_chars_per_sec": 1.2425517596879279,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2797221406560802
           },
           "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
         },
@@ -126,12 +106,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 2.8719084240001393,
-            "retrieval_time": 0.021085262298583984,
-            "time_to_response": 2.8929936862987233,
-            "speed_chars_per_sec": 122.56658222747807,
+            "generation_time": 333.01322932399853,
+            "retrieval_time": 0.6180329322814941,
+            "time_to_response": 333.63126225628,
+            "speed_chars_per_sec": 1.05701506428001,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2744586534597499
           },
           "response": "Question: What are the key assumptions about the nature of RAG documents in the discussed setup?\n\nQuestion: What are the failure cases observed during the attack analysis?\n\nQuestion: What are the financial costs involved in launching the attack?\n\nQuestion: What potential countermeasures against the attack are explored, and what are their limitations?"
         },
@@ -146,37 +127,15 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.18181818181818182,
-            "generation_time": 1.3130959930003883,
+            "generation_time": 110.66793691500061,
             "retrieval_time": 0.0,
-            "time_to_response": 1.3130959930003883,
-            "speed_chars_per_sec": 102.81045766618227,
+            "time_to_response": 110.66793691500061,
+            "speed_chars_per_sec": 1.2198655162758463,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2797221406560802
           },
           "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.07575757575757576,
-            "rouge2": 0.0,
-            "rougeL": 0.06060606060606061,
-            "bert_score": 0.8107373714447021,
-            "domain_relevance": 0.0,
-            "context_utilization": 0.24242424242424243,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.625,
-            "coherence": 0.3747474747474747,
-            "factual_density": 0.10989010989010989,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.2727272727272727,
-            "generation_time": 5.642515955999443,
-            "retrieval_time": 0.013135433197021484,
-            "time_to_response": 5.655651389196464,
-            "speed_chars_per_sec": 97.29702215839941,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "1. What are the assumptions regarding the nature of the RAG documents in the setup?\n2. What are the failure cases observed during the attack?\n3. What are the financial costs involved in launching the attack?\n4. What potential countermeasures against the attack are discussed, and what are their limitations?\n5. What are the antagonistic IC(50) values for flavones and flavonols?\n6. How do the IC(50) values for flavones and flavonols compare?\n7. What is the significance of the IC(50) values for flav"
         }
       }
     },
@@ -185,16 +144,16 @@
       "cells": {
         "baseline|cuda": {
           "metrics": {
-            "quality_score": 0.43828086950463757,
+            "quality_score": 0.43831717724825514,
             "rouge1": 0.3185840707964602,
             "rouge2": 0.14285714285714285,
             "rougeL": 0.20353982300884957,
-            "bert_score": 0.8705034255981445,
+            "bert_score": 0.8706305027008057,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 10.512945565999871,
+            "generation_time": 525.1757540180006,
             "retrieval_time": 0.0,
-            "time_to_response": 10.512945565999871,
-            "speed_chars_per_sec": 123.65706564717277,
+            "time_to_response": 525.1757540180006,
+            "speed_chars_per_sec": 2.4734576759525657,
             "cuda_used": 1.0,
             "domain_relevance": 0.038461538461538464,
             "coherence": 0.1590096618357488
@@ -203,42 +162,21 @@
         },
         "fine_tuned|cuda": {
           "metrics": {
-            "quality_score": 0.4842893699909408,
-            "rouge1": 0.42666666666666664,
-            "rouge2": 0.17567567567567566,
-            "rougeL": 0.27999999999999997,
-            "bert_score": 0.8770706653594971,
+            "quality_score": 0.39361980068192837,
+            "rouge1": 0.2,
+            "rouge2": 0.11320754716981132,
+            "rougeL": 0.14375000000000002,
+            "bert_score": 0.8535135388374329,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 6.130800236999676,
+            "generation_time": 528.0416115480002,
             "retrieval_time": 0.0,
-            "time_to_response": 6.130800236999676,
-            "speed_chars_per_sec": 122.65935455891119,
+            "time_to_response": 528.0416115480002,
+            "speed_chars_per_sec": 3.567900632824919,
             "cuda_used": 1.0,
             "domain_relevance": 0.038461538461538464,
-            "coherence": 0.15404040404040403
+            "coherence": 0.20973376669508384
           },
-          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system can not only identify relevant literature but also generate s"
-        },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.5927627071013681,
-            "rouge1": 0.45161290322580644,
-            "rouge2": 0.26143790849673204,
-            "rougeL": 0.2838709677419355,
-            "bert_score": 0.8841192126274109,
-            "retrieval_hit_at_k": 1.0,
-            "faithfulness": 0.6455696202531646,
-            "context_utilization": 0.24719101123595505,
-            "answer_relevancy": 0.7142857142857143,
-            "generation_time": 7.071458977000475,
-            "retrieval_time": 0.013038396835327148,
-            "time_to_response": 7.084497373835802,
-            "speed_chars_per_sec": 105.63590942542066,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.038461538461538464,
-            "coherence": 0.1606060606060606
-          },
-          "response": "The research paper titled \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" aims to develop an automated system for generating literature reviews from research articles. The authors, Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim, address the challenges of manual literature review due to the increasing number of research articles. They propose using Natural Language Processing (NLP) techniques and Large Language Models (LLM) to automate "
+          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques and Large Language Models (LLMs) to enhance the retrieval and generation of relevant literature.\n\nThe system works by first using NLP techniques to analyze and extract key information from existing"
         },
         "rag|cuda": {
           "metrics": {
@@ -251,10 +189,10 @@
             "faithfulness": 0.6992481203007519,
             "context_utilization": 0.3717277486910995,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 11.384474741999838,
-            "retrieval_time": 0.014569520950317383,
-            "time_to_response": 11.399044262950156,
-            "speed_chars_per_sec": 112.69733817992761,
+            "generation_time": 761.4322260470035,
+            "retrieval_time": 0.1375102996826172,
+            "time_to_response": 761.5697363466861,
+            "speed_chars_per_sec": 1.6849825317490568,
             "cuda_used": 1.0,
             "domain_relevance": 0.038461538461538464,
             "coherence": 0.18528011949064582
@@ -266,18 +204,19 @@
             "rouge1": 0.3185840707964602,
             "rouge2": 0.14285714285714285,
             "rougeL": 0.20353982300884957,
-            "bert_score": 0.8705034255981445,
+            "bert_score": 0.8706305027008057,
             "domain_relevance": 0.038461538461538464,
             "coherence": 0.1590096618357488,
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 9.577633034000428,
+            "generation_time": 375.7602634600007,
             "retrieval_time": 0.0,
-            "time_to_response": 9.577633034000428,
-            "speed_chars_per_sec": 135.7329097267585,
+            "time_to_response": 375.7602634600007,
+            "speed_chars_per_sec": 3.4569914020146975,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.43831717724825514
           },
           "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data from scholarly articles, books, and other academic resources. By integrating Large Language Models (LLMs) for retrieval-augmented ge"
         },
@@ -295,57 +234,36 @@
             "factual_density": 0.028409090909090908,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 11.384474741999838,
-            "retrieval_time": 0.014569520950317383,
-            "time_to_response": 11.399044262950156,
-            "speed_chars_per_sec": 112.69733817992761,
+            "generation_time": 761.4322260470035,
+            "retrieval_time": 0.1375102996826172,
+            "time_to_response": 761.5697363466861,
+            "speed_chars_per_sec": 1.6849825317490568,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.5661247852011839
           },
           "response": "The research paper titled \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" by Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim focuses on developing an automated system for generating literature reviews. The primary objective of this research is to address the challenges posed by the ever-increasing number of research articles, which makes manual literature review time-consuming and error-prone. The paper highlights the use of Natural Lan"
         },
         "fine_tuned|cpu": {
           "metrics": {
-            "rouge1": 0.42666666666666664,
-            "rouge2": 0.17567567567567566,
-            "rougeL": 0.27999999999999997,
-            "bert_score": 0.8770706653594971,
+            "rouge1": 0.2,
+            "rouge2": 0.11320754716981132,
+            "rougeL": 0.14375000000000002,
+            "bert_score": 0.8535135388374329,
             "domain_relevance": 0.038461538461538464,
-            "coherence": 0.15404040404040403,
+            "coherence": 0.20973376669508384,
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 6.130800236999676,
+            "generation_time": 528.0416115480002,
             "retrieval_time": 0.0,
-            "time_to_response": 6.130800236999676,
-            "speed_chars_per_sec": 122.65935455891119,
+            "time_to_response": 528.0416115480002,
+            "speed_chars_per_sec": 3.567900632824919,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.39361980068192837
           },
-          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system can not only identify relevant literature but also generate s"
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.45161290322580644,
-            "rouge2": 0.26143790849673204,
-            "rougeL": 0.2838709677419355,
-            "bert_score": 0.8841192126274109,
-            "domain_relevance": 0.038461538461538464,
-            "context_utilization": 0.24719101123595505,
-            "retrieval_hit_at_k": 1.0,
-            "faithfulness": 0.6455696202531646,
-            "coherence": 0.1606060606060606,
-            "factual_density": 0.04950495049504951,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.7142857142857143,
-            "generation_time": 7.071458977000475,
-            "retrieval_time": 0.013038396835327148,
-            "time_to_response": 7.084497373835802,
-            "speed_chars_per_sec": 105.63590942542066,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The research paper titled \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" aims to develop an automated system for generating literature reviews from research articles. The authors, Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim, address the challenges of manual literature review due to the increasing number of research articles. They propose using Natural Language Processing (NLP) techniques and Large Language Models (LLM) to automate "
+          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques and Large Language Models (LLMs) to enhance the retrieval and generation of relevant literature.\n\nThe system works by first using NLP techniques to analyze and extract key information from existing"
         }
       }
     },
@@ -354,16 +272,16 @@
       "cells": {
         "baseline|cuda": {
           "metrics": {
-            "quality_score": 0.37463238377313557,
+            "quality_score": 0.3746323667432371,
             "rouge1": 0.2111801242236025,
             "rouge2": 0.025157232704402517,
             "rougeL": 0.12422360248447202,
-            "bert_score": 0.8410255908966064,
+            "bert_score": 0.8410255312919617,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 5.829093960999671,
+            "generation_time": 402.61064979399816,
             "retrieval_time": 0.0,
-            "time_to_response": 5.829093960999671,
-            "speed_chars_per_sec": 132.09600070813534,
+            "time_to_response": 402.61064979399816,
+            "speed_chars_per_sec": 1.912517715052948,
             "cuda_used": 1.0,
             "domain_relevance": 0.15384615384615385,
             "coherence": 0.12771739130434784
@@ -372,149 +290,108 @@
         },
         "fine_tuned|cuda": {
           "metrics": {
-            "quality_score": 0.3816123458677182,
-            "rouge1": 0.2380952380952381,
-            "rouge2": 0.024096385542168672,
-            "rougeL": 0.13095238095238093,
-            "bert_score": 0.8440657258033752,
+            "quality_score": 0.3746323667432371,
+            "rouge1": 0.2111801242236025,
+            "rouge2": 0.025157232704402517,
+            "rougeL": 0.12422360248447202,
+            "bert_score": 0.8410255312919617,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 6.255586893000327,
+            "generation_time": 375.14102764400013,
             "retrieval_time": 0.0,
-            "time_to_response": 6.255586893000327,
-            "speed_chars_per_sec": 131.7222530985882,
+            "time_to_response": 375.14102764400013,
+            "speed_chars_per_sec": 2.0525614189304604,
             "cuda_used": 1.0,
             "domain_relevance": 0.15384615384615385,
-            "coherence": 0.1330718954248366
+            "coherence": 0.12771739130434784
           },
-          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach reduces computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience. This method"
-        },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.3650430290576211,
-            "rouge1": 0.2918918918918919,
-            "rouge2": 0.06557377049180328,
-            "rougeL": 0.1837837837837838,
-            "bert_score": 0.8456029295921326,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5529411764705883,
-            "context_utilization": 0.24120603015075376,
-            "answer_relevancy": 0.7857142857142857,
-            "generation_time": 8.041042425999876,
-            "retrieval_time": 0.012150287628173828,
-            "time_to_response": 8.05319271362805,
-            "speed_chars_per_sec": 109.18982309570686,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.07692307692307693,
-            "coherence": 0.20125541125541124
-          },
-          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience by providi"
         },
         "rag|cuda": {
           "metrics": {
-            "quality_score": 0.3661706514997864,
-            "rouge1": 0.2903225806451613,
-            "rouge2": 0.06521739130434782,
-            "rougeL": 0.18279569892473116,
-            "bert_score": 0.8445500135421753,
+            "quality_score": 0.37221024085955884,
+            "rouge1": 0.3023255813953489,
+            "rouge2": 0.07058823529411765,
+            "rougeL": 0.19767441860465115,
+            "bert_score": 0.849518358707428,
             "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5647058823529412,
-            "context_utilization": 0.24120603015075376,
+            "faithfulness": 0.5679012345679012,
+            "context_utilization": 0.22916666666666666,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 7.668838432000484,
-            "retrieval_time": 0.014466047286987305,
-            "time_to_response": 7.683304479287472,
-            "speed_chars_per_sec": 114.88050084922487,
+            "generation_time": 685.5940100139997,
+            "retrieval_time": 0.6626219749450684,
+            "time_to_response": 686.2566319889447,
+            "speed_chars_per_sec": 1.2004188892828782,
             "cuda_used": 1.0,
             "domain_relevance": 0.07692307692307693,
-            "coherence": 0.19628571428571426
+            "coherence": 0.18824675324675325
           },
-          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the efficiency and effectiveness of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amst"
         },
         "baseline|cpu": {
           "metrics": {
             "rouge1": 0.2111801242236025,
             "rouge2": 0.025157232704402517,
             "rougeL": 0.12422360248447202,
-            "bert_score": 0.8410255908966064,
+            "bert_score": 0.8410255312919617,
             "domain_relevance": 0.15384615384615385,
             "coherence": 0.12771739130434784,
             "factual_density": 0.009615384615384616,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 5.235854527000811,
+            "generation_time": 306.41021423599886,
             "retrieval_time": 0.0,
-            "time_to_response": 5.235854527000811,
-            "speed_chars_per_sec": 147.0629094122425,
+            "time_to_response": 306.41021423599886,
+            "speed_chars_per_sec": 2.5129710571819963,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3746323667432371
           },
           "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience by providi"
         },
         "rag|cpu": {
           "metrics": {
-            "rouge1": 0.2903225806451613,
-            "rouge2": 0.06521739130434782,
-            "rougeL": 0.18279569892473116,
-            "bert_score": 0.8445500135421753,
+            "rouge1": 0.3023255813953489,
+            "rouge2": 0.07058823529411765,
+            "rougeL": 0.19767441860465115,
+            "bert_score": 0.849518358707428,
             "domain_relevance": 0.07692307692307693,
-            "context_utilization": 0.24120603015075376,
+            "context_utilization": 0.22916666666666666,
             "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5647058823529412,
-            "coherence": 0.19628571428571426,
-            "factual_density": 0.03937007874015748,
+            "faithfulness": 0.5679012345679012,
+            "coherence": 0.18824675324675325,
+            "factual_density": 0.034782608695652174,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 7.668838432000484,
-            "retrieval_time": 0.014466047286987305,
-            "time_to_response": 7.683304479287472,
-            "speed_chars_per_sec": 114.88050084922487,
+            "generation_time": 685.5940100139997,
+            "retrieval_time": 0.6626219749450684,
+            "time_to_response": 686.2566319889447,
+            "speed_chars_per_sec": 1.2004188892828782,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.37221024085955884
           },
-          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the efficiency and effectiveness of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amst"
         },
         "fine_tuned|cpu": {
           "metrics": {
-            "rouge1": 0.2380952380952381,
-            "rouge2": 0.024096385542168672,
-            "rougeL": 0.13095238095238093,
-            "bert_score": 0.8440657258033752,
+            "rouge1": 0.2111801242236025,
+            "rouge2": 0.025157232704402517,
+            "rougeL": 0.12422360248447202,
+            "bert_score": 0.8410255312919617,
             "domain_relevance": 0.15384615384615385,
-            "coherence": 0.1330718954248366,
-            "factual_density": 0.009174311926605505,
+            "coherence": 0.12771739130434784,
+            "factual_density": 0.009615384615384616,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.8571428571428571,
-            "generation_time": 6.255586893000327,
+            "generation_time": 375.14102764400013,
             "retrieval_time": 0.0,
-            "time_to_response": 6.255586893000327,
-            "speed_chars_per_sec": 131.7222530985882,
+            "time_to_response": 375.14102764400013,
+            "speed_chars_per_sec": 2.0525614189304604,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3746323667432371
           },
-          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach reduces computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience. This method"
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.2918918918918919,
-            "rouge2": 0.06557377049180328,
-            "rougeL": 0.1837837837837838,
-            "bert_score": 0.8456029295921326,
-            "domain_relevance": 0.07692307692307693,
-            "context_utilization": 0.24120603015075376,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5529411764705883,
-            "coherence": 0.20125541125541124,
-            "factual_density": 0.03968253968253968,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.7857142857142857,
-            "generation_time": 8.041042425999876,
-            "retrieval_time": 0.012150287628173828,
-            "time_to_response": 8.05319271362805,
-            "speed_chars_per_sec": 109.18982309570686,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience by providi"
         }
       }
     },
@@ -529,10 +406,10 @@
             "rougeL": 0.015151515151515152,
             "bert_score": 0.7755041718482971,
             "answer_relevancy": 0.375,
-            "generation_time": 2.2482320250001067,
+            "generation_time": 225.2463621900024,
             "retrieval_time": 0.0,
-            "time_to_response": 2.2482320250001067,
-            "speed_chars_per_sec": 101.85781425295245,
+            "time_to_response": 225.2463621900024,
+            "speed_chars_per_sec": 1.0166645879360807,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.10714285714285714
@@ -547,36 +424,15 @@
             "rougeL": 0.015151515151515152,
             "bert_score": 0.7755041718482971,
             "answer_relevancy": 0.375,
-            "generation_time": 1.799883048999618,
+            "generation_time": 199.49345310200079,
             "retrieval_time": 0.0,
-            "time_to_response": 1.799883048999618,
-            "speed_chars_per_sec": 127.23048874052071,
+            "time_to_response": 199.49345310200079,
+            "speed_chars_per_sec": 1.1479073445227927,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.10714285714285714
           },
           "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
-        },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.2366890958783305,
-            "rouge1": 0.07142857142857144,
-            "rouge2": 0.0,
-            "rougeL": 0.05952380952380952,
-            "bert_score": 0.7942544221878052,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.2916666666666667,
-            "context_utilization": 0.06763285024154589,
-            "answer_relevancy": 0.25,
-            "generation_time": 5.660532558999876,
-            "retrieval_time": 0.014415264129638672,
-            "time_to_response": 5.674947823129514,
-            "speed_chars_per_sec": 90.09752963776057,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.15384615384615385,
-            "coherence": 0.23444444444444446
-          },
-          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC-ROC. The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different models. The results show that increasing the number of prototypes generally improves the performance of t"
         },
         "rag|cuda": {
           "metrics": {
@@ -589,10 +445,10 @@
             "faithfulness": 0.2916666666666667,
             "context_utilization": 0.06763285024154589,
             "answer_relevancy": 0.25,
-            "generation_time": 5.678977102000317,
-            "retrieval_time": 0.010565519332885742,
-            "time_to_response": 5.689542621333203,
-            "speed_chars_per_sec": 89.8049051510283,
+            "generation_time": 553.3632516619982,
+            "retrieval_time": 0.6215212345123291,
+            "time_to_response": 553.9847728965105,
+            "speed_chars_per_sec": 0.9216369147539905,
             "cuda_used": 1.0,
             "domain_relevance": 0.15384615384615385,
             "coherence": 0.23444444444444446
@@ -604,18 +460,19 @@
             "rouge1": 0.16216216216216214,
             "rouge2": 0.0,
             "rougeL": 0.08108108108108107,
-            "bert_score": 0.832678496837616,
+            "bert_score": 0.8326783776283264,
             "domain_relevance": 0.0,
             "coherence": 0.10714285714285714,
             "factual_density": 0.05263157894736842,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.375,
-            "generation_time": 1.6711712219994297,
+            "generation_time": 218.25056793099793,
             "retrieval_time": 0.0,
-            "time_to_response": 1.6711712219994297,
-            "speed_chars_per_sec": 137.0296454279645,
+            "time_to_response": 218.25056793099793,
+            "speed_chars_per_sec": 1.0492527106385383,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.312324360881489
           },
           "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
         },
@@ -633,12 +490,13 @@
             "factual_density": 0.125,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.25,
-            "generation_time": 5.467295040999488,
-            "retrieval_time": 0.010080337524414062,
-            "time_to_response": 5.477375378523902,
-            "speed_chars_per_sec": 93.2819604896914,
+            "generation_time": 553.3632516619982,
+            "retrieval_time": 0.6215212345123291,
+            "time_to_response": 553.9847728965105,
+            "speed_chars_per_sec": 0.9216369147539905,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.24294448692156329
           },
           "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC-ROC. The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different models. The results show that increasing the number of prototypes generally improves the performance of t"
         },
@@ -647,43 +505,21 @@
             "rouge1": 0.16216216216216214,
             "rouge2": 0.0,
             "rougeL": 0.08108108108108107,
-            "bert_score": 0.832678496837616,
+            "bert_score": 0.8326783776283264,
             "domain_relevance": 0.0,
             "coherence": 0.10714285714285714,
             "factual_density": 0.05263157894736842,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.375,
-            "generation_time": 1.8038743729994167,
+            "generation_time": 199.49345310200079,
             "retrieval_time": 0.0,
-            "time_to_response": 1.8038743729994167,
-            "speed_chars_per_sec": 126.94897351373041,
+            "time_to_response": 199.49345310200079,
+            "speed_chars_per_sec": 1.1479073445227927,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.312324360881489
           },
           "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.07272727272727272,
-            "rouge2": 0.0,
-            "rougeL": 0.07272727272727272,
-            "bert_score": 0.8123014569282532,
-            "domain_relevance": 0.15384615384615385,
-            "context_utilization": 0.06763285024154589,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.2916666666666667,
-            "coherence": 0.23444444444444446,
-            "factual_density": 0.125,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.25,
-            "generation_time": 5.707372288999977,
-            "retrieval_time": 0.011141061782836914,
-            "time_to_response": 5.718513350782814,
-            "speed_chars_per_sec": 89.35810985783094,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC-ROC. The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different models. The results show that increasing the number of prototypes generally improves the performance of t"
         }
       }
     },
@@ -692,151 +528,88 @@
       "cells": {
         "baseline|cuda": {
           "metrics": {
-            "quality_score": 0.3419969523774314,
-            "rouge1": 0.15602836879432624,
-            "rouge2": 0.028571428571428574,
-            "rougeL": 0.0851063829787234,
-            "bert_score": 0.8303196430206299,
-            "answer_relevancy": 0.7142857142857143,
-            "generation_time": 12.02246143999946,
-            "retrieval_time": 0.0,
-            "time_to_response": 12.02246143999946,
-            "speed_chars_per_sec": 126.4300166472456,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.07692307692307693,
-            "coherence": 0.2111525471432592
-          },
-          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a specialized knowledge base.\n\nThe main goal of the paper is to create a system that can accurately answer questions about musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve this,"
-        },
-        "fine_tuned|cuda": {
-          "metrics": {
-            "quality_score": 0.3475160863811362,
+            "quality_score": 0.3475160523213392,
             "rouge1": 0.17307692307692304,
             "rouge2": 0.04516129032258064,
             "rougeL": 0.08974358974358974,
-            "bert_score": 0.8269317150115967,
+            "bert_score": 0.8269315958023071,
             "answer_relevancy": 0.7142857142857143,
-            "generation_time": 13.841799529999662,
+            "generation_time": 596.0873066780005,
             "retrieval_time": 0.0,
-            "time_to_response": 13.841799529999662,
-            "speed_chars_per_sec": 122.02170652301314,
+            "time_to_response": 596.0873066780005,
+            "speed_chars_per_sec": 2.833477547798847,
             "cuda_used": 1.0,
             "domain_relevance": 0.07692307692307693,
             "coherence": 0.19998681143417985
           },
           "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
         },
-        "fine_tuned_with_rag|cuda": {
+        "fine_tuned|cuda": {
           "metrics": {
-            "quality_score": 0.5374795357100125,
+            "quality_score": 0.3477810589587921,
+            "rouge1": 0.17363344051446944,
+            "rouge2": 0.04530744336569579,
+            "rougeL": 0.090032154340836,
+            "bert_score": 0.8270712494850159,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 494.0062864419997,
+            "retrieval_time": 0.0,
+            "time_to_response": 494.0062864419997,
+            "speed_chars_per_sec": 3.392669376884085,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.20194759574790533
+          },
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.5374795473717908,
             "rouge1": 0.25098039215686274,
             "rouge2": 0.09486166007905138,
             "rougeL": 0.1568627450980392,
-            "bert_score": 0.8478356599807739,
+            "bert_score": 0.8478357195854187,
             "retrieval_hit_at_k": 1.0,
             "faithfulness": 0.7164179104477612,
             "context_utilization": 0.375,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 12.782157765000193,
-            "retrieval_time": 0.015422582626342773,
-            "time_to_response": 12.797580347626536,
-            "speed_chars_per_sec": 108.04122632419873,
+            "generation_time": 772.3765849849988,
+            "retrieval_time": 0.67295241355896,
+            "time_to_response": 773.0495373985577,
+            "speed_chars_per_sec": 1.7879879152820537,
             "cuda_used": 1.0,
             "domain_relevance": 0.07692307692307693,
             "coherence": 0.20357142857142854
           },
           "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) in music-related applications. The authors propose the MusT-RAG framework, which stands for Musical Text Question Answering with Retrieval Augmented Generation. This framework aims to enhance general-purpose LLMs for music-"
         },
-        "rag|cuda": {
-          "metrics": {
-            "quality_score": 0.5375303972493201,
-            "rouge1": 0.25098039215686274,
-            "rouge2": 0.09486166007905138,
-            "rougeL": 0.1568627450980392,
-            "bert_score": 0.8476591110229492,
-            "retrieval_hit_at_k": 1.0,
-            "faithfulness": 0.7164179104477612,
-            "context_utilization": 0.365,
-            "answer_relevancy": 0.7857142857142857,
-            "generation_time": 12.317842007000763,
-            "retrieval_time": 0.011538028717041016,
-            "time_to_response": 12.329380035717804,
-            "speed_chars_per_sec": 112.03261084333491,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.07692307692307693,
-            "coherence": 0.2214285714285714
-          },
-          "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) in music-related applications. The authors propose the MusT-RAG framework, which stands for Musical Text Question Answering with Retrieval Augmented Generation. This framework aims to enhance general-purpose LLMs for music-"
-        },
         "baseline|cpu": {
           "metrics": {
-            "rouge1": 0.15602836879432624,
-            "rouge2": 0.028571428571428574,
-            "rougeL": 0.0851063829787234,
-            "bert_score": 0.8303196430206299,
+            "rouge1": 0.17307692307692304,
+            "rouge2": 0.04516129032258064,
+            "rougeL": 0.08974358974358974,
+            "bert_score": 0.8269315958023071,
             "domain_relevance": 0.07692307692307693,
-            "coherence": 0.2111525471432592,
-            "factual_density": 0.02702702702702703,
+            "coherence": 0.19998681143417985,
+            "factual_density": 0.032520325203252036,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7142857142857143,
-            "generation_time": 11.321233527999539,
+            "generation_time": 425.5704003119972,
             "retrieval_time": 0.0,
-            "time_to_response": 11.321233527999539,
-            "speed_chars_per_sec": 134.26098810176066,
+            "time_to_response": 425.5704003119972,
+            "speed_chars_per_sec": 3.9687910596266756,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3475160523213392
           },
-          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a specialized knowledge base.\n\nThe main goal of the paper is to create a system that can accurately answer questions about musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve this,"
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
         },
         "rag|cpu": {
           "metrics": {
             "rouge1": 0.25098039215686274,
             "rouge2": 0.09486166007905138,
             "rougeL": 0.1568627450980392,
-            "bert_score": 0.8476591110229492,
-            "domain_relevance": 0.07692307692307693,
-            "context_utilization": 0.365,
-            "retrieval_hit_at_k": 1.0,
-            "faithfulness": 0.7164179104477612,
-            "coherence": 0.2214285714285714,
-            "factual_density": 0.021621621621621623,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.7857142857142857,
-            "generation_time": 12.317842007000763,
-            "retrieval_time": 0.011538028717041016,
-            "time_to_response": 12.329380035717804,
-            "speed_chars_per_sec": 112.03261084333491,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) in music-related applications. The authors propose the MusT-RAG framework, which stands for Musical Text Question Answering with Retrieval Augmented Generation. This framework aims to enhance general-purpose LLMs for music-"
-        },
-        "fine_tuned|cpu": {
-          "metrics": {
-            "rouge1": 0.17307692307692304,
-            "rouge2": 0.04516129032258064,
-            "rougeL": 0.08974358974358974,
-            "bert_score": 0.8269317150115967,
-            "domain_relevance": 0.07692307692307693,
-            "coherence": 0.19998681143417985,
-            "factual_density": 0.032520325203252036,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.7142857142857143,
-            "generation_time": 13.841799529999662,
-            "retrieval_time": 0.0,
-            "time_to_response": 13.841799529999662,
-            "speed_chars_per_sec": 122.02170652301314,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.25098039215686274,
-            "rouge2": 0.09486166007905138,
-            "rougeL": 0.1568627450980392,
-            "bert_score": 0.8478356599807739,
+            "bert_score": 0.8478357195854187,
             "domain_relevance": 0.07692307692307693,
             "context_utilization": 0.375,
             "retrieval_hit_at_k": 1.0,
@@ -845,14 +618,36 @@
             "factual_density": 0.021621621621621623,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7857142857142857,
-            "generation_time": 12.782157765000193,
-            "retrieval_time": 0.015422582626342773,
-            "time_to_response": 12.797580347626536,
-            "speed_chars_per_sec": 108.04122632419873,
+            "generation_time": 772.3765849849988,
+            "retrieval_time": 0.67295241355896,
+            "time_to_response": 773.0495373985577,
+            "speed_chars_per_sec": 1.7879879152820537,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.5374795473717908
           },
           "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) in music-related applications. The authors propose the MusT-RAG framework, which stands for Musical Text Question Answering with Retrieval Augmented Generation. This framework aims to enhance general-purpose LLMs for music-"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "rouge1": 0.17363344051446944,
+            "rouge2": 0.04530744336569579,
+            "rougeL": 0.090032154340836,
+            "bert_score": 0.8270712494850159,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.20194759574790533,
+            "factual_density": 0.0326530612244898,
+            "technical_accuracy": 0.0,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 494.0062864419997,
+            "retrieval_time": 0.0,
+            "time_to_response": 494.0062864419997,
+            "speed_chars_per_sec": 3.392669376884085,
+            "cuda_used": 1.0,
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3477810589587921
+          },
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
         }
       }
     },
@@ -867,10 +662,10 @@
             "rougeL": 0.06153846153846155,
             "bert_score": 0.8212810158729553,
             "answer_relevancy": 0.0,
-            "generation_time": 1.544308466000075,
+            "generation_time": 103.11091541199858,
             "retrieval_time": 0.0,
-            "time_to_response": 1.544308466000075,
-            "speed_chars_per_sec": 83.53253436091293,
+            "time_to_response": 103.11091541199858,
+            "speed_chars_per_sec": 1.2510799606865757,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.1111111111111111
@@ -885,10 +680,10 @@
             "rougeL": 0.06153846153846155,
             "bert_score": 0.8212810158729553,
             "answer_relevancy": 0.0,
-            "generation_time": 1.4639741579994734,
+            "generation_time": 108.4125894179997,
             "retrieval_time": 0.0,
-            "time_to_response": 1.4639741579994734,
-            "speed_chars_per_sec": 88.11630949570792,
+            "time_to_response": 108.4125894179997,
+            "speed_chars_per_sec": 1.1898987072674991,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.1111111111111111
@@ -897,19 +692,18 @@
         },
         "fine_tuned_with_rag|cuda": {
           "metrics": {
-            "quality_score": 0.21804329763168553,
+            "quality_score": 0.06832795059210152,
             "rouge1": 0.04,
             "rouge2": 0.0,
             "rougeL": 0.04,
-            "bert_score": 0.8335397243499756,
             "retrieval_hit_at_k": 0.0,
             "faithfulness": 0.2222222222222222,
             "context_utilization": 0.025157232704402517,
             "answer_relevancy": 0.2,
-            "generation_time": 0.5998309019996668,
-            "retrieval_time": 0.013698339462280273,
-            "time_to_response": 0.6135292414619471,
-            "speed_chars_per_sec": 113.36528307112422,
+            "generation_time": 3.4558195900026476,
+            "retrieval_time": 0.020256996154785156,
+            "time_to_response": 3.4760765861574328,
+            "speed_chars_per_sec": 19.67695310157898,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.0
@@ -918,19 +712,19 @@
         },
         "rag|cuda": {
           "metrics": {
-            "quality_score": 0.21804329763168553,
+            "quality_score": 0.2180432626463506,
             "rouge1": 0.04,
             "rouge2": 0.0,
             "rougeL": 0.04,
-            "bert_score": 0.8335397243499756,
+            "bert_score": 0.8335395455360413,
             "retrieval_hit_at_k": 0.0,
             "faithfulness": 0.2222222222222222,
             "context_utilization": 0.025157232704402517,
             "answer_relevancy": 0.2,
-            "generation_time": 0.8588761579994753,
-            "retrieval_time": 0.015478372573852539,
-            "time_to_response": 0.8743545305733278,
-            "speed_chars_per_sec": 79.17323046711182,
+            "generation_time": 131.5977779249988,
+            "retrieval_time": 0.5497183799743652,
+            "time_to_response": 132.14749630497317,
+            "speed_chars_per_sec": 0.5167260501826639,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.0
@@ -948,12 +742,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.0,
-            "generation_time": 1.8701903439996386,
+            "generation_time": 106.66708778199973,
             "retrieval_time": 0.0,
-            "time_to_response": 1.8701903439996386,
-            "speed_chars_per_sec": 68.97693617865505,
+            "time_to_response": 106.66708778199973,
+            "speed_chars_per_sec": 1.2093702254592629,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2637658146016068
           },
           "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
         },
@@ -962,7 +757,7 @@
             "rouge1": 0.04,
             "rouge2": 0.0,
             "rougeL": 0.04,
-            "bert_score": 0.8335397243499756,
+            "bert_score": 0.8335395455360413,
             "domain_relevance": 0.0,
             "context_utilization": 0.025157232704402517,
             "retrieval_hit_at_k": 0.0,
@@ -971,12 +766,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.2,
-            "generation_time": 0.8588761579994753,
-            "retrieval_time": 0.015478372573852539,
-            "time_to_response": 0.8743545305733278,
-            "speed_chars_per_sec": 79.17323046711182,
+            "generation_time": 131.5977779249988,
+            "retrieval_time": 0.5497183799743652,
+            "time_to_response": 132.14749630497317,
+            "speed_chars_per_sec": 0.5167260501826639,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2180432626463506
           },
           "response": "The text does not explicitly mention any limitations or future work."
         },
@@ -991,12 +787,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.0,
-            "generation_time": 1.4639741579994734,
+            "generation_time": 108.4125894179997,
             "retrieval_time": 0.0,
-            "time_to_response": 1.4639741579994734,
-            "speed_chars_per_sec": 88.11630949570792,
+            "time_to_response": 108.4125894179997,
+            "speed_chars_per_sec": 1.1898987072674991,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.2637658146016068
           },
           "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
         },
@@ -1005,7 +802,6 @@
             "rouge1": 0.04,
             "rouge2": 0.0,
             "rougeL": 0.04,
-            "bert_score": 0.8335397243499756,
             "domain_relevance": 0.0,
             "context_utilization": 0.025157232704402517,
             "retrieval_hit_at_k": 0.0,
@@ -1014,12 +810,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.2,
-            "generation_time": 0.5998309019996668,
-            "retrieval_time": 0.013698339462280273,
-            "time_to_response": 0.6135292414619471,
-            "speed_chars_per_sec": 113.36528307112422,
+            "generation_time": 3.4558195900026476,
+            "retrieval_time": 0.020256996154785156,
+            "time_to_response": 3.4760765861574328,
+            "speed_chars_per_sec": 19.67695310157898,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.06832795059210152
           },
           "response": "The text does not explicitly mention any limitations or future work."
         }
@@ -1036,10 +833,10 @@
             "rougeL": 0.07017543859649122,
             "bert_score": 0.7961772680282593,
             "answer_relevancy": 0.7777777777777778,
-            "generation_time": 3.252762571999483,
+            "generation_time": 309.850904758001,
             "retrieval_time": 0.0,
-            "time_to_response": 3.252762571999483,
-            "speed_chars_per_sec": 122.66496283334122,
+            "time_to_response": 309.850904758001,
+            "speed_chars_per_sec": 1.2877161043361356,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.20357142857142857
@@ -1054,36 +851,15 @@
             "rougeL": 0.07017543859649122,
             "bert_score": 0.7961772680282593,
             "answer_relevancy": 0.7777777777777778,
-            "generation_time": 3.0385150050005905,
+            "generation_time": 275.9569077080014,
             "retrieval_time": 0.0,
-            "time_to_response": 3.0385150050005905,
-            "speed_chars_per_sec": 131.31414501601992,
+            "time_to_response": 275.9569077080014,
+            "speed_chars_per_sec": 1.44587792099118,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.20357142857142857
           },
           "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
-        },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.2576415938278124,
-            "rouge1": 0.07246376811594203,
-            "rouge2": 0.0,
-            "rougeL": 0.057971014492753624,
-            "bert_score": 0.7583031058311462,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5084745762711864,
-            "context_utilization": 0.0898876404494382,
-            "answer_relevancy": 0.0,
-            "generation_time": 8.372327646000485,
-            "retrieval_time": 0.010673999786376953,
-            "time_to_response": 8.383001645786862,
-            "speed_chars_per_sec": 68.55918978209166,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.038461538461538464,
-            "coherence": 1.0
-          },
-          "response": "[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK_9]: extensive reference list\n[MASK_10]: exciting areas of future research\n\nAnswer:\n[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK"
         },
         "rag|cuda": {
           "metrics": {
@@ -1096,10 +872,10 @@
             "faithfulness": 0.5084745762711864,
             "context_utilization": 0.0898876404494382,
             "answer_relevancy": 0.0,
-            "generation_time": 8.089362081000218,
-            "retrieval_time": 0.014328241348266602,
-            "time_to_response": 8.103690322348484,
-            "speed_chars_per_sec": 70.95738752356937,
+            "generation_time": 718.251363686999,
+            "retrieval_time": 0.5116221904754639,
+            "time_to_response": 718.7629858774744,
+            "speed_chars_per_sec": 0.7991631189580851,
             "cuda_used": 1.0,
             "domain_relevance": 0.038461538461538464,
             "coherence": 1.0
@@ -1117,12 +893,13 @@
             "factual_density": 0.05084745762711865,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7777777777777778,
-            "generation_time": 2.8998112090002905,
+            "generation_time": 261.2762620329995,
             "retrieval_time": 0.0,
-            "time_to_response": 2.8998112090002905,
-            "speed_chars_per_sec": 137.5951643891863,
+            "time_to_response": 261.2762620329995,
+            "speed_chars_per_sec": 1.5271192143341588,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3248789445131351
           },
           "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
         },
@@ -1131,7 +908,7 @@
             "rouge1": 0.03389830508474576,
             "rouge2": 0.0,
             "rougeL": 0.03389830508474576,
-            "bert_score": 0.774038553237915,
+            "bert_score": 0.7740386128425598,
             "domain_relevance": 0.038461538461538464,
             "context_utilization": 0.0898876404494382,
             "retrieval_hit_at_k": 0.0,
@@ -1140,12 +917,13 @@
             "factual_density": 0.3492063492063492,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.0,
-            "generation_time": 8.210698096999295,
-            "retrieval_time": 0.013602018356323242,
-            "time_to_response": 8.224300115355618,
-            "speed_chars_per_sec": 69.90879377354962,
+            "generation_time": 718.251363686999,
+            "retrieval_time": 0.5116221904754639,
+            "time_to_response": 718.7629858774744,
+            "speed_chars_per_sec": 0.7991631189580851,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.25181850389900085
           },
           "response": "[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK_9]: extensive reference list\n[MASK_10]: exciting areas of future research\n\nAnswer:\n[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK"
         },
@@ -1160,37 +938,15 @@
             "factual_density": 0.05084745762711865,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.7777777777777778,
-            "generation_time": 3.013761236999926,
+            "generation_time": 275.9569077080014,
             "retrieval_time": 0.0,
-            "time_to_response": 3.013761236999926,
-            "speed_chars_per_sec": 132.39270420678312,
+            "time_to_response": 275.9569077080014,
+            "speed_chars_per_sec": 1.44587792099118,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.3248789445131351
           },
           "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.03389830508474576,
-            "rouge2": 0.0,
-            "rougeL": 0.03389830508474576,
-            "bert_score": 0.774038553237915,
-            "domain_relevance": 0.038461538461538464,
-            "context_utilization": 0.0898876404494382,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.5084745762711864,
-            "coherence": 1.0,
-            "factual_density": 0.3492063492063492,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 0.0,
-            "generation_time": 8.551968615000078,
-            "retrieval_time": 0.012975931167602539,
-            "time_to_response": 8.56494454616768,
-            "speed_chars_per_sec": 67.11904893958673,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK_9]: extensive reference list\n[MASK_10]: exciting areas of future research\n\nAnswer:\n[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK"
         }
       }
     },
@@ -1205,10 +961,10 @@
             "rougeL": 0.05,
             "bert_score": 0.8033280968666077,
             "answer_relevancy": 0.4444444444444444,
-            "generation_time": 1.3703604150005049,
+            "generation_time": 105.33165010100129,
             "retrieval_time": 0.0,
-            "time_to_response": 1.3703604150005049,
-            "speed_chars_per_sec": 121.86575018655839,
+            "time_to_response": 105.33165010100129,
+            "speed_chars_per_sec": 1.5854683738445723,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.13636363636363635
@@ -1223,36 +979,15 @@
             "rougeL": 0.05,
             "bert_score": 0.8033280968666077,
             "answer_relevancy": 0.4444444444444444,
-            "generation_time": 1.2266031780000048,
+            "generation_time": 109.22693499600064,
             "retrieval_time": 0.0,
-            "time_to_response": 1.2266031780000048,
-            "speed_chars_per_sec": 136.14835098690682,
+            "time_to_response": 109.22693499600064,
+            "speed_chars_per_sec": 1.5289269080571997,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.13636363636363635
           },
           "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses."
-        },
-        "fine_tuned_with_rag|cuda": {
-          "metrics": {
-            "quality_score": 0.29334871116358674,
-            "rouge1": 0.09032258064516129,
-            "rouge2": 0.0,
-            "rougeL": 0.051612903225806445,
-            "bert_score": 0.8146904110908508,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.4383561643835616,
-            "context_utilization": 0.18620689655172415,
-            "answer_relevancy": 1.0,
-            "generation_time": 5.697636333999981,
-            "retrieval_time": 0.010179996490478516,
-            "time_to_response": 5.707816330490459,
-            "speed_chars_per_sec": 128.1233053860967,
-            "cuda_used": 1.0,
-            "domain_relevance": 0.0,
-            "coherence": 0.16820276497695852
-          },
-          "response": "The passage discusses the issue of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in their setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations.\n\nQuestion: What problem does this passage say the work addresses?\n\nAnswer: The passag"
         },
         "rag|cuda": {
           "metrics": {
@@ -1265,10 +1000,10 @@
             "faithfulness": 0.4383561643835616,
             "context_utilization": 0.18620689655172415,
             "answer_relevancy": 1.0,
-            "generation_time": 5.963390734999848,
-            "retrieval_time": 0.010753154754638672,
-            "time_to_response": 5.974143889754487,
-            "speed_chars_per_sec": 122.41357852262529,
+            "generation_time": 648.969894146001,
+            "retrieval_time": 0.5924806594848633,
+            "time_to_response": 649.5623748054859,
+            "speed_chars_per_sec": 1.124859576052644,
             "cuda_used": 1.0,
             "domain_relevance": 0.0,
             "coherence": 0.16820276497695852
@@ -1286,12 +1021,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.4444444444444444,
-            "generation_time": 1.2140353900003902,
+            "generation_time": 106.66708778199973,
             "retrieval_time": 0.0,
-            "time_to_response": 1.2140353900003902,
-            "speed_chars_per_sec": 137.5577692178696,
+            "time_to_response": 106.66708778199973,
+            "speed_chars_per_sec": 1.5656188190054023,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.29284535580243065
           },
           "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses."
         },
@@ -1309,12 +1045,13 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 1.0,
-            "generation_time": 6.112427564000427,
-            "retrieval_time": 0.013683557510375977,
-            "time_to_response": 6.126111121510803,
-            "speed_chars_per_sec": 119.42881815064548,
+            "generation_time": 648.969894146001,
+            "retrieval_time": 0.5924806594848633,
+            "time_to_response": 649.5623748054859,
+            "speed_chars_per_sec": 1.124859576052644,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.29894845624950805
           },
           "response": "The passage discusses the issue of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in their setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations.\n\nQuestion: What problem does this passage say the work addresses?\n\nAnswer: The passag"
         },
@@ -1329,37 +1066,15 @@
             "factual_density": 0.0,
             "technical_accuracy": 0.0,
             "answer_relevancy": 0.4444444444444444,
-            "generation_time": 1.2733974810007567,
+            "generation_time": 109.22693499600064,
             "retrieval_time": 0.0,
-            "time_to_response": 1.2733974810007567,
-            "speed_chars_per_sec": 131.14522565943474,
+            "time_to_response": 109.22693499600064,
+            "speed_chars_per_sec": 1.5289269080571997,
             "cuda_used": 1.0,
-            "cuda_device_count": 1.0
+            "cuda_device_count": 1.0,
+            "quality_score": 0.29284535580243065
           },
           "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses."
-        },
-        "fine_tuned_with_rag|cpu": {
-          "metrics": {
-            "rouge1": 0.11538461538461539,
-            "rouge2": 0.0,
-            "rougeL": 0.07692307692307693,
-            "bert_score": 0.8040778040885925,
-            "domain_relevance": 0.0,
-            "context_utilization": 0.18620689655172415,
-            "retrieval_hit_at_k": 0.0,
-            "faithfulness": 0.4383561643835616,
-            "coherence": 0.16820276497695852,
-            "factual_density": 0.0,
-            "technical_accuracy": 0.0,
-            "answer_relevancy": 1.0,
-            "generation_time": 6.362924205000127,
-            "retrieval_time": 0.013895750045776367,
-            "time_to_response": 6.376819955045903,
-            "speed_chars_per_sec": 114.7271249005842,
-            "cuda_used": 1.0,
-            "cuda_device_count": 1.0
-          },
-          "response": "The passage discusses the issue of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in their setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations.\n\nQuestion: What problem does this passage say the work addresses?\n\nAnswer: The passag"
         }
       }
     }
