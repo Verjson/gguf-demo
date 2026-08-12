@@ -104,6 +104,17 @@ def main() -> None:
 
     logger.info("Fine-tuning on %d examples | %s", len(records), hardware.summary())
 
+    # Keep Trainer MLflow logs in the same experiment the UI shows
+    try:
+        import mlflow
+
+        mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
+        exp_name = os.getenv("MLFLOW_EXPERIMENT_NAME", "gguf-demo")
+        mlflow.set_experiment(exp_name)
+        logger.info("MLflow fine-tune experiment: %s", exp_name)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not set MLflow experiment: %s", exc)
+
     ft = config["fine_tuning"]
     base_model = ft["base_model"]
     use_cuda = hardware.cuda_available
@@ -114,18 +125,31 @@ def main() -> None:
 
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        torch_dtype=torch.float16 if use_cuda else torch.float32,
-        device_map="auto" if use_cuda else None,
+        # bf16 on Ampere+ GPUs: half memory vs fp32, better numerical range than fp16
+        # for training. fp32 on CPU so we do not need CUDA AMP there.
+        torch_dtype=torch.bfloat16 if use_cuda else torch.float32,
+        device_map={"": 0} if use_cuda else None,
+        low_cpu_mem_usage=True,
     )
 
+    # Attention projections only: q/k/v/o dominate generation behavior for instruction
+    # following, while leaving MLP/embed frozen reduces trainable size and overfitting
+    # risk on a handful of paper-derived Q&A pairs.
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
         r=ft.get("lora_r", 8),
         lora_alpha=ft.get("lora_alpha", 16),
+        # Light dropout regularizes adapters when n_train is small.
         lora_dropout=0.05,
         target_modules=["q_proj", "v_proj", "k_proj", "o_proj"],
     )
     model = get_peft_model(model, lora_config)
+    # PEFT may leave adapter weights in the base dtype (bf16/fp16). Trainer AMP
+    # unscales fp16 grads and raises "Attempting to unscale FP16 gradients" unless
+    # trainable params are fp32 — cast adapters only, keep frozen base in bf16.
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            param.data = param.data.to(torch.float32)
     model.print_trainable_parameters()
 
     texts = [format_qa_example(r) for r in records]
@@ -138,6 +162,7 @@ def main() -> None:
 
     tokenized = ds.map(tokenize, batched=True, remove_columns=ds.column_names)
 
+    use_bf16 = bool(use_cuda and torch.cuda.is_bf16_supported())
     training_args = TrainingArguments(
         output_dir=output_dir,
         num_train_epochs=ft["epochs"],
@@ -146,7 +171,10 @@ def main() -> None:
         logging_steps=5,
         save_strategy="epoch",
         report_to="mlflow",
-        fp16=use_cuda,
+        # Prefer bf16 AMP on modern NVIDIA; avoid fp16 GradScaler path that breaks LoRA.
+        fp16=False,
+        bf16=use_bf16,
+        # With batch_size=1, accumulate 4 steps → effective batch 4 without the VRAM hit.
         gradient_accumulation_steps=4,
         overwrite_output_dir=True,
     )
@@ -178,6 +206,35 @@ def main() -> None:
         json.dump(sidecar, f, indent=2)
 
     logger.info("Fine-tuned adapter saved to %s", adapter_path)
+
+    # MLflow Model Registry: base = v1, this LoRA = next version
+    try:
+        from src.model_registry import register_lora_adapter, registered_model_name
+
+        version = register_lora_adapter(
+            adapter_path=adapter_path,
+            base_model_id=base_model,
+            train_metrics=sidecar["train_metrics"],
+            hardware_params=hardware.as_params(),
+            registered_name=registered_model_name(config),
+            extra_tags={
+                "device": hardware.device,
+                "n_train": str(len(records)),
+                "lora_r": str(ft.get("lora_r", 8)),
+            },
+        )
+        sidecar["registered_model"] = registered_model_name(config)
+        sidecar["registered_version"] = version
+        with open(os.path.join(adapter_path, "train_info.json"), "w", encoding="utf-8") as f:
+            json.dump(sidecar, f, indent=2)
+        logger.info(
+            "Model Registry: %s v%s (open MLflow → Model Training → Models)",
+            sidecar["registered_model"],
+            version,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Model Registry registration failed (adapter still on disk): %s", exc)
+
     logger.info("Set llm.fine_tuned_path to that path before step 6 (auto-detected if default).")
 
 

@@ -7,6 +7,10 @@
 #   Step 1 / 1b / 3  → once
 #   Step 2, 4, 5, 6  → CPU, then GPU (if available)
 #   Step 7 / 8       → export CPU run, CUDA run, combined summary
+#
+# Env knobs:
+#   SKIP_CPU_FINETUNE=1  (default) — skip CPU LoRA train (RAM-heavy)
+#   SKIP_CPU_EVAL=1      — skip all CPU eval/export passes (safer on WSL/16–24GB hosts)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -14,6 +18,8 @@ cd "$(dirname "$0")/.."
 TIMESTAMP="$(date -u +%Y-%m-%d_%H%M%S)"
 CPU_RUN_ID="${TIMESTAMP}_cpu"
 CUDA_RUN_ID="${TIMESTAMP}_cuda"
+SKIP_CPU_FINETUNE="${SKIP_CPU_FINETUNE:-1}"
+SKIP_CPU_EVAL="${SKIP_CPU_EVAL:-0}"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -79,7 +85,11 @@ export_results() {
 
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
-echo "  Each eval step: CPU first, then GPU (if available)"
+if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
+  echo "  Mode: GPU-only evals (SKIP_CPU_EVAL=1)"
+else
+  echo "  Each eval step: CPU first, then GPU (if available)"
+fi
 echo "  Run stamp: ${TIMESTAMP}"
 echo "========================================================================"
 
@@ -91,10 +101,15 @@ echo ""
 echo "==> Detect CUDA"
 if docker compose exec -T app python -c "import torch; raise SystemExit(0 if torch.cuda.is_available() else 1)"; then
   HAS_CUDA=1
-  echo "    CUDA available — eval steps will run twice (CPU → GPU)."
+  if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
+    echo "    CUDA available — running GPU evals only (SKIP_CPU_EVAL=1)."
+  else
+    echo "    CUDA available — eval steps will run twice (CPU → GPU)."
+  fi
   docker compose exec app python scripts/check_cuda.py || true
 else
   HAS_CUDA=0
+  SKIP_CPU_EVAL=0
   echo "    CUDA not available — eval steps will run on CPU only."
 fi
 
@@ -111,13 +126,15 @@ echo "==> Step 1b: Generate QA pairs (once)"
 run_app cuda scripts/01b_generate_qa_pairs.py
 
 # ---------------------------------------------------------------------------
-# Step 2: Baseline — CPU, then GPU
+# Step 2: Baseline — CPU (optional), then GPU
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "==> Step 2: Baseline evaluation [CPU]"
-run_app cpu scripts/02_baseline_evaluation.py
-snapshot baseline_results cpu
+if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+  echo ""
+  echo "==> Step 2: Baseline evaluation [CPU]"
+  run_app cpu scripts/02_baseline_evaluation.py
+  snapshot baseline_results cpu
+fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
@@ -135,13 +152,15 @@ echo "==> Step 3: Create RAG database (once)"
 run_app cuda scripts/03_create_rag_db.py
 
 # ---------------------------------------------------------------------------
-# Step 4: RAG eval — CPU, then GPU
+# Step 4: RAG eval — CPU (optional), then GPU
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "==> Step 4: RAG evaluation [CPU]"
-run_app cpu scripts/04_rag_evaluation.py
-snapshot rag_results cpu
+if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+  echo ""
+  echo "==> Step 4: RAG evaluation [CPU]"
+  run_app cpu scripts/04_rag_evaluation.py
+  snapshot rag_results cpu
+fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
@@ -152,12 +171,9 @@ fi
 
 # ---------------------------------------------------------------------------
 # Step 5: Fine-tune — GPU preferred; CPU optional (SKIP_CPU_FINETUNE=1 by default)
-# Phi-3 LoRA on CPU often OOMs or takes many hours; skip unless explicitly requested.
 # ---------------------------------------------------------------------------
 
-SKIP_CPU_FINETUNE="${SKIP_CPU_FINETUNE:-1}"
-
-if [[ "$SKIP_CPU_FINETUNE" != "1" ]]; then
+if [[ "$SKIP_CPU_EVAL" != "1" && "$SKIP_CPU_FINETUNE" != "1" ]]; then
   echo ""
   echo "==> Step 5: Fine-tune LoRA [CPU]"
   echo "    Warning: CPU fine-tuning of Phi-3 can take a long time / use lots of RAM."
@@ -168,7 +184,7 @@ if [[ "$SKIP_CPU_FINETUNE" != "1" ]]; then
       cp -a models/fine_tuned/adapter/. models/fine_tuned/adapter_cpu/
     fi
   '
-else
+elif [[ "$SKIP_CPU_FINETUNE" == "1" ]]; then
   echo ""
   echo "==> Step 5: Skipping CPU fine-tune (SKIP_CPU_FINETUNE=1)."
   echo "    Set SKIP_CPU_FINETUNE=0 to train LoRA on CPU as well."
@@ -197,28 +213,28 @@ elif [[ "$SKIP_CPU_FINETUNE" == "1" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Step 6: Comparison — CPU, then GPU
+# Step 6 / 7: Comparison + export
 # ---------------------------------------------------------------------------
 
-echo ""
-echo "==> Step 6: Fine-tuned comparison [CPU]"
-CPU_ADAPTER="/app/models/fine_tuned/adapter_cpu"
-# Prefer CPU adapter; else reuse default adapter trained on GPU-only path
-if docker compose exec -T app test -d "$CPU_ADAPTER"; then
-  run_app_env cpu "FINE_TUNED_PATH=${CPU_ADAPTER}" scripts/06_fine_tuned_evaluation.py
-elif docker compose exec -T app test -d /app/models/fine_tuned/adapter; then
-  echo "    No adapter_cpu — evaluating default adapter under CUDA_VISIBLE_DEVICES= (CPU inference)."
-  run_app cpu scripts/06_fine_tuned_evaluation.py
-else
-  echo "    ERROR: No fine-tuned adapter found. Skipping Step 6 CPU."
-fi
-snapshot comparison_report cpu
+if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+  echo ""
+  echo "==> Step 6: Fine-tuned comparison [CPU]"
+  CPU_ADAPTER="/app/models/fine_tuned/adapter_cpu"
+  if docker compose exec -T app test -d "$CPU_ADAPTER"; then
+    run_app_env cpu "FINE_TUNED_PATH=${CPU_ADAPTER}" scripts/06_fine_tuned_evaluation.py
+  elif docker compose exec -T app test -d /app/models/fine_tuned/adapter; then
+    echo "    No adapter_cpu — evaluating default adapter under CUDA_VISIBLE_DEVICES= (CPU inference)."
+    run_app cpu scripts/06_fine_tuned_evaluation.py
+  else
+    echo "    ERROR: No fine-tuned adapter found. Skipping Step 6 CPU."
+  fi
+  snapshot comparison_report cpu
 
-# Only export CPU results if we have baseline/rag snapshots at least
-echo ""
-echo "==> Step 7a: Export CPU results → results/runs/${CPU_RUN_ID}"
-stage_for_export cpu
-export_results "$CPU_RUN_ID"
+  echo ""
+  echo "==> Step 7a: Export CPU results → results/runs/${CPU_RUN_ID}"
+  stage_for_export cpu
+  export_results "$CPU_RUN_ID"
+fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
@@ -238,26 +254,32 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   stage_for_export cuda
   export_results "$CUDA_RUN_ID"
 
-  echo ""
-  echo "==> Step 8: CPU vs CUDA summary"
-  docker compose exec -T app python scripts/08_compare_devices.py \
-    --cpu-run-id "$CPU_RUN_ID" \
-    --cuda-run-id "$CUDA_RUN_ID" \
-    --out "results/runs/${TIMESTAMP}_cpu_vs_cuda"
+  if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+    echo ""
+    echo "==> Step 8: CPU vs CUDA summary"
+    docker compose exec -T app python scripts/08_compare_devices.py \
+      --cpu-run-id "$CPU_RUN_ID" \
+      --cuda-run-id "$CUDA_RUN_ID" \
+      --out "results/runs/${TIMESTAMP}_cpu_vs_cuda"
+  fi
 fi
 
 echo ""
 echo "========================================================================"
 echo "DONE"
 echo "========================================================================"
-echo "  CPU results : results/runs/${CPU_RUN_ID}/"
+if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+  echo "  CPU results : results/runs/${CPU_RUN_ID}/"
+fi
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo "  CUDA results: results/runs/${CUDA_RUN_ID}/"
-  echo "  Combined    : results/runs/${TIMESTAMP}_cpu_vs_cuda/"
+  if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
+    echo "  Combined    : results/runs/${TIMESTAMP}_cpu_vs_cuda/"
+  fi
   echo "  ★ Open first: results/latest/by_question.md"
 fi
 echo ""
 echo "Review then commit:"
 echo "  git add results/"
-echo "  git commit -m \"results: CPU vs CUDA full pipeline ${TIMESTAMP}\""
+echo "  git commit -m \"results: pipeline ${TIMESTAMP}\""
 echo "========================================================================"

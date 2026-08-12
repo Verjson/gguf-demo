@@ -23,7 +23,7 @@
       "id": 100,
       "options": {
         "mode": "markdown",
-        "content": "## Live ops\nPrometheus scrapes the **app** container (`:8000/metrics`) while evaluations run. Use this during `./scripts/run_pipeline.sh` to watch CUDA status and live latency. For question-level comparison, open **Quality & Latency** or **By Question**."
+        "content": "## Live ops\nPrometheus scrapes the **persistent** app metrics server (`:8000/metrics`, always on). Evaluation scripts write metrics via multiprocess files; values appear here within ~15s. For question-level comparison after a run, open **Quality & Latency** or **By Question**. MLflow UI: http://localhost:5000 → **Experiments → gguf-demo**."
       }
     },
     {

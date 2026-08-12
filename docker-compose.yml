@@ -63,6 +63,8 @@ services:
       --port 5000
       --backend-store-uri postgresql://raguser:ragpass@postgres:5432/rag_eval
       --default-artifact-root /mlflow-artifacts
+      --allowed-hosts '*'
+      --cors-allowed-origins '*'
 
   app:
     build:
@@ -89,11 +91,14 @@ services:
       - huggingface_cache:/root/.cache/huggingface
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_EXPERIMENT_NAME: gguf-demo
       POSTGRES_HOST: postgres
       POSTGRES_DB: rag_eval
       POSTGRES_USER: raguser
       POSTGRES_PASSWORD: ragpass
       PROMETHEUS_URL: http://prometheus:9090
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
+      METRICS_PORT: "8000"
       NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
       NVIDIA_DRIVER_CAPABILITIES: compute,utility
     # Requires NVIDIA Container Toolkit / Docker Desktop GPU. For CPU-only hosts:
@@ -104,8 +109,12 @@ services:
         condition: service_healthy
       mlflow:
         condition: service_started
+      prometheus:
+        condition: service_started
     stdin_open: true
     tty: true
+    # Persistent Prometheus exporter (eval scripts are ephemeral `exec` processes)
+    command: ["python", "scripts/metrics_server.py"]
 
 volumes:
   postgres_data:

@@ -15,9 +15,12 @@ From a machine with Docker (GPU recommended):
 docker compose up -d
 docker compose exec -T app python scripts/check_cuda.py   # expect PASS on GPU hosts
 
-# 2. Full evaluation (CPU then GPU per step; ~45–90+ min on a laptop GPU)
+# 2. Full evaluation
 chmod +x scripts/run_pipeline.sh
-./scripts/run_pipeline.sh
+# GPU hosts / WSL (recommended): skip CPU eval passes — avoids Phi-3 RAM spikes that can crash WSL
+SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh
+# Dual-device comparison (CPU then GPU per step; ~45–90+ min, needs ≥24GB RAM):
+# ./scripts/run_pipeline.sh
 ```
 
 Then open:
@@ -27,7 +30,9 @@ Then open:
 | **Results (start here)** | [`results/latest/by_question.md`](results/latest/by_question.md) |
 | Device summary | `results/latest/summary.md` (or `results/runs/*_cpu_vs_cuda/`) |
 | Grafana | http://localhost:3000 (admin / admin) → **By Question** |
-| MLflow | http://localhost:5000 |
+| MLflow GenAI traces | http://localhost:5000 → **GenAI** → **gguf-demo** → Traces |
+| MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
+| Prometheus | http://localhost:9090/graph (see queries below) |
 
 CPU-only hosts:
 
@@ -70,8 +75,10 @@ SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # trains LoRA on CPU once
 **Notes**
 
 - Default pipeline **skips CPU LoRA** (`SKIP_CPU_FINETUNE=1`) — Phi-3 LoRA on CPU is RAM-heavy and slow.
+- On WSL / ≤24GB hosts prefer **`SKIP_CPU_EVAL=1`** so Phi-3 is not also loaded in fp32 on CPU.
 - Eval uses **greedy decoding** (`do_sample: false`) for stable quality numbers.
 - `cuda_used=1.0` means CUDA was **available** to the process (not a per-kernel probe).
+- Step 05 registers **base = Model Registry v1** and each LoRA as **v2+** (`phi-3-mini-gguf-demo`).
 
 ---
 
@@ -142,6 +149,7 @@ Shared setup runs once. Metric steps run **CPU first**, then **GPU** (if CUDA wo
 
 ```bash
 SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # also train LoRA on CPU
+SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh       # GPU-only evals (safer on WSL)
 ```
 
 After code/compose changes:
@@ -279,10 +287,147 @@ git commit -m "results: Phi-3 RAG eval on arXiv corpus"
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| MLflow | http://localhost:5000 | Experiment tracking |
-| Prometheus | http://localhost:9090 | Scrapes app `:8000/metrics` |
+| MLflow | http://localhost:5000 | Experiment tracking (all stages → **gguf-demo**) |
+| Prometheus | http://localhost:9090 | Scrapes persistent app `:8000/metrics` |
 | Grafana | http://localhost:3000 | Dashboards (admin / admin) |
 | Postgres | localhost:5432 | pgvector + metrics |
+
+### MLflow — GenAI vs Model Training
+
+MLflow 3’s UI toggle:
+
+| Toggle | What it shows | What this demo logs |
+|--------|---------------|---------------------|
+| **GenAI** | Traces (spans: retrieve → generate → score) | Primary view for RAG/LLM eval |
+| **Model Training** | Classic runs (params, metrics, artifacts) | Same Q&A also logged as a run |
+
+**Why GenAI looked empty before:** experiments existed, but only classic training runs were written. The GenAI tab lists experiments that have **traces**. We now emit both.
+
+How to view:
+
+1. Open http://localhost:5000  
+2. Stay on **GenAI** → **Experiments** → **`gguf-demo`**  
+3. Open the **Traces** tab — each evaluation is a trace named `eval.<approach>` with child spans `retrieve` / `generate` / `score`  
+4. Flip to **Model Training** → same experiment for ROUGE/BERT metrics tables and `response.txt` artifacts  
+
+Ignore empty older GenAI experiment names (`pipeline_smoke`, `baseline_evaluation`, …) unless you re-run under those names; new work goes to **`gguf-demo`**.
+
+Smoke-check:
+
+```bash
+docker compose exec -T app python - <<'PY'
+from src.hardware import detect_hardware
+from src.mlflow_tracker import MLflowTracker
+t = MLflowTracker("readme_smoke", hardware=detect_hardware())
+t.log_evaluation(
+    approach="smoke",
+    question="Does GenAI tracing work?",
+    response="yes",
+    metrics={"rougeL": 0.5, "bert_score": 0.8, "generation_time": 0.2},
+    context="optional retrieved chunk text",
+)
+print("logged to", t.experiment_name)
+PY
+# Then refresh GenAI → gguf-demo → Traces
+```
+
+### Prometheus — how to query in the UI
+
+Prometheus scrapes the **always-on** metrics server inside `app` (`scripts/metrics_server.py` on `:8000`). Eval scripts are short-lived `docker compose exec` processes; they write into `PROMETHEUS_MULTIPROC_DIR` and the metrics server aggregates them.
+
+#### 1. Confirm the scrape is healthy
+
+1. Open http://localhost:9090/targets  
+2. Job **`rag-evaluation`** → target `app:8000` should be **UP** (last scrape &lt; 1m)  
+3. If **DOWN**: recreate the app so it runs the metrics server:
+
+```bash
+docker compose up -d --force-recreate app
+docker compose logs -f app   # expect: metrics_server listening on 0.0.0.0:8000
+```
+
+#### 2. Use the Graph explorer
+
+1. Open http://localhost:9090/graph  
+2. Switch to the **Table** or **Graph** tab  
+3. Paste a query (below) → **Execute**  
+4. For time series, set the range to **Last 15m** / **Last 1h** while a pipeline is running  
+5. Optional: **Add graph** / compare two queries with the same time range  
+
+#### 3. What is collected (metric → meaning)
+
+| PromQL | Type | Meaning |
+|--------|------|---------|
+| `rag_metrics_server_up` | gauge | `1` while the persistent `:8000` exporter is alive |
+| `rag_metrics_server_heartbeat_unixtime` | gauge | Last heartbeat unix time |
+| `cuda_available` | gauge | `1` if the last eval process saw CUDA |
+| `cuda_device_count` | gauge | GPU count from the last eval process |
+| `evaluation_requests_total` | counter | Q&A evals finished (labels: `device`, `approach`) |
+| `evaluation_duration_seconds` | histogram | End-to-end latency observations (`device`, `approach`) |
+| `response_quality_score` | gauge | Latest blended quality score (`device`) |
+| `domain_relevance_score` | gauge | Latest heuristic domain score |
+| `context_utilization_score` | gauge | Latest context-overlap score (RAG) |
+| `retrieval_hit_at_k` | gauge | Latest retrieval hit@k (RAG) |
+| `faithfulness_score` | gauge | Latest faithfulness proxy (RAG) |
+
+Label values you will see:
+
+- `device`: `cuda` or `cpu`  
+- `approach`: `baseline`, `rag`, `fine_tuned`, `fine_tuned_with_rag`, …  
+
+#### 4. Useful queries to paste
+
+**Is the exporter up?**
+```promql
+rag_metrics_server_up
+```
+
+**How many evaluations so far (by approach)?**
+```promql
+sum by (approach, device) (evaluation_requests_total)
+```
+
+**Eval rate (per minute) while the pipeline runs:**
+```promql
+sum by (approach) (rate(evaluation_requests_total[5m])) * 60
+```
+
+**Latest quality by device:**
+```promql
+response_quality_score
+```
+
+**p50 / p95 latency (seconds) by approach:**
+```promql
+histogram_quantile(0.50, sum by (le, approach) (rate(evaluation_duration_seconds_bucket[15m])))
+```
+```promql
+histogram_quantile(0.95, sum by (le, approach) (rate(evaluation_duration_seconds_bucket[15m])))
+```
+
+**RAG faithfulness / hit@k (latest gauges):**
+```promql
+faithfulness_score
+```
+```promql
+retrieval_hit_at_k
+```
+
+**CUDA status:**
+```promql
+cuda_available
+```
+
+#### 5. Raw scrape (optional)
+
+```bash
+curl -s http://localhost:8000/metrics | head
+curl -s 'http://localhost:9090/api/v1/query?query=evaluation_requests_total'
+```
+
+Gauges show the **most recent** eval process values (multiprocess `livemostrecent`). Counters / histograms accumulate across eval processes until the app container is recreated.
+
+Grafana **Live Ops** reads the same series during a run; **By Question** / **Quality & Latency** use Postgres, not Prometheus.
 
 ### Grafana dashboards (provisioned)
 
@@ -290,7 +435,7 @@ git commit -m "results: Phi-3 RAG eval on arXiv corpus"
 |-----------|------|
 | **gguf-demo · By Question** | After a run — same layout as `by_question.md` |
 | **gguf-demo · Quality & Latency** | Aggregates + GPU speedup |
-| **gguf-demo · Live Ops** | While the pipeline is running |
+| **gguf-demo · Live Ops** | While the pipeline is running (Prometheus) |
 
 ```bash
 docker compose up -d prometheus grafana
@@ -357,6 +502,8 @@ PRELOAD_MODELS=true docker compose build app   # bake models into image
 | Empty host `results/` | Confirm `./results:/app/results` mount; re-export |
 | OOM during CPU LoRA | Keep `SKIP_CPU_FINETUNE=1` (default) |
 | Grafana empty | `docker compose up -d prometheus grafana` then open **By Question** |
+| MLflow looks empty | Open **Experiments → gguf-demo** (not Default); confirm `MLFLOW_TRACKING_URI` |
+| Prometheus target DOWN | `docker compose up -d --force-recreate app` — app must run `metrics_server.py` |
 
 ---
 

@@ -139,6 +139,7 @@ def run_approach(
             metrics=metrics,
             params={"use_rag": use_rag},
             model_name=run_config["llm"].get("fine_tuned_path") or run_config["llm"]["model"],
+            context=context if use_rag else None,
         )
         results.append({"question": prompt_data["question"], "response": response, "metrics": metrics})
 

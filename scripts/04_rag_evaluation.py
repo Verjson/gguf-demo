@@ -120,6 +120,7 @@ def main() -> None:
                 "k_documents": k,
             },
             model_name=config["llm"]["model"],
+            context=context,
         )
         results.append({
             "question": prompt_data["question"],

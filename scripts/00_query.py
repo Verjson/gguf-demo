@@ -102,6 +102,7 @@ def main() -> None:
         metrics=metrics,
         params={"pdf": args.pdf, "use_rag": use_rag},
         model_name=config["llm"]["model"],
+        context=context if use_rag else None,
     )
 
     print("\n" + "=" * 72)

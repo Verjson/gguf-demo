@@ -44,7 +44,7 @@ RUN pip install --no-cache-dir --upgrade pip \
         "rouge-score>=0.1.2" \
         "bert-score>=0.3.13" \
         "ragas>=0.1.0,<0.2" \
-        "mlflow>=2.9.2,<2.15" \
+        "mlflow>=3.1.0,<3.16" \
         "prometheus-client>=0.19.0" \
         "peft>=0.7.1,<0.12" \
         "pyyaml>=6.0.1" \
@@ -73,6 +73,8 @@ RUN mkdir -p /app/data/papers /app/data/processed /app/models
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV HF_HOME=/root/.cache/huggingface
+ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
+ENV MLFLOW_EXPERIMENT_NAME=gguf-demo
 
-# Keep container alive; run scripts via `docker compose exec app python scripts/...`
-CMD ["tail", "-f", "/dev/null"]
+# Persistent Prometheus /metrics; run scripts via `docker compose exec app python scripts/...`
+CMD ["python", "scripts/metrics_server.py"]

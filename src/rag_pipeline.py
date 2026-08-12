@@ -89,14 +89,39 @@ class RAGPipeline:
         """Shared dtype / device / 8-bit policy for base and PEFT loads."""
         use_cuda = self.hardware.cuda_available
         kwargs: dict = {
-            "torch_dtype": torch.float16 if use_cuda else torch.float32,
+            "low_cpu_mem_usage": True,
         }
         if use_cuda:
-            kwargs["device_map"] = "auto"
-            load_8bit = self.config.get("llm", {}).get("load_in_8bit", True)
+            # fp16 on a single GPU. 8-bit (bitsandbytes) is disabled by default because
+            # current accelerate+transformers stacks often fail with:
+            #   ValueError: `.to` is not supported for 8-bit bitsandbytes models
+            # when dispatch_model runs after quantization. Phi-3-mini fits in 12GB fp16.
+            load_8bit = bool(self.config.get("llm", {}).get("load_in_8bit", False))
             if load_8bit:
                 kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
+            else:
+                kwargs["torch_dtype"] = torch.float16
+            kwargs["device_map"] = {"": 0}
+        else:
+            kwargs["torch_dtype"] = torch.float32
         return kwargs
+
+    def _from_pretrained(self, model_id: str):
+        """Load causal LM; fall back to fp16 if an 8-bit dispatch fails."""
+        model_kwargs = self._model_load_kwargs()
+        try:
+            return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
+        except ValueError as exc:
+            msg = str(exc)
+            if "8-bit" not in msg and "4-bit" not in msg:
+                raise
+            logger.warning("Quantized load failed (%s); falling back to float16", exc)
+            return AutoModelForCausalLM.from_pretrained(
+                model_id,
+                torch_dtype=torch.float16,
+                device_map={"": 0},
+                low_cpu_mem_usage=True,
+            )
 
     def _load_base_model(self):
         """
@@ -108,15 +133,14 @@ class RAGPipeline:
         model_id = self.config["llm"]["model"]
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         use_cuda = self.hardware.cuda_available
-        load_8bit = bool(self.config.get("llm", {}).get("load_in_8bit", True)) and use_cuda
+        load_8bit = bool(self.config.get("llm", {}).get("load_in_8bit", False)) and use_cuda
 
-        model_kwargs = self._model_load_kwargs()
         if use_cuda:
             logger.info("Loading %s with CUDA (8-bit=%s)", model_id, load_8bit)
         else:
             logger.info("Loading %s on CPU (no CUDA)", model_id)
 
-        model = AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
+        model = self._from_pretrained(model_id)
         return pipeline(
             "text-generation",
             model=model,
@@ -141,7 +165,7 @@ class RAGPipeline:
             base_id = self.config["fine_tuning"]["base_model"]
             self.tokenizer = AutoTokenizer.from_pretrained(model_path)
             # Same quantization / dtype policy as the base model path
-            base = AutoModelForCausalLM.from_pretrained(base_id, **self._model_load_kwargs())
+            base = self._from_pretrained(base_id)
             model = PeftModel.from_pretrained(base, model_path)
             return pipeline(
                 "text-generation",
@@ -164,13 +188,22 @@ class RAGPipeline:
         loader = PyPDFLoader(pdf_path)
         documents = loader.load()
 
+        # Postgres rejects strings containing NUL (0x00); PDF extractors sometimes emit them.
+        for doc in documents:
+            if doc.page_content:
+                doc.page_content = doc.page_content.replace("\x00", " ")
+
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.config["chunking"]["chunk_size"],
             chunk_overlap=self.config["chunking"]["chunk_overlap"],
             length_function=len,
             separators=["\n\n", "\n", " ", ""],
         )
-        return text_splitter.split_documents(documents)
+        chunks = text_splitter.split_documents(documents)
+        for chunk in chunks:
+            if chunk.page_content:
+                chunk.page_content = chunk.page_content.replace("\x00", " ")
+        return chunks
 
     def _delete_collection_if_exists(self) -> None:
         """Drop the pgvector collection so rebuilds do not duplicate embeddings."""
