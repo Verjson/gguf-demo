@@ -11,7 +11,7 @@ Packaging uses **`pyproject.toml`**. Exported metrics land in **`results/`** (sa
 From a machine with Docker (GPU recommended):
 
 ```bash
-# 1. Start everything (app defaults to CUDA 11.8 PyTorch)
+# 1. Start everything (app defaults to CUDA 13.0 PyTorch — Ada Lovelace RTX 40-series)
 docker compose up -d
 docker compose exec -T app python scripts/check_cuda.py   # expect PASS on GPU hosts
 
@@ -58,7 +58,7 @@ SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # trains LoRA on CPU once
 
 | Item | Approx. size |
 |------|----------------|
-| App image (cu118 torch + deps) | ~3–4 GB |
+| App image (cu130 torch + deps) | ~3–5 GB |
 | Hugging Face cache (Phi-3 + MiniLM + BERTScore) | ~8–12 GB first run |
 | LoRA adapters under `models/` | ~100–300 MB |
 | Postgres + MLflow volumes | ~1–2 GB |
@@ -118,13 +118,21 @@ Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latenc
 1. **Windows:** NVIDIA driver with WSL support  
 2. **WSL:** `nvidia-smi` works  
 3. **Docker:** GPU enabled (Docker Desktop → Resources → GPU, or `nvidia-container-toolkit`)  
-4. First build uses **cu118** torch by default:
-
-```bash
-docker compose build app    # already done if you rebuilt recently
-docker compose up -d
-docker compose exec -T app python scripts/check_cuda.py
-```
+4. First build uses **cu130** torch by default (CUDA 13.0 userland — native INT8 routing,
+   newer cuBLAS GEMM paths, and tighter fatbin load for Ada Lovelace / RTX 40-series):
+   ```bash
+   docker compose build app
+   # CPU-only hosts:
+   TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
+   # Older CUDA 12.6 userland (still fine; misses CUDA 13 polish):
+   TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 docker compose build app
+   ```
+   Host driver must support CUDA 13 userland (this repo’s RTX 4080 Laptop path is sm_89;
+   driver 610.x is sufficient). Then verify GPU inside the container:
+   ```bash
+   docker compose up -d
+   docker compose exec -T app python scripts/check_cuda.py
+   ```
 
 ---
 
@@ -187,7 +195,8 @@ Add `--no-rag` for baseline. Add `--judge` for LLM groundedness scoring.
 
 ## Recent improvements
 
-- **Default cu118 torch** in compose / Dockerfile (override with CPU wheel index if needed)
+- **Default cu130 torch** in compose / Dockerfile (Ada Lovelace CUDA 13 polish; override
+  with `…/cpu` or `…/cu126` if needed)
 - **Greedy eval** + **Phi-3 chat template** for more stable, instruction-faithful answers
 - **`time_to_response`** as primary latency metric; CPU÷GPU speedup in exports and Grafana
 - **Question-centric views** — `by_question.md` / CSV + Grafana **By Question** dashboard
@@ -242,7 +251,7 @@ Ground truth from `prompts/evaluation_prompts.txt` (`question|answer`, from step
 | Store | Use |
 |-------|-----|
 | **`results/`** | Commit-friendly snapshots |
-| **MLflow** :5000 | Per-question runs |
+| **MLflow** :5000 | Parent stage runs + GenAI traces/assessments |
 | **Prometheus** :9090 | Live gauges |
 | **Grafana** :3000 | Dashboards |
 | **Postgres** `evaluation_metrics` | SQL / Grafana |
@@ -298,37 +307,58 @@ MLflow 3’s UI toggle:
 
 | Toggle | What it shows | What this demo logs |
 |--------|---------------|---------------------|
-| **GenAI** | Traces (spans: retrieve → generate → score) | Primary view for RAG/LLM eval |
-| **Model Training** | Classic runs (params, metrics, artifacts) | Same Q&A also logged as a run |
+| **GenAI** | Traces + assessments | One live trace per question (`retrieve` / `generate`), scores as feedback |
+| **Model Training** | Classic runs | **One parent run per stage×device** (e.g. `rag@cuda`) with mean metrics + lineage tags |
 
-**Why GenAI looked empty before:** experiments existed, but only classic training runs were written. The GenAI tab lists experiments that have **traces**. We now emit both.
+**Layout:**
+
+```text
+Experiment: gguf-demo
+└── Evaluation run  (baseline@cuda | rag@cuda | fine_tuned@cuda | …)
+    ├── Aggregated metrics: mean rougeL, bert_score, quality_score, latency, …
+    ├── Tags: registered_model, model_version, approach, device
+    └── Traces (one per question)  ← GenAI UI
+         ├── retrieve / generate (live @mlflow.trace on RAGPipeline)
+         └── Assessments: rougeL, faithfulness, quality_score, …
+```
+
+Stages call ``mlflow.genai.evaluate`` with custom scorers wrapping this repo’s `Evaluator`
+(`src/genai_scorers.py` + `src/eval_runner.py`). Prometheus/Postgres still get per-question
+rows for Grafana; MLflow is the experiment-compare + debug layer.
 
 How to view:
 
 1. Open http://localhost:5000  
-2. Stay on **GenAI** → **Experiments** → **`gguf-demo`**  
-3. Open the **Traces** tab — each evaluation is a trace named `eval.<approach>` with child spans `retrieve` / `generate` / `score`  
-4. Flip to **Model Training** → same experiment for ROUGE/BERT metrics tables and `response.txt` artifacts  
+2. **GenAI** → **Experiments** → **`gguf-demo`** → **Traces** (open a trace → Assessments)  
+3. **Model Training** → same experiment → runs named `baseline@cuda`, `rag@cuda`, …  
+4. **Models** → `phi-3-mini-gguf-demo` for registry versions tagged on those runs  
 
 Ignore empty older GenAI experiment names (`pipeline_smoke`, `baseline_evaluation`, …) unless you re-run under those names; new work goes to **`gguf-demo`**.
 
-Smoke-check:
+Smoke-check (parent run + assessments; no full model load):
 
 ```bash
 docker compose exec -T app python - <<'PY'
+import mlflow
+from mlflow.entities import SpanType
 from src.hardware import detect_hardware
 from src.mlflow_tracker import MLflowTracker
+
 t = MLflowTracker("readme_smoke", hardware=detect_hardware())
-t.log_evaluation(
-    approach="smoke",
-    question="Does GenAI tracing work?",
-    response="yes",
-    metrics={"rougeL": 0.5, "bert_score": 0.8, "generation_time": 0.2},
-    context="optional retrieved chunk text",
-)
-print("logged to", t.experiment_name)
+with t.stage_run("smoke", params={"readme": True}, lineage={"registered_model": "phi-3-mini-gguf-demo"}):
+    with mlflow.start_span(name="eval.smoke", span_type=SpanType.CHAIN) as root:
+        root.set_inputs({"question": "Does GenAI tracing work?"})
+        root.set_outputs({"answer": "yes"})
+    t.log_evaluation(
+        approach="smoke",
+        question="Does GenAI tracing work?",
+        response="yes",
+        metrics={"rougeL": 0.5, "bert_score": 0.8, "generation_time": 0.2},
+        context="optional retrieved chunk text",
+    )
+print("logged parent run + assessments to", t.experiment_name)
 PY
-# Then refresh GenAI → gguf-demo → Traces
+# Then: GenAI → gguf-demo → Traces; Model Training → smoke@<device>
 ```
 
 ### Prometheus — how to query in the UI
@@ -480,14 +510,15 @@ docker compose restart grafana   # if panels missing
 
 ```bash
 pip install -e .                    # local Python (optional)
-docker compose build app            # cu118 by default
+docker compose build app            # cu130 by default (Ada / CUDA 13)
 TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
+TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 docker compose build app  # CUDA 12.6 fallback
 PRELOAD_MODELS=true docker compose build app   # bake models into image
 ```
 
 | Build arg | Default | Purpose |
 |-----------|---------|---------|
-| `TORCH_INDEX_URL` | cu118 wheels | Use `…/cpu` without a GPU |
+| `TORCH_INDEX_URL` | cu130 wheels | Use `…/cpu` without a GPU; `…/cu126` for CUDA 12.6 fallback |
 | `PRELOAD_MODELS` | `false` | Download models at build time |
 
 ---
@@ -496,7 +527,7 @@ PRELOAD_MODELS=true docker compose build app   # bake models into image
 
 | Issue | Fix |
 |-------|-----|
-| `cuda: False` in container | Enable GPU in Docker; `gpus: all`; rebuild (cu118 default) |
+| `cuda: False` in container | Enable GPU in Docker; `gpus: all`; rebuild (cu130 default) |
 | No eval prompts | Run `01b_generate_qa_pairs.py` |
 | Old Postgres schema | Auto-migrates on insert; or apply `scripts/migrate_metrics_table.sql` |
 | Empty host `results/` | Confirm `./results:/app/results` mount; re-export |

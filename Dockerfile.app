@@ -19,9 +19,10 @@ COPY config/ ./config/
 
 # Install CPU or CUDA torch first (build-arg), then the rest of the project without
 # letting pip replace torch from the default PyPI index.
-# Default matches compose (GPU-ready). Override with cpu index for CPU-only builds:
-#   TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
-ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu118
+# Default: CUDA 13.0 wheels (Ada Lovelace — native INT8 paths, newer cuBLAS/fatbin).
+# Fallback: TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126
+# CPU-only: TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu130
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir torch --index-url ${TORCH_INDEX_URL} \
     && pip install --no-cache-dir -e . --no-deps \
@@ -54,7 +55,8 @@ RUN pip install --no-cache-dir --upgrade pip \
         "numpy>=1.26.3" \
         "click>=8.1.7" \
         "rich>=13.7.0" \
-        "python-dotenv>=1.0.0"
+        "python-dotenv>=1.0.0" \
+        "packaging>=24.0"
 
 # Optionally bake models into the image so first run is offline-friendly
 ARG PRELOAD_MODELS=false

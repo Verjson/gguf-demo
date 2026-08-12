@@ -71,8 +71,9 @@ services:
       context: .
       dockerfile: Dockerfile.app
       args:
-        # Default: CUDA 11.8 wheels (GPU hosts). Override with …/cpu for CPU-only builds.
-        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu118}
+        # Default: CUDA 13.0 wheels (Ada Lovelace — INT8/GEMM/fatbin polish vs cu118/cu126).
+        # Override: …/cpu, or …/cu126 if the host driver cannot run CUDA 13 userland.
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu130}
         PRELOAD_MODELS: ${PRELOAD_MODELS:-false}
         LLM_MODEL: ${LLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
         EMBED_MODEL: ${EMBED_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
