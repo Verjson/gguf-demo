@@ -8,20 +8,17 @@ Packaging uses **`pyproject.toml`**. Exported metrics land in **`results/`** (sa
 
 ## Easiest way to run
 
-From a machine with Docker (GPU recommended):
+From a machine with Docker (an NVIDIA GPU is optional):
 
 ```bash
-# 1. Start everything (app defaults to CUDA 13.0 PyTorch — Ada Lovelace RTX 40-series)
-docker compose up -d
-docker compose exec -T app python scripts/check_cuda.py   # expect PASS on GPU hosts
-
-# 2. Full evaluation
 chmod +x scripts/run_pipeline.sh
-# GPU hosts / WSL (recommended): skip CPU eval passes — avoids Phi-3 RAM spikes that can crash WSL
-SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh
-# Dual-device comparison (CPU then GPU per step; ~45–90+ min, needs ≥24GB RAM):
-# ./scripts/run_pipeline.sh
+./scripts/run_pipeline.sh
 ```
+
+The script checks the host GPU and Docker NVIDIA runtime before building the app. It
+builds a CPU-only image when either is absent; otherwise it builds the CUDA image and
+runs both CPU and GPU evaluations. On GPU hosts, use `SKIP_CPU_EVAL=1` to run only the
+accelerated passes.
 
 Then open:
 
@@ -34,12 +31,11 @@ Then open:
 | MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
 | Prometheus | http://localhost:9090/graph (see queries below) |
 
-CPU-only hosts:
+Device selection can also be forced:
 
 ```bash
-TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
-docker compose up -d
-SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # trains LoRA on CPU once
+COMPUTE_DEVICE=cpu ./scripts/run_pipeline.sh
+COMPUTE_DEVICE=cuda SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh
 ```
 
 ---
@@ -58,7 +54,7 @@ SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # trains LoRA on CPU once
 
 | Item | Approx. size |
 |------|----------------|
-| App image (cu130 torch + deps) | ~3–5 GB |
+| App image (CPU or cu130 torch + deps) | ~2–5 GB |
 | Hugging Face cache (Phi-3 + MiniLM + BERTScore) | ~8–12 GB first run |
 | LoRA adapters under `models/` | ~100–300 MB |
 | Postgres + MLflow volumes | ~1–2 GB |
@@ -113,25 +109,26 @@ Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latenc
 
 ---
 
-## Prerequisites (WSL2 + NVIDIA)
+## Optional NVIDIA GPU acceleration
+
+CPU-only hosts need no GPU drivers or container runtime. For automatic GPU acceleration:
 
 1. **Windows:** NVIDIA driver with WSL support  
 2. **WSL:** `nvidia-smi` works  
 3. **Docker:** GPU enabled (Docker Desktop → Resources → GPU, or `nvidia-container-toolkit`)  
-4. First build uses **cu130** torch by default (CUDA 13.0 userland — native INT8 routing,
-   newer cuBLAS GEMM paths, and tighter fatbin load for Ada Lovelace / RTX 40-series):
+4. The pipeline selects **cu130** torch after both checks pass (CUDA 13.0 userland —
+   native INT8 routing, newer cuBLAS GEMM paths, and tighter fatbin load for Ada
+   Lovelace / RTX 40-series):
    ```bash
-   docker compose build app
-   # CPU-only hosts:
-   TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
+   ./scripts/run_pipeline.sh
    # Older CUDA 12.6 userland (still fine; misses CUDA 13 polish):
-   TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 docker compose build app
+   TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 ./scripts/run_pipeline.sh
    ```
    Host driver must support CUDA 13 userland (this repo’s RTX 4080 Laptop path is sm_89;
    driver 610.x is sufficient). Then verify GPU inside the container:
    ```bash
-   docker compose up -d
-   docker compose exec -T app python scripts/check_cuda.py
+   docker compose -f docker-compose.yml -f docker-compose.gpu.yml exec -T app \
+     python scripts/check_cuda.py
    ```
 
 ---
@@ -142,7 +139,8 @@ Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latenc
 ./scripts/run_pipeline.sh
 ```
 
-Shared setup runs once. Metric steps run **CPU first**, then **GPU** (if CUDA works):
+This command builds and starts the stack. Shared setup runs once. Metric steps run
+**CPU first**, then **GPU** (if CUDA works):
 
 | Step | CPU | GPU |
 |------|-----|-----|
@@ -158,12 +156,14 @@ Shared setup runs once. Metric steps run **CPU first**, then **GPU** (if CUDA wo
 ```bash
 SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # also train LoRA on CPU
 SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh       # GPU-only evals (safer on WSL)
+COMPUTE_DEVICE=cpu ./scripts/run_pipeline.sh    # force the portable CPU image
+COMPUTE_DEVICE=cuda ./scripts/run_pipeline.sh   # require GPU startup; do not fall back
 ```
 
 After code/compose changes:
 
 ```bash
-docker compose up -d --force-recreate app
+./scripts/run_pipeline.sh
 ```
 
 ### Manual steps
@@ -195,8 +195,8 @@ Add `--no-rag` for baseline. Add `--judge` for LLM groundedness scoring.
 
 ## Recent improvements
 
-- **Default cu130 torch** in compose / Dockerfile (Ada Lovelace CUDA 13 polish; override
-  with `…/cpu` or `…/cu126` if needed)
+- **Pre-build device selection** uses CPU PyTorch without GPU-only dependencies on CPU
+  hosts and the cu130 stack on supported NVIDIA hosts
 - **Greedy eval** + **Phi-3 chat template** for more stable, instruction-faithful answers
 - **`time_to_response`** as primary latency metric; CPU÷GPU speedup in exports and Grafana
 - **Question-centric views** — `by_question.md` / CSV + Grafana **By Question** dashboard
@@ -510,15 +510,16 @@ docker compose restart grafana   # if panels missing
 
 ```bash
 pip install -e .                    # local Python (optional)
-docker compose build app            # cu130 by default (Ada / CUDA 13)
-TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu docker compose build app
-TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 docker compose build app  # CUDA 12.6 fallback
+docker compose build app            # CPU-only default
+docker compose -f docker-compose.yml -f docker-compose.gpu.yml build app  # cu130
+TORCH_INDEX_URL=https://download.pytorch.org/whl/cu126 \
+  docker compose -f docker-compose.yml -f docker-compose.gpu.yml build app
 PRELOAD_MODELS=true docker compose build app   # bake models into image
 ```
 
 | Build arg | Default | Purpose |
 |-----------|---------|---------|
-| `TORCH_INDEX_URL` | cu130 wheels | Use `…/cpu` without a GPU; `…/cu126` for CUDA 12.6 fallback |
+| `TORCH_INDEX_URL` | CPU wheels | GPU overlay defaults to cu130; use `…/cu126` for older drivers |
 | `PRELOAD_MODELS` | `false` | Download models at build time |
 
 ---
@@ -527,7 +528,7 @@ PRELOAD_MODELS=true docker compose build app   # bake models into image
 
 | Issue | Fix |
 |-------|-----|
-| `cuda: False` in container | Enable GPU in Docker; `gpus: all`; rebuild (cu130 default) |
+| `cuda: False` in container | Confirm `nvidia-smi -L` and the Docker NVIDIA runtime, then rerun with `COMPUTE_DEVICE=cuda` |
 | No eval prompts | Run `01b_generate_qa_pairs.py` |
 | Old Postgres schema | Auto-migrates on insert; or apply `scripts/migrate_metrics_table.sql` |
 | Empty host `results/` | Confirm `./results:/app/results` mount; re-export |

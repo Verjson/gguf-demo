@@ -15,7 +15,6 @@ dependencies = [
   "transformers>=4.36.2,<4.45",
   "torch>=2.1.2",
   "accelerate>=0.25.0",
-  "bitsandbytes>=0.41.3",
   "sentence-transformers>=2.2.2,<3",
   "langchain>=0.1.0,<0.2",
   "langchain-community>=0.0.10,<0.1",
@@ -51,6 +50,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+gpu = [
+  "bitsandbytes>=0.41.3",
+]
 dev = [
   "pytest>=7.4.0",
   "ruff>=0.1.0",

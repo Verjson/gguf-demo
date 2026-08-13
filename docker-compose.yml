@@ -71,9 +71,8 @@ services:
       context: .
       dockerfile: Dockerfile.app
       args:
-        # Default: CUDA 13.0 wheels (Ada Lovelace — INT8/GEMM/fatbin polish vs cu118/cu126).
-        # Override: …/cpu, or …/cu126 if the host driver cannot run CUDA 13 userland.
-        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu130}
+        # CPU is the portable default. docker-compose.gpu.yml overrides this for NVIDIA hosts.
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
         PRELOAD_MODELS: ${PRELOAD_MODELS:-false}
         LLM_MODEL: ${LLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
         EMBED_MODEL: ${EMBED_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
@@ -100,11 +99,6 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
       METRICS_PORT: "8000"
-      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
-      NVIDIA_DRIVER_CAPABILITIES: compute,utility
-    # Requires NVIDIA Container Toolkit / Docker Desktop GPU. For CPU-only hosts:
-    #   docker compose up -d --scale app=0  # then use a cpu override, or comment gpus
-    gpus: all
     depends_on:
       postgres:
         condition: service_healthy

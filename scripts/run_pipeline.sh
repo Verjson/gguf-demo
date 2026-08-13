@@ -9,6 +9,8 @@
 #   Step 7 / 8       → export CPU run, CUDA run, combined summary
 #
 # Env knobs:
+#   COMPUTE_DEVICE=auto  (default) — use NVIDIA GPU when Docker supports it, else CPU
+#   COMPUTE_DEVICE=cpu|cuda       — force a device mode (cuda fails instead of falling back)
 #   SKIP_CPU_FINETUNE=1  (default) — skip CPU LoRA train (RAM-heavy)
 #   SKIP_CPU_EVAL=1      — skip all CPU eval/export passes (safer on WSL/16–24GB hosts)
 set -euo pipefail
@@ -20,10 +22,58 @@ CPU_RUN_ID="${TIMESTAMP}_cpu"
 CUDA_RUN_ID="${TIMESTAMP}_cuda"
 SKIP_CPU_FINETUNE="${SKIP_CPU_FINETUNE:-1}"
 SKIP_CPU_EVAL="${SKIP_CPU_EVAL:-0}"
+COMPUTE_DEVICE="${COMPUTE_DEVICE:-auto}"
+CPU_TORCH_INDEX_URL="https://download.pytorch.org/whl/cpu"
+CUDA_TORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
+COMPOSE=(docker compose -f docker-compose.yml)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+start_stack() {
+  case "$COMPUTE_DEVICE" in
+    auto|cpu|cuda) ;;
+    *)
+      echo "ERROR: COMPUTE_DEVICE must be one of: auto, cpu, cuda" >&2
+      return 2
+      ;;
+  esac
+
+  if [[ "$COMPUTE_DEVICE" == "cpu" ]]; then
+    echo "==> Starting services in CPU mode"
+    TORCH_INDEX_URL="${TORCH_INDEX_URL:-$CPU_TORCH_INDEX_URL}" \
+      "${COMPOSE[@]}" up -d --build
+    return
+  fi
+
+  if [[ "$COMPUTE_DEVICE" == "cuda" ]] || gpu_is_available; then
+    COMPOSE+=(-f docker-compose.gpu.yml)
+    echo "==> Starting services with NVIDIA GPU support"
+    if TORCH_INDEX_URL="${TORCH_INDEX_URL:-$CUDA_TORCH_INDEX_URL}" \
+      "${COMPOSE[@]}" up -d --build; then
+      return
+    fi
+
+    if [[ "$COMPUTE_DEVICE" == "cuda" ]]; then
+      echo "ERROR: CUDA mode was requested, but the GPU-enabled stack failed to start." >&2
+      return 1
+    fi
+
+    echo "    GPU-enabled startup failed — retrying with the CPU stack."
+    COMPOSE=(docker compose -f docker-compose.yml)
+  fi
+
+  echo "==> Starting services in CPU mode"
+  TORCH_INDEX_URL="${TORCH_INDEX_URL:-$CPU_TORCH_INDEX_URL}" \
+    "${COMPOSE[@]}" up -d --build
+}
+
+gpu_is_available() {
+  command -v nvidia-smi >/dev/null 2>&1 &&
+    nvidia-smi -L >/dev/null 2>&1 &&
+    docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -q '"nvidia"'
+}
 
 # Run a script inside the app container on a given device.
 # Usage: run_app cpu|cuda scripts/foo.py [args...]
@@ -31,12 +81,12 @@ run_app() {
   local device="$1"
   shift
   if [[ "$device" == "cpu" ]]; then
-    docker compose exec -T \
+    "${COMPOSE[@]}" exec -T \
       -e CUDA_VISIBLE_DEVICES= \
       -e SKIP_AUTO_EXPORT=1 \
       app python "$@"
   else
-    docker compose exec -T \
+    "${COMPOSE[@]}" exec -T \
       -e SKIP_AUTO_EXPORT=1 \
       app python "$@"
   fi
@@ -55,21 +105,21 @@ run_app_env() {
   if [[ "$device" == "cpu" ]]; then
     env_flags+=(-e CUDA_VISIBLE_DEVICES=)
   fi
-  docker compose exec -T "${env_flags[@]}" app python "$@"
+  "${COMPOSE[@]}" exec -T "${env_flags[@]}" app python "$@"
 }
 
 snapshot() {
   # snapshot <src_basename> <device>  e.g. snapshot baseline_results cpu
   local name="$1"
   local device="$2"
-  docker compose exec -T app bash -c \
+  "${COMPOSE[@]}" exec -T app bash -c \
     "test -f data/processed/${name}.json && cp data/processed/${name}.json data/processed/${name}_${device}.json || true"
 }
 
 stage_for_export() {
   # Copy device-tagged artifacts back to canonical names before export
   local device="$1"
-  docker compose exec -T app bash -c "
+  "${COMPOSE[@]}" exec -T app bash -c "
     for f in baseline_results rag_results comparison_report; do
       if [ -f data/processed/\${f}_${device}.json ]; then
         cp data/processed/\${f}_${device}.json data/processed/\${f}.json
@@ -80,8 +130,10 @@ stage_for_export() {
 
 export_results() {
   local run_id="$1"
-  docker compose exec -T app python scripts/07_export_results.py --run-id "$run_id"
+  "${COMPOSE[@]}" exec -T app python scripts/07_export_results.py --run-id "$run_id"
 }
+
+start_stack
 
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
@@ -99,14 +151,14 @@ echo "========================================================================"
 
 echo ""
 echo "==> Detect CUDA"
-if docker compose exec -T app python -c "import torch; raise SystemExit(0 if torch.cuda.is_available() else 1)"; then
+if "${COMPOSE[@]}" exec -T app python -c "import torch; raise SystemExit(0 if torch.cuda.is_available() else 1)"; then
   HAS_CUDA=1
   if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
     echo "    CUDA available — running GPU evals only (SKIP_CPU_EVAL=1)."
   else
     echo "    CUDA available — eval steps will run twice (CPU → GPU)."
   fi
-  docker compose exec app python scripts/check_cuda.py || true
+  "${COMPOSE[@]}" exec app python scripts/check_cuda.py || true
 else
   HAS_CUDA=0
   SKIP_CPU_EVAL=0
@@ -178,7 +230,7 @@ if [[ "$SKIP_CPU_EVAL" != "1" && "$SKIP_CPU_FINETUNE" != "1" ]]; then
   echo "==> Step 5: Fine-tune LoRA [CPU]"
   echo "    Warning: CPU fine-tuning of Phi-3 can take a long time / use lots of RAM."
   run_app cpu scripts/05_fine_tune.py
-  docker compose exec -T app bash -c '
+  "${COMPOSE[@]}" exec -T app bash -c '
     if [ -d models/fine_tuned/adapter ]; then
       mkdir -p models/fine_tuned/adapter_cpu
       cp -a models/fine_tuned/adapter/. models/fine_tuned/adapter_cpu/
@@ -194,20 +246,10 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
   echo "==> Step 5: Fine-tune LoRA [GPU]"
   run_app cuda scripts/05_fine_tune.py
-  docker compose exec -T app bash -c '
+  "${COMPOSE[@]}" exec -T app bash -c '
     if [ -d models/fine_tuned/adapter ]; then
       mkdir -p models/fine_tuned/adapter_cuda
       cp -a models/fine_tuned/adapter/. models/fine_tuned/adapter_cuda/
-    fi
-  '
-elif [[ "$SKIP_CPU_FINETUNE" == "1" ]]; then
-  echo ""
-  echo "==> Step 5: Fine-tune LoRA [CPU fallback — no CUDA]"
-  run_app cpu scripts/05_fine_tune.py
-  docker compose exec -T app bash -c '
-    if [ -d models/fine_tuned/adapter ]; then
-      mkdir -p models/fine_tuned/adapter_cpu
-      cp -a models/fine_tuned/adapter/. models/fine_tuned/adapter_cpu/
     fi
   '
 fi
@@ -220,9 +262,9 @@ if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   echo ""
   echo "==> Step 6: Fine-tuned comparison [CPU]"
   CPU_ADAPTER="/app/models/fine_tuned/adapter_cpu"
-  if docker compose exec -T app test -d "$CPU_ADAPTER"; then
+  if "${COMPOSE[@]}" exec -T app test -d "$CPU_ADAPTER"; then
     run_app_env cpu "FINE_TUNED_PATH=${CPU_ADAPTER}" scripts/06_fine_tuned_evaluation.py
-  elif docker compose exec -T app test -d /app/models/fine_tuned/adapter; then
+  elif "${COMPOSE[@]}" exec -T app test -d /app/models/fine_tuned/adapter; then
     echo "    No adapter_cpu — evaluating default adapter under CUDA_VISIBLE_DEVICES= (CPU inference)."
     run_app cpu scripts/06_fine_tuned_evaluation.py
   else
@@ -240,9 +282,9 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
   echo "==> Step 6: Fine-tuned comparison [GPU]"
   CUDA_ADAPTER="/app/models/fine_tuned/adapter_cuda"
-  if docker compose exec -T app test -d "$CUDA_ADAPTER"; then
+  if "${COMPOSE[@]}" exec -T app test -d "$CUDA_ADAPTER"; then
     run_app_env cuda "FINE_TUNED_PATH=${CUDA_ADAPTER}" scripts/06_fine_tuned_evaluation.py
-  elif docker compose exec -T app test -d /app/models/fine_tuned/adapter; then
+  elif "${COMPOSE[@]}" exec -T app test -d /app/models/fine_tuned/adapter; then
     run_app cuda scripts/06_fine_tuned_evaluation.py
   else
     echo "    ERROR: No fine-tuned adapter found. Skipping Step 6 GPU."
@@ -257,7 +299,7 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
     echo ""
     echo "==> Step 8: CPU vs CUDA summary"
-    docker compose exec -T app python scripts/08_compare_devices.py \
+    "${COMPOSE[@]}" exec -T app python scripts/08_compare_devices.py \
       --cpu-run-id "$CPU_RUN_ID" \
       --cuda-run-id "$CUDA_RUN_ID" \
       --out "results/runs/${TIMESTAMP}_cpu_vs_cuda"
