@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,7 +12,9 @@
       "icon": "dashboard",
       "includeVars": false,
       "keepTime": true,
-      "tags": ["gguf-demo"],
+      "tags": [
+        "gguf-demo"
+      ],
       "title": "gguf-demo dashboards",
       "type": "dashboards"
     }
@@ -19,15 +23,92 @@
     {
       "type": "text",
       "title": "",
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "options": {
         "mode": "markdown",
-        "content": "## Quality & latency comparison (Postgres)\nAggregates from `evaluation_metrics`. **Quality story:** `rougeL` (did RAG help?). **Device story:** `time_to_response` and `tokens_per_sec`. `quality_score` is a blend that can fall on RAG when hit@k is 0 even if overlap improved. Speedup = CPU seconds ÷ GPU seconds."
+        "content": "## Quality & latency comparison (Postgres)\nAggregates from `evaluation_metrics`. **Quality story:** `rougeL` (did RAG help?). **Device story:** `time_to_response` and `tokens_per_sec`. `quality_score` is a blend that can fall on RAG when hit@k is 0 even if overlap improved. Speedup = CPU seconds \u00f7 GPU seconds."
       }
     },
     {
-      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "type": "table",
+      "title": "Run \u2014 what you are looking at",
+      "description": "The selected run's identity, per device leg. `run_id` matches `results/runs/<run_id>/` on disk. Rows written before run identity was added to the schema have no run_id and are excluded from every panel here.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 101,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "run_started_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wall_s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- One row per device leg of the selected run. Rows written before run_id\n-- existed have no run and never appear here.\nSELECT run_id,\n       MIN(run_started_at) AS run_started_at,\n       COALESCE(device, 'unknown') AS device,\n       COALESCE(MAX(runtime), 'transformers') AS runtime,\n       MAX(model_name) AS model,\n       COUNT(DISTINCT question) AS questions,\n       COUNT(*) AS answers,\n       ROUND(EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp)))::numeric, 1) AS wall_s,\n       'results/runs/' || run_id || '/' AS export_folder\nFROM evaluation_metrics\nWHERE run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY run_id, COALESCE(device, 'unknown')\nORDER BY run_id",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -36,71 +117,121 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.07 },
-              { "color": "green", "value": 0.09 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.07
+              },
+              {
+                "color": "green",
+                "value": 0.09
+              }
             ]
           },
-          "custom": { "axisPlacement": "auto" }
+          "custom": {
+            "axisPlacement": "auto"
+          }
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 3 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
       "id": 1,
       "options": {
         "orientation": "horizontal",
         "displayMode": "gradient",
-        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        },
         "showUnfilled": true,
-        "naming": { "mode": "auto" }
+        "naming": {
+          "mode": "auto"
+        }
       },
       "targets": [
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach || ' | ' || COALESCE(device, 'unknown') AS series, AVG(\"rougeL\") AS rouge_l FROM evaluation_metrics WHERE \"rougeL\" IS NOT NULL GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END || ' \u00b7 ' || COALESCE(device, 'unknown')\n         || ' (n=' || COUNT(*) || ')' AS series,\n       AVG(\"rougeL\") AS rouge_l\nFROM evaluation_metrics\nWHERE \"rougeL\" IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 1",
           "refId": "A"
         }
       ],
-      "title": "Avg rougeL by approach × device (RAG quality story)",
+      "title": "Avg rougeL by approach \u00d7 device (RAG quality story)",
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 2 },
-              { "color": "red", "value": 5 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 3 },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
       "id": 2,
       "options": {
         "orientation": "horizontal",
         "displayMode": "gradient",
-        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach || ' | ' || COALESCE(device, 'unknown') AS series, AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))) AS time_to_response_sec FROM evaluation_metrics WHERE generation_time IS NOT NULL GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END || ' \u00b7 ' || COALESCE(device, 'unknown')\n         || ' (n=' || COUNT(*) || ')' AS series,\n       AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))) AS time_to_response\nFROM evaluation_metrics\nWHERE generation_time IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 1",
           "refId": "A"
         }
       ],
-      "title": "Avg time_to_response (seconds) — lower is better",
+      "title": "Avg time to response \u2014 lower is better",
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "none",
@@ -108,45 +239,92 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 1 },
-              { "color": "green", "value": 2 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
       "id": 3,
       "options": {
         "orientation": "horizontal",
         "displayMode": "lcd",
-        "reduceOptions": { "calcs": ["mean"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "mean"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "WITH lat AS (\n  SELECT approach,\n         COALESCE(device, 'unknown') AS device,\n         AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))) AS ttr\n  FROM evaluation_metrics\n  WHERE generation_time IS NOT NULL\n  GROUP BY 1, 2\n)\nSELECT c.approach AS series,\n       (c.ttr / NULLIF(g.ttr, 0)) AS gpu_speedup_x\nFROM lat c\nJOIN lat g ON c.approach = g.approach\nWHERE c.device = 'cpu' AND g.device IN ('cuda', 'gpu')\nORDER BY 1",
+          "rawSql": "-- The CPU and GPU legs of one pipeline invocation are separate run_ids\n-- (<stamp>_cpu and <stamp>_cuda) that share the <stamp> prefix, so the join key is\n-- that prefix plus approach. Joining on approach alone divided one run's CPU latency\n-- by a different run's GPU latency \u2014 different model, prompts and thread budget \u2014 and\n-- printed the quotient as a headline speedup.\nWITH lat AS (\n  SELECT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') AS run_group,\n         approach,\n         COALESCE(device, 'unknown') AS device,\n         AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))) AS ttr,\n         COUNT(*) AS n\n  FROM evaluation_metrics\n  WHERE generation_time IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\n  GROUP BY 1, 2, 3\n)\nSELECT CASE c.approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE c.approach END || ' (n=' || c.n || '/' || g.n || ')' AS series,\n       (c.ttr / NULLIF(g.ttr, 0)) AS gpu_speedup_x\nFROM lat c\nJOIN lat g\n  ON c.run_group = g.run_group\n AND c.approach = g.approach\nWHERE c.device = 'cpu' AND g.device IN ('cuda', 'gpu')\nORDER BY CASE c.approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 1",
           "refId": "A"
         }
       ],
-      "title": "GPU speedup (CPU time_to_response ÷ GPU) — >1× means GPU faster",
+      "title": "GPU speedup (CPU time_to_response \u00f7 GPU) \u2014 >1\u00d7 means GPU faster",
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "custom": { "fillOpacity": 40 }
+          "custom": {
+            "fillOpacity": 40
+          }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "n_.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
       "id": 4,
       "options": {
-        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
         "xTickLabelRotation": 0,
         "xTickLabelSpacing": 0
       },
@@ -154,7 +332,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach,\n       AVG(COALESCE(retrieval_time, 0)) FILTER (WHERE COALESCE(device,'') IN ('cpu')) AS retrieval_cpu,\n       AVG(generation_time) FILTER (WHERE COALESCE(device,'') IN ('cpu')) AS generation_cpu,\n       AVG(COALESCE(retrieval_time, 0)) FILTER (WHERE COALESCE(device,'') IN ('cuda','gpu')) AS retrieval_cuda,\n       AVG(generation_time) FILTER (WHERE COALESCE(device,'') IN ('cuda','gpu')) AS generation_cuda\nFROM evaluation_metrics\nWHERE generation_time IS NOT NULL\nGROUP BY approach\nORDER BY approach",
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END AS approach,\n       COUNT(*) FILTER (WHERE COALESCE(device, '') = 'cpu') AS n_cpu,\n       AVG(COALESCE(retrieval_time, 0)) FILTER (WHERE COALESCE(device, '') = 'cpu') AS retrieval_cpu,\n       AVG(generation_time) FILTER (WHERE COALESCE(device, '') = 'cpu') AS generation_cpu,\n       COUNT(*) FILTER (WHERE COALESCE(device, '') IN ('cuda', 'gpu')) AS n_gpu,\n       AVG(COALESCE(retrieval_time, 0)) FILTER (WHERE COALESCE(device, '') IN ('cuda', 'gpu')) AS retrieval_cuda,\n       AVG(generation_time) FILTER (WHERE COALESCE(device, '') IN ('cuda', 'gpu')) AS generation_cuda\nFROM evaluation_metrics\nWHERE generation_time IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END",
           "refId": "A"
         }
       ],
@@ -162,44 +340,193 @@
       "type": "table"
     },
     {
-      "datasource": { "type": "postgres", "uid": "Postgres" },
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
       "fieldConfig": {
-        "defaults": { "custom": { "align": "auto", "filterable": true } },
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "avg_quality" },
-            "properties": [{ "id": "decimals", "value": 3 }]
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*ttr_sec"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
           },
           {
-            "matcher": { "id": "byName", "options": "avg_ttr_sec" },
+            "matcher": {
+              "id": "byName",
+              "options": "avg_quality"
+            },
             "properties": [
-              { "id": "decimals", "value": 2 },
-              { "id": "unit", "value": "s" }
+              {
+                "id": "decimals",
+                "value": 3
+              }
             ]
           }
         ]
       },
-      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 20 },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
       "id": 5,
-      "options": { "showHeader": true, "cellHeight": "sm", "footer": { "show": false } },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
       "targets": [
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach,\n       COALESCE(device, 'unknown') AS device,\n       COUNT(*) AS n_answers,\n       ROUND(AVG(\"rougeL\")::numeric, 3) AS avg_rouge_l,\n       ROUND(AVG(bert_score)::numeric, 3) AS avg_bert,\n       ROUND(AVG(faithfulness)::numeric, 3) AS avg_faithfulness,\n       ROUND(AVG(quality_score)::numeric, 3) AS avg_quality,\n       ROUND(AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0)))::numeric, 2) AS avg_ttr_sec,\n       ROUND(AVG(tokens_per_sec)::numeric, 2) AS avg_tok_per_sec\nFROM evaluation_metrics\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY approach, device",
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END AS approach,\n       COALESCE(device, 'unknown') AS device,\n       COUNT(*) AS n_answers,\n       ROUND(AVG(\"rougeL\")::numeric, 3) AS avg_rouge_l,\n       ROUND(AVG(bert_score)::numeric, 3) AS avg_bert,\n       ROUND(AVG(faithfulness)::numeric, 3) AS avg_faithfulness,\n       ROUND(AVG(quality_score)::numeric, 3) AS avg_quality,\n       ROUND(AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0)))::numeric, 2) AS avg_ttr_sec,\n       -- At a handful of questions one slow answer owns the mean, so the\n       -- distribution is reported next to it rather than instead of it.\n       ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))))::numeric, 2) AS p50_ttr_sec,\n       ROUND((percentile_cont(0.95) WITHIN GROUP (ORDER BY COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))))::numeric, 2) AS p95_ttr_sec,\n       ROUND(AVG(tokens_per_sec)::numeric, 2) AS avg_tok_per_sec\nFROM evaluation_metrics\nWHERE run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, device",
           "refId": "A"
         }
       ],
-      "title": "Summary — approach × device (headline metrics)",
+      "title": "Summary \u2014 approach \u00d7 device (headline metrics)",
       "type": "table"
+    },
+    {
+      "type": "table",
+      "title": "Selected run vs comparison run \u2014 headline deltas",
+      "description": "Both legs come from their own run, matched on approach and device. Empty when the two runs share no approach/device pair.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 33
+      },
+      "id": 6,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*ttr.*"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "WITH agg AS (\n  SELECT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') AS run_group,\n         approach,\n         COALESCE(device, 'unknown') AS device,\n         COUNT(*) AS n,\n         AVG(\"rougeL\") AS rouge_l,\n         AVG(quality_score) AS quality,\n         AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))) AS ttr\n  FROM evaluation_metrics\n  WHERE run_id IS NOT NULL\n    AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') IN ('$run', '$baseline_run')\n  GROUP BY 1, 2, 3\n)\nSELECT CASE sel.approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE sel.approach END AS approach,\n       sel.device,\n       sel.n AS n_selected,\n       base.n AS n_compared,\n       ROUND(sel.rouge_l::numeric, 3) AS rouge_l,\n       ROUND((sel.rouge_l - base.rouge_l)::numeric, 3) AS d_rouge_l,\n       ROUND(sel.quality::numeric, 3) AS quality,\n       ROUND((sel.quality - base.quality)::numeric, 3) AS d_quality,\n       ROUND(sel.ttr::numeric, 2) AS ttr_sec,\n       ROUND((sel.ttr - base.ttr)::numeric, 2) AS d_ttr_sec\nFROM agg sel\nJOIN agg base\n  ON base.run_group = '$baseline_run'\n AND sel.approach = base.approach\n AND sel.device = base.device\nWHERE sel.run_group = '$run'\nORDER BY CASE sel.approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, sel.device",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
-  "tags": ["gguf-demo", "quality", "latency", "postgres"],
-  "templating": { "list": [] },
-  "time": { "from": "now-24h", "to": "now" },
+  "tags": [
+    "gguf-demo",
+    "quality",
+    "latency",
+    "postgres"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "run",
+        "label": "Run",
+        "description": "Pipeline invocation. CPU and GPU legs share this stamp.",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "Postgres"
+        },
+        "definition": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "query": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "current": {},
+        "options": [],
+        "refresh": 2,
+        "sort": 2,
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "regex": "",
+        "skipUrlSync": false
+      },
+      {
+        "name": "baseline_run",
+        "label": "Compare with",
+        "description": "Earlier run to diff the selected run against.",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "Postgres"
+        },
+        "definition": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "query": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "current": {},
+        "options": [],
+        "refresh": 2,
+        "sort": 2,
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
   "timezone": "browser",
-  "title": "gguf-demo · Quality & Latency",
+  "title": "gguf-demo \u00b7 Quality & Latency",
   "uid": "gguf-quality-latency",
-  "version": 1
+  "version": 1,
+  "timepicker": {
+    "hidden": true
+  }
 }

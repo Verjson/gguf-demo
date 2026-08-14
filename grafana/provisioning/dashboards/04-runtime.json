@@ -1,0 +1,289 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": true,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "gguf-demo"
+      ],
+      "title": "gguf-demo dashboards",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "## Transformers vs GGUF\nSame Phi-3, two engines: Hugging Face PyTorch (`baseline` / `rag`) vs llama.cpp GGUF (`baseline_gguf` / `rag_gguf`). Quality (`rougeL`) should stay close; **time_to_response** and **tokens_per_sec** are the runtime story."
+      }
+    },
+    {
+      "type": "table",
+      "title": "Run \u2014 what you are looking at",
+      "description": "The selected run's identity, per device leg. `run_id` matches `results/runs/<run_id>/` on disk. Rows written before run identity was added to the schema have no run_id and are excluded from every panel here.",
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 101,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "run_started_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsLocal"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wall_s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "-- One row per device leg of the selected run. Rows written before run_id\n-- existed have no run and never appear here.\nSELECT run_id,\n       MIN(run_started_at) AS run_started_at,\n       COALESCE(device, 'unknown') AS device,\n       COALESCE(MAX(runtime), 'transformers') AS runtime,\n       MAX(model_name) AS model,\n       COUNT(DISTINCT question) AS questions,\n       COUNT(*) AS answers,\n       ROUND(EXTRACT(EPOCH FROM (MAX(timestamp) - MIN(timestamp)))::numeric, 1) AS wall_s,\n       'results/runs/' || run_id || '/' AS export_folder\nFROM evaluation_metrics\nWHERE run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY run_id, COALESCE(device, 'unknown')\nORDER BY run_id",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 2,
+      "title": "Avg rougeL \u2014 Transformers vs GGUF",
+      "type": "bargauge",
+      "targets": [
+        {
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END || ' \u00b7 ' || COALESCE(device, 'unknown')\n         || ' (n=' || COUNT(*) || ')' AS series,\n       AVG(\"rougeL\") AS rouge_l\nFROM evaluation_metrics\nWHERE approach IN ('baseline', 'baseline_gguf', 'rag', 'rag_gguf') AND \"rougeL\" IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 3,
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 3,
+      "title": "Avg time to response \u2014 Transformers vs GGUF",
+      "type": "bargauge",
+      "targets": [
+        {
+          "rawSql": "SELECT CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END || ' \u00b7 ' || COALESCE(device, 'unknown')\n         || ' (n=' || COUNT(*) || ')' AS series,\n       AVG(COALESCE(time_to_response, generation_time)) AS ttr\nFROM evaluation_metrics\nWHERE approach IN ('baseline', 'baseline_gguf', 'rag', 'rag_gguf') AND generation_time IS NOT NULL AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "Postgres"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 4,
+      "title": "Runtime \u00d7 device summary",
+      "type": "table",
+      "targets": [
+        {
+          "rawSql": "SELECT COALESCE(runtime, CASE WHEN approach LIKE '%gguf%' THEN 'gguf' ELSE 'transformers' END) AS runtime,\n       CASE approach\n           WHEN 'baseline' THEN 'Baseline'\n           WHEN 'baseline_gguf' THEN 'Baseline (GGUF)'\n           WHEN 'rag' THEN 'RAG'\n           WHEN 'rag_gguf' THEN 'RAG (GGUF)'\n           WHEN 'fine_tuned' THEN 'Fine-tuned'\n           WHEN 'fine_tuned_with_rag' THEN 'Fine-tuned + RAG'\n           ELSE approach END AS approach,\n       COALESCE(device, 'unknown') AS device,\n       COUNT(*) AS n_answers,\n       ROUND(AVG(\"rougeL\")::numeric, 4) AS rouge_l,\n       ROUND(AVG(COALESCE(time_to_response, generation_time))::numeric, 2) AS ttr_s,\n       ROUND((percentile_cont(0.5) WITHIN GROUP (\n         ORDER BY COALESCE(time_to_response, generation_time)))::numeric, 2) AS p50_ttr_s,\n       ROUND((percentile_cont(0.95) WITHIN GROUP (\n         ORDER BY COALESCE(time_to_response, generation_time)))::numeric, 2) AS p95_ttr_s,\n       ROUND(AVG(tokens_per_sec)::numeric, 2) AS tok_s,\n       ROUND(AVG(peak_rss_mb)::numeric, 0) AS rss_mb\nFROM evaluation_metrics\nWHERE approach IN ('baseline', 'baseline_gguf', 'rag', 'rag_gguf') AND run_id IS NOT NULL AND regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') = '$run'\nGROUP BY 1, approach, COALESCE(device, 'unknown')\nORDER BY 1, CASE approach\n           WHEN 'baseline' THEN 1\n           WHEN 'baseline_gguf' THEN 2\n           WHEN 'rag' THEN 3\n           WHEN 'rag_gguf' THEN 4\n           WHEN 'fine_tuned' THEN 5\n           WHEN 'fine_tuned_with_rag' THEN 6\n           ELSE 7 END, 3",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*ttr_s"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "rss_mb"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decmbytes"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": [
+    "gguf-demo",
+    "gguf",
+    "runtime",
+    "postgres"
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "run",
+        "label": "Run",
+        "description": "Pipeline invocation. CPU and GPU legs share this stamp.",
+        "type": "query",
+        "datasource": {
+          "type": "postgres",
+          "uid": "Postgres"
+        },
+        "definition": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "query": "SELECT DISTINCT regexp_replace(run_id, '_(cpu|cuda|gpu)$', '') FROM evaluation_metrics WHERE run_id IS NOT NULL ORDER BY 1 DESC",
+        "current": {},
+        "options": [],
+        "refresh": 2,
+        "sort": 2,
+        "includeAll": false,
+        "multi": false,
+        "hide": 0,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "gguf-demo \u00b7 Transformers vs GGUF",
+  "uid": "gguf-transformers-vs-gguf",
+  "version": 1,
+  "timepicker": {
+    "hidden": true
+  }
+}

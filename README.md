@@ -553,8 +553,11 @@ docker compose restart grafana   # if panels missing
 
 | Key | Default | Notes |
 |-----|---------|-------|
-| `llm.model` | `microsoft/Phi-3-mini-4k-instruct` | Base model |
+| `llm.model` | `microsoft/Phi-3-mini-4k-instruct` | Transformers Hub id (safetensors) |
 | `llm.do_sample` | `false` | Greedy eval |
+| `gguf.repo_id` | `microsoft/Phi-3-mini-4k-instruct-gguf` | Official GGUF package |
+| `gguf.filename` | `Phi-3-mini-4k-instruct-q4.gguf` | Q4_K_M (~2.2 GB) |
+| `gguf.n_gpu_layers` | `-1` | Offload all layers if llama.cpp has CUDA |
 | `evaluation.llm_judge` | `false` | Slower groundedness judge |
 | `evaluation.bertscore` | `true` | Disable to speed up |
 | `vector_store.top_k` | `4` | Chunks per question |
