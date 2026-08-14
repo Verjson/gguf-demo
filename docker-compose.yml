@@ -103,8 +103,16 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
       METRICS_PORT: "8000"
+      # HF_HOME must stay on the huggingface_cache named volume below. It must never
+      # resolve under /app/results, which is bind-mounted to the host: a 17GB cache
+      # reachable from a bind mount is one bad copy away from filling the host disk.
       HF_HOME: /app/.cache/huggingface
-      HOME: /app
+      # HOME outside /app so stray dotfile caches (torch hub, pip, matplotlib) cannot
+      # land next to the bind-mounted results/ tree.
+      HOME: /tmp/home
+      MPLCONFIGDIR: /tmp/matplotlib
+      TRITON_CACHE_DIR: /tmp/triton
+      XDG_CONFIG_HOME: /tmp/xdg-config
       # Thread pools are sized at runtime from the CPU budget this container is
       # actually granted (src/cpu_runtime.py) rather than from the host's core
       # count, so the demo behaves the same on a laptop and on a slice of a

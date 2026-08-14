@@ -24,12 +24,19 @@ Then open:
 
 | What | Where |
 |------|--------|
-| **Results (start here)** | [`results/latest/README.md`](results/latest/README.md) |
-| Per-question table | [`results/latest/by_question.md`](results/latest/by_question.md) |
+| **Results (start here)** | locally `results/latest/README.md`; on GitHub the newest folder in [`results/runs/`](results/runs/) |
+| Per-question table | `results/latest/by_question.md`, or `by_question.md` in that run folder |
 | Grafana | http://localhost:3000 (admin / admin) → **By Question** |
 | MLflow GenAI traces | http://localhost:5000 → **GenAI** → **gguf-demo** → Traces |
 | MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
 | Prometheus | http://localhost:9090/graph (see queries below) |
+
+> **Ports.** If one of these is already taken, `run_pipeline.sh` publishes that
+> service on the next free port and prints where it moved to — macOS in
+> particular runs an AirPlay Receiver on 5000, which otherwise stops MLflow from
+> starting. Pin a port yourself with `MLFLOW_PORT`, `GRAFANA_PORT`,
+> `PROMETHEUS_PORT`, `POSTGRES_PORT`, or `APP_PORT`. Only the host side moves;
+> the containers still talk to each other on the standard ports.
 
 Device selection can also be forced:
 

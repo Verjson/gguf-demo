@@ -11,7 +11,8 @@ Large artifacts stay **out** of git (see root `.gitignore`):
 
 ```
 results/
-├── latest/                    ← start here after a pipeline run
+├── latest/                    ← start here after a pipeline run (local only, gitignored:
+│   │                            it is a regenerated copy of the newest runs/ folder)
 │   ├── by_question.md         ← PRIMARY VIEW (question × approach × device)
 │   ├── by_question.json
 │   ├── by_question_quality.csv

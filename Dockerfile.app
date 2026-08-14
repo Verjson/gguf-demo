@@ -73,8 +73,8 @@ SentenceTransformer('${EMBED_MODEL}')"; \
     fi
 
 RUN mkdir -p /app/data/papers /app/data/processed /app/models \
-        /app/.cache/huggingface /tmp/prometheus_multiproc /mlflow-artifacts \
-    && chmod 1777 /tmp/prometheus_multiproc /mlflow-artifacts
+        /app/.cache/huggingface /tmp/prometheus_multiproc /tmp/home /mlflow-artifacts \
+    && chmod 1777 /tmp/prometheus_multiproc /tmp/home /mlflow-artifacts
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
