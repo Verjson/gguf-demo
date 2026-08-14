@@ -2,12 +2,16 @@
 llm:
   model: "microsoft/Phi-3-mini-4k-instruct"
   fine_tuned_path: null
-  max_new_tokens: 512
+  # Keeps the full CPU evaluation practical while leaving enough room for concise answers.
+  max_new_tokens: 128
   # Deterministic decoding for reproducible evaluation (set do_sample: true for demos)
   temperature: 0.0
   do_sample: false
   load_in_8bit: false  # fp16 on GPU; 8-bit hits accelerate `.to()` bugs with this stack
   # set true only if bitsandbytes+accelerate are known-good on your host
+  # CPU weight dtype. bfloat16 is Phi-3's native dtype and keeps the CPU run inside
+  # ~8GB; float32 doubles memory but prefills faster on CPUs without AVX-512/AMX.
+  cpu_dtype: bfloat16
 
 embeddings:
   model: "sentence-transformers/all-MiniLM-L6-v2"

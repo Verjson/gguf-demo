@@ -1,7 +1,7 @@
 {
   "total_chunks": 825,
   "num_documents": 5,
-  "creation_time_seconds": 7.53874135017395,
+  "creation_time_seconds": 5.59815526008606,
   "hardware": {
     "cuda_available": true,
     "device": "cuda",
@@ -13,24 +13,24 @@
   },
   "document_stats": [
     {
-      "filename": "2507.23334v2.pdf",
-      "num_chunks": 81
-    },
-    {
-      "filename": "2605.12335v1.pdf",
-      "num_chunks": 263
-    },
-    {
-      "filename": "2504.05181v2.pdf",
-      "num_chunks": 171
+      "filename": "2411.18583v1.pdf",
+      "num_chunks": 58
     },
     {
       "filename": "2502.00306v2.pdf",
       "num_chunks": 252
     },
     {
-      "filename": "2411.18583v1.pdf",
-      "num_chunks": 58
+      "filename": "2504.05181v2.pdf",
+      "num_chunks": 171
+    },
+    {
+      "filename": "2507.23334v2.pdf",
+      "num_chunks": 81
+    },
+    {
+      "filename": "2605.12335v1.pdf",
+      "num_chunks": 263
     }
   ]
 }

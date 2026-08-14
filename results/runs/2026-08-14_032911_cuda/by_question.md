@@ -7,7 +7,7 @@ Each question shows quality **and** latency across approach × device.
 - **GPU speedup:** CPU time ÷ GPU time (values **> 1×** mean GPU was faster)
 - **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row (HTML Markdown preview; emoji also visible on GitHub)
 
-_Generated: 2026-08-14T04:15:47.045865+00:00_
+_Generated: 2026-08-14T04:15:45.280056+00:00_
 
 ## Overview — quality (`quality_score`)
 
@@ -36,6 +36,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.288</td>
 </tr>
 <tr>
+<td style="text-align:left">Summarize the contribution of 'Automated Literature Revie...</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.492</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.438</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.583</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.566</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.394</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
 <td style="text-align:left">Summarize the contribution of 'Lightweight and Direct Doc...</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.389</td>
@@ -58,6 +69,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.226</td>
 </tr>
 <tr>
+<td style="text-align:left">What is the paper 'MUST-RAG: MUSical Text Question Answer...</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.352</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.348</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.518</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.537</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.348</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
 <td style="text-align:left">What is the paper 'Riddle Me This! Stealthy Membership In...</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.420</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.430</td>
@@ -78,6 +100,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.215</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
+</tr>
+<tr>
+<td style="text-align:left">What method or approach is described in this excerpt?</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.227</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.258</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">What problem does this passage say the work addresses?</td>
@@ -121,6 +154,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.359</td>
 </tr>
 <tr>
+<td style="text-align:left">Summarize the contribution of 'Automated Literature Revie...</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;962.158</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;761.570</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
 <td style="text-align:left">Summarize the contribution of 'Lightweight and Direct Doc...</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;24.264</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.414</td>
@@ -143,6 +187,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.742</td>
 </tr>
 <tr>
+<td style="text-align:left">What is the paper 'MUST-RAG: MUSical Text Question Answer...</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;596.087</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;961.546</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;773.050</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
 <td style="text-align:left">What is the paper 'Riddle Me This! Stealthy Membership In...</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;25.471</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.556</td>
@@ -163,6 +218,17 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.126</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;15.143</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.653</td>
+</tr>
+<tr>
+<td style="text-align:left">What method or approach is described in this excerpt?</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.854</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.763</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">What problem does this passage say the work addresses?</td>
@@ -315,7 +381,100 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 
 </details>
 
-## Q2. Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.
+## Q2. Summarize the contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation'.
+
+<table>
+<thead><tr>
+<th>Approach × Device</th>
+<th>quality_score</th>
+<th>rougeL</th>
+<th>bert_score</th>
+<th>retrieval_hit_at_k</th>
+<th>faithfulness</th>
+<th>retrieval_time</th>
+<th>generation_time</th>
+<th>time_to_response</th>
+<th>speed_chars_per_sec</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>baseline|cpu</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.492</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.877</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.017</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>baseline|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.438</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.204</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.871</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.473</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cpu</code></td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.583</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.264</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.854</td>
+<td style="text-align:right">1.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.750</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.699</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;960.459</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;962.158</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.580</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.566</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.197</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.878</td>
+<td style="text-align:right">1.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.699</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.138</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;761.432</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;761.570</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.685</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>fine_tuned|cuda</code></td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.394</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.144</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.854</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.568</td>
+</tr>
+</tbody>
+</table>
+
+**CPU → GPU speedup (time_to_response):**
+- **baseline:** 302.48s (CPU) → 525.18s (GPU) = **0.6×** faster time-to-response
+- **rag:** 962.16s (CPU) → 761.57s (GPU) = **1.3×** faster time-to-response
+
+<details><summary>Sample answers</summary>
+
+- **`baseline|cpu`:** The contribution of "Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation" lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Pr...
+- **`baseline|cuda`:** The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Pr...
+- **`rag|cpu`:** The research paper titled "Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation" by Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim focuses on developing an automated system for generating literature reviews. The primary obj...
+- **`rag|cuda`:** The research paper titled "Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation" by Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim focuses on developing an automated system for generating literature reviews. The primary obj...
+- **`fine_tuned|cuda`:** The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Pr...
+
+</details>
+
+## Q3. Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.
 
 <table>
 <thead><tr>
@@ -449,7 +608,7 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 
 </details>
 
-## Q3. What experimental result or finding is reported here?
+## Q4. What experimental result or finding is reported here?
 
 <table>
 <thead><tr>
@@ -583,7 +742,100 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 
 </details>
 
-## Q4. What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?
+## Q5. What is the paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' about?
+
+<table>
+<thead><tr>
+<th>Approach × Device</th>
+<th>quality_score</th>
+<th>rougeL</th>
+<th>bert_score</th>
+<th>retrieval_hit_at_k</th>
+<th>faithfulness</th>
+<th>retrieval_time</th>
+<th>generation_time</th>
+<th>time_to_response</th>
+<th>speed_chars_per_sec</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>baseline|cpu</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.352</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.088</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.829</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.814</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>baseline|cuda</code></td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.348</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.090</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.827</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;596.087</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;596.087</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.833</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cpu</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.518</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.126</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.835</td>
+<td style="text-align:right">1.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.660</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.520</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;961.026</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;961.546</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.501</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cuda</code></td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.537</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.157</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.848</td>
+<td style="text-align:right">1.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.716</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.673</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;772.377</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;773.050</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.788</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>fine_tuned|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.348</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.090</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.827</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.393</td>
+</tr>
+</tbody>
+</table>
+
+**CPU → GPU speedup (time_to_response):**
+- **baseline:** 302.65s (CPU) → 596.09s (GPU) = **0.5×** faster time-to-response
+- **rag:** 961.55s (CPU) → 773.05s (GPU) = **1.2×** faster time-to-response
+
+<details><summary>Sample answers</summary>
+
+- **`baseline|cpu`:** The paper "MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation" introduces a novel approach to answering questions about music-related texts. The acronym MUST-RAG stands for "MUSical Text Question Answering with Retrieval Augmented Generation."  The m...
+- **`baseline|cuda`:** The paper "MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained languag...
+- **`rag|cpu`:** The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, introduces the MusT-RAG framework. This framework aims to adapt genera...
+- **`rag|cuda`:** The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) ...
+- **`fine_tuned|cuda`:** The paper "MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained languag...
+
+</details>
+
+## Q6. What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?
 
 <table>
 <thead><tr>
@@ -717,7 +969,7 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 
 </details>
 
-## Q5. What limitation or future work is mentioned in this text?
+## Q7. What limitation or future work is mentioned in this text?
 
 <table>
 <thead><tr>
@@ -851,7 +1103,100 @@ _Generated: 2026-08-14T04:15:47.045865+00:00_
 
 </details>
 
-## Q6. What problem does this passage say the work addresses?
+## Q8. What method or approach is described in this excerpt?
+
+<table>
+<thead><tr>
+<th>Approach × Device</th>
+<th>quality_score</th>
+<th>rougeL</th>
+<th>bert_score</th>
+<th>retrieval_hit_at_k</th>
+<th>faithfulness</th>
+<th>retrieval_time</th>
+<th>generation_time</th>
+<th>time_to_response</th>
+<th>speed_chars_per_sec</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left"><code>baseline|cpu</code></td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.540</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>baseline|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.796</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.288</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cpu</code></td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.227</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.020</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.762</td>
+<td style="text-align:right">0.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.400</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.541</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.313</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.854</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.312</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>rag|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.258</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.758</td>
+<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.508</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.512</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.251</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.763</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.799</td>
+</tr>
+<tr>
+<td style="text-align:left"><code>fine_tuned|cuda</code></td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.796</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.446</td>
+</tr>
+</tbody>
+</table>
+
+**CPU → GPU speedup (time_to_response):**
+- **baseline:** 259.14s (CPU) → 309.85s (GPU) = **0.8×** faster time-to-response
+- **rag:** 957.85s (CPU) → 718.76s (GPU) = **1.3×** faster time-to-response
+
+<details><summary>Sample answers</summary>
+
+- **`baseline|cpu`:** The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, ...
+- **`baseline|cuda`:** The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, ...
+- **`rag|cpu`:** [MASK_1]: extension [MASK_2]: PageRank [MASK_3]: comprehensive [MASK_4]: PageRank [MASK_5]: storage [MASK_6]: possible alterations [MASK_7]: sensitivity [MASK_8]: introduce [MASK_9]: extensive [MASK_10]: exciting  Answer: [MASK_1]: extension [MASK_2]: PageRank [MASK_3]: compre...
+- **`rag|cuda`:** [MASK_1]: extension [MASK_2]: PageRank [MASK_3]: comprehensive [MASK_4]: PageRank model [MASK_5]: storage issues [MASK_6]: possible alterations [MASK_7]: sensitivity and conditioning [MASK_8]: introduce [MASK_9]: extensive reference list [MASK_10]: exciting areas of future res...
+- **`fine_tuned|cuda`:** The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, ...
+
+</details>
+
+## Q9. What problem does this passage say the work addresses?
 
 <table>
 <thead><tr>
