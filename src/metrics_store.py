@@ -9,17 +9,13 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
 from typing import Any
 
 import psycopg2
 
+from src.run_id import run_started_at
+
 logger = logging.getLogger(__name__)
-
-# A run id is the pipeline's UTC start stamp plus the device it ran on, e.g.
-# ``2026-08-14_181632_cpu`` — the same identity results/runs/<run_id>/ uses.
-_RUN_ID_STAMP = "%Y-%m-%d_%H%M%S"
-
 
 def run_started_from_id(run_id: str) -> str | None:
     """
@@ -27,14 +23,9 @@ def run_started_from_id(run_id: str) -> str | None:
 
     Lets a row carry when its run began even when only RUN_ID reaches the container,
     so the dashboards' run header has a real clock time rather than the timestamp of
-    whichever row happened to be written first.
+    whichever row happened to be written first. src.run_id owns the shape.
     """
-    stamp = "_".join(run_id.split("_")[:2])
-    try:
-        started = datetime.strptime(stamp, _RUN_ID_STAMP).replace(tzinfo=timezone.utc)
-    except ValueError:
-        return None
-    return started.isoformat()
+    return run_started_at(run_id)
 
 
 # Columns we know how to write; unknown metric keys are ignored
