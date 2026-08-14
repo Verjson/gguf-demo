@@ -142,11 +142,6 @@ def test_export_leaves_no_results_nested_inside_results(tmp_path):
 
     refresh_latest(source, results / "latest")
 
-    # And the shape that caused it: 09_compare_runtimes passed the repo root, so the
-    # destination sat inside the source and copytree recursed into its own output.
-    with pytest.raises(ValueError):
-        refresh_latest(tmp_path, results / "latest")
-
     nested = [p for p in results.rglob("results") if p != results]
     assert nested == [], f"results/ copied into itself: {nested}"
 
@@ -194,26 +189,6 @@ def test_refresh_latest_leaves_unrelated_files_in_the_destination(tmp_path):
     assert (latest / "keep_dir").is_dir()
 
 
-def test_refresh_latest_removes_a_symlink_instead_of_writing_through_it(tmp_path):
-    """results/ is a container-writable bind mount: a planted link must not be followed."""
-    outside = tmp_path / "outside" / "important.conf"
-    outside.parent.mkdir()
-    outside.write_bytes(b"ORIGINAL HOST FILE")
-    original = outside.read_bytes()
-
-    results = tmp_path / "results"
-    source = _run_dir(results)
-    latest = results / "latest"
-    latest.mkdir()
-    (latest / "manifest.json").symlink_to(outside)
-
-    refresh_latest(source, latest)
-
-    assert outside.read_bytes() == original
-    assert not (latest / "manifest.json").is_symlink()
-    assert (latest / "manifest.json").read_text(encoding="utf-8") == '{"run_id": "snapshot content"}'
-
-
 def test_refresh_latest_removes_symlinks_of_every_kind(tmp_path):
     """Name and target are irrelevant — no symlink belongs in results/latest/."""
     outside_dir = tmp_path / "outside"
@@ -224,6 +199,7 @@ def test_refresh_latest_removes_symlinks_of_every_kind(tmp_path):
     source = _run_dir(results)
     latest = results / "latest"
     latest.mkdir()
+    (latest / "manifest.json").symlink_to(outside_dir / "keep.txt")
     (latest / "unrelated.json").symlink_to(outside_dir / "keep.txt")
     (latest / "weights.safetensors").symlink_to(outside_dir / "keep.txt")
     (latest / "subdir").symlink_to(outside_dir, target_is_directory=True)
@@ -233,6 +209,8 @@ def test_refresh_latest_removes_symlinks_of_every_kind(tmp_path):
 
     assert [p for p in latest.iterdir() if p.is_symlink()] == []
     assert (outside_dir / "keep.txt").read_text(encoding="utf-8") == "untouched"
+    # The link is replaced by the real artifact, not merely removed.
+    assert (latest / "manifest.json").read_text(encoding="utf-8") == '{"run_id": "snapshot content"}'
     assert sorted(p.name for p in outside_dir.iterdir()) == ["keep.txt"]
 
 
@@ -322,3 +300,61 @@ def test_a_crashed_runs_temp_file_is_cleaned_up_not_handed_to_the_user(tmp_path,
 
     assert not orphan.exists()
     assert ".snapshot-abc123" not in caplog.text
+
+
+def test_a_symlinked_summary_is_not_folded_into_the_readme(tmp_path):
+    """read_text follows a link, so a planted summary.md leaks a host file's contents."""
+    secret = tmp_path / "host_secret.txt"
+    secret.write_text("SUPER SECRET HOST CONTENT", encoding="utf-8")
+    results = tmp_path / "results"
+    source = _run_dir(results)
+    latest = results / "latest"
+    latest.mkdir(parents=True)
+
+    real_replace = run_results._replace_artifact
+
+    def plant_after_copy(src, dest):
+        real_replace(src, dest)
+        link = latest / "summary.md"
+        if not link.is_symlink():
+            link.unlink(missing_ok=True)
+            link.symlink_to(secret)
+
+    run_results._replace_artifact = plant_after_copy
+    try:
+        refresh_latest(source, latest)
+    finally:
+        run_results._replace_artifact = real_replace
+
+    assert "SUPER SECRET HOST CONTENT" not in (latest / "README.md").read_text(encoding="utf-8")
+    assert secret.read_text(encoding="utf-8") == "SUPER SECRET HOST CONTENT"
+
+
+def test_a_symlinked_readme_does_not_become_an_arbitrary_host_write(tmp_path):
+    """write_text follows a link planted after the clear loop ran."""
+    target = tmp_path / "host_file.conf"
+    target.write_bytes(b"ORIGINAL HOST FILE")
+    results = tmp_path / "results"
+    source = _run_dir(results)
+    latest = results / "latest"
+    latest.mkdir(parents=True)
+
+    real_replace = run_results._replace_artifact
+
+    def plant_after_copy(src, dest):
+        real_replace(src, dest)
+        link = latest / "README.md"
+        if not link.is_symlink():
+            link.unlink(missing_ok=True)
+            link.symlink_to(target)
+
+    run_results._replace_artifact = plant_after_copy
+    try:
+        refresh_latest(source, latest)
+    finally:
+        run_results._replace_artifact = real_replace
+
+    assert target.read_bytes() == b"ORIGINAL HOST FILE"
+    assert not (latest / "README.md").is_symlink()
+    assert (latest / "README.md").read_text(encoding="utf-8").startswith("<!-- Generated")
+

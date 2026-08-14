@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import shutil
+import stat
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +23,7 @@ import yaml
 
 from src.display_metrics import select_summary_metrics
 from src.hardware import HardwareInfo, detect_hardware
+from src.run_id import parse_run_id
 from src.score_colors import html_table, ranked_metric_row
 
 logger = logging.getLogger(__name__)
@@ -376,28 +378,50 @@ def _snapshot_order(source_dir: Path) -> list[Path]:
     return ordered + list(remaining.values())
 
 
-def _replace_artifact(src: Path, dest: Path) -> None:
+def _atomic_write(dest: Path, fill) -> None:
     """
-    Copy `src` onto `dest` without ever writing through a symlink.
+    Put bytes at `dest` without any step following a symlink that may sit there.
 
-    Writing to `dest` directly follows a symlink sitting there and overwrites whatever
-    it points at, anywhere on the host. Every write goes through the descriptor mkstemp
-    already opened on a file it created exclusively — the path is never reopened by
-    name, so a link appearing at that path afterwards has nothing left to redirect.
-    Closing the descriptor and reopening `tmp` by name would only move the window from
-    `dest` to `tmp`, since results/ is a container-writable bind mount. Renaming into
-    place then replaces `dest` itself rather than following it.
+    `fill(out)` writes to a descriptor mkstemp opened on a file it created
+    exclusively; the path is never reopened by name, so a link appearing at it
+    afterwards has nothing left to redirect. Permissions and timestamps are set on
+    that same descriptor rather than through `shutil.copystat`, which takes a path
+    and would follow such a link.
+
+    One window remains, between closing the descriptor and `os.replace`: a link
+    swapped in there is installed at `dest` by the rename — `os.replace` does not
+    follow symlinks — orphaning the bytes just written. Nothing follows that link:
+    the next refresh's clear loop removes it before anything reads or writes it. It
+    costs one stale snapshot, not a write outside results/latest, so it is left.
     """
     fd, tmp_name = tempfile.mkstemp(dir=dest.parent, prefix=SNAPSHOT_TEMP_PREFIX)
     tmp = Path(tmp_name)
     try:
-        with os.fdopen(fd, "wb") as out, open(src, "rb") as reader:
-            shutil.copyfileobj(reader, out)
-        shutil.copystat(src, tmp)
+        with os.fdopen(fd, "wb") as out:
+            fill(out)
         os.replace(tmp, dest)
     except BaseException:
         tmp.unlink(missing_ok=True)
         raise
+
+
+def _replace_artifact(src: Path, dest: Path) -> None:
+    """Copy `src` onto `dest`, carrying its mode and mtime, following no symlink."""
+    info = src.stat()
+
+    def fill(out):
+        with open(src, "rb") as reader:
+            shutil.copyfileobj(reader, out)
+        os.fchmod(out.fileno(), stat.S_IMODE(info.st_mode))
+        if os.utime in os.supports_fd:
+            os.utime(out.fileno(), ns=(info.st_atime_ns, info.st_mtime_ns))
+
+    _atomic_write(dest, fill)
+
+
+def _write_snapshot_text(dest: Path, text: str) -> None:
+    """Write generated text (the README) as safely as a copied artifact."""
+    _atomic_write(dest, lambda out: out.write(text.encode("utf-8")))
 
 
 def _report_snapshot_residue(latest_dir: Path) -> None:
@@ -529,8 +553,16 @@ def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
     for artifact in artifacts:
         _replace_artifact(artifact, latest_dir / artifact.name)
 
+    # A link here is never legitimate — the clear loop says so — and read_text would
+    # follow it, folding a host file's contents into the README this writes. Treat it
+    # as absent, exactly as if the source had no summary.
     summary = latest_dir / "summary.md"
-    body = summary.read_text(encoding="utf-8") if summary.is_file() else ""
+    if summary.is_symlink():
+        logger.warning("Snapshot ignores symlinked summary.md -> %s", os.readlink(summary))
+        summary.unlink()
+        body = ""
+    else:
+        body = summary.read_text(encoding="utf-8") if summary.is_file() else ""
     # summary.md's own H1 would collide with the README's, and keeping both files
     # would leave two copies of the same text to drift apart.
     body = "\n".join(line for line in body.splitlines() if not line.startswith("# "))
@@ -543,7 +575,11 @@ def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
     ]
     files = "**In this folder**\n\n" + "\n".join(listed) + "\n\n" if listed else ""
 
-    (latest_dir / "README.md").write_text(
+    # write_text follows a symlink planted here after the clear loop ran, which is an
+    # arbitrary host write. The one file written on every refresh takes the safest
+    # path, not the least safe one.
+    _write_snapshot_text(
+        latest_dir / "README.md",
         _LATEST_README_INTRO.format(
             title=source_dir.name,
             source=source_dir.name,
@@ -551,7 +587,6 @@ def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
             files=files,
         )
         + body.lstrip("\n"),
-        encoding="utf-8",
     )
     return latest_dir
 
@@ -560,20 +595,10 @@ def _run_scope(run_id: str) -> tuple[str | None, datetime | None]:
     """
     Device and start time encoded in a pipeline run id, e.g. ``2026-08-14_032911_cpu``.
 
-    Returns ``(None, None)`` components for ids that do not follow that shape, which
-    simply means the export is not scoped rather than that it fails.
+    src.run_id owns the shape: a suffix test here once read ``..._cpu_vs_cuda`` as a
+    CUDA run and stamped a comparison export with GPU hardware.
     """
-    device = None
-    stamp = run_id
-    for suffix in ("cpu", "cuda"):
-        if run_id.endswith(f"_{suffix}"):
-            device, stamp = suffix, run_id[: -len(suffix) - 1]
-            break
-    try:
-        started = datetime.strptime(stamp, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
-    except ValueError:
-        started = None
-    return device, started
+    return parse_run_id(run_id)
 
 
 def _hardware_for_run(hardware: HardwareInfo, device: str | None) -> dict[str, Any]:
