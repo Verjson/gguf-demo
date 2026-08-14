@@ -19,6 +19,9 @@ import yaml
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import mlflow
+from mlflow.entities import SpanType
+
 from src.evaluator import Evaluator
 from src.hardware import detect_hardware
 from src.latency import attach_generation_meta, attach_latency_metrics, attach_retrieval_meta
@@ -26,9 +29,6 @@ from src.llm.runtime import approach_for_runtime, resolve_runtime
 from src.mlflow_tracker import MLflowTracker
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
-
-import mlflow
-from mlflow.entities import SpanType
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
