@@ -48,15 +48,10 @@ def attach_retrieval_meta(metrics: dict[str, float], meta: dict[str, Any] | None
 
 
 def llm_run_params(config: dict[str, Any] | None) -> dict[str, Any]:
-    """Decode / dtype knobs to store on the parent evaluation run."""
-    llm = (config or {}).get("llm") or {}
-    return {
-        "max_new_tokens": llm.get("max_new_tokens", 512),
-        "temperature": llm.get("temperature", 0.0),
-        "do_sample": bool(llm.get("do_sample", False)),
-        "cpu_dtype": llm.get("cpu_dtype", "bfloat16"),
-        "load_in_8bit": bool(llm.get("load_in_8bit", False)),
-    }
+    """Decode / dtype knobs for the parent evaluation run (includes runtime)."""
+    from src.llm.runtime import llm_tracking_params
+
+    return llm_tracking_params(config)
 
 
 def attach_latency_metrics(

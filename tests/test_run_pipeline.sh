@@ -52,11 +52,15 @@ run_pipeline() {
   local cuda_available="${4:-$runtime}"
   local gpu_start_fail="${5:-0}"
 
+  # Pin the published ports so this test describes device selection only, and
+  # does not change behavior depending on what else the machine is listening on.
   PATH="$TEST_TMP/bin:$PATH" \
     DOCKER_CALLS="$log_file" \
     FAKE_NVIDIA_RUNTIME="$runtime" \
     FAKE_CUDA_AVAILABLE="$cuda_available" \
     FAKE_GPU_START_FAIL="$gpu_start_fail" \
+    MLFLOW_PORT=5000 GRAFANA_PORT=3000 PROMETHEUS_PORT=9090 \
+    POSTGRES_PORT=5432 APP_PORT=8000 \
     "$ROOT_DIR/scripts/run_pipeline.sh" > "$output_file"
 }
 
@@ -79,7 +83,9 @@ GPU_LOG="$TEST_TMP/gpu.log"
 GPU_OUTPUT="$TEST_TMP/gpu.out"
 run_pipeline 1 "$GPU_LOG" "$GPU_OUTPUT"
 
-head -n 1 "$GPU_LOG" | grep -q '^|info --format {{json .Runtimes}}$'
+# The runtimes probe must happen; it is no longer the first docker call, because
+# memory sizing now asks docker how much it can actually give a container.
+grep -q '^|info --format {{json .Runtimes}}$' "$GPU_LOG"
 grep -q '^https://download.pytorch.org/whl/cu130|compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build$' "$GPU_LOG"
 grep -q 'CUDA available — eval steps will run twice (CPU → GPU).' "$GPU_OUTPUT"
 
@@ -91,5 +97,67 @@ grep -q '^https://download.pytorch.org/whl/cu130|compose -f docker-compose.yml -
 grep -q '^https://download.pytorch.org/whl/cpu|compose -f docker-compose.yml up -d --build$' "$FALLBACK_LOG"
 grep -q 'GPU-enabled startup failed — retrying with the CPU stack.' "$FALLBACK_OUTPUT"
 grep -q 'CUDA not available — eval steps will run on CPU only.' "$FALLBACK_OUTPUT"
+
+# results/ is bind-mounted onto the host disk, so the pipeline must refuse to start
+# when a snapshot has already blown past its budget or nested results/ inside itself.
+BUDGET_OUTPUT="$TEST_TMP/budget.out"
+budget_status=0
+export RESULTS_MAX_MB=0
+run_pipeline 0 "$TEST_TMP/budget.log" "$BUDGET_OUTPUT" 2>"$TEST_TMP/budget.err" || budget_status=$?
+unset RESULTS_MAX_MB
+if (( budget_status == 0 )); then
+  echo "Pipeline started with results/ over the size budget" >&2
+  exit 1
+fi
+grep -q 'over the 0MB budget' "$TEST_TMP/budget.err"
+
+# Run the pipeline expecting it to abort, and to say why on stderr.
+# Usage: expect_abort <label> <stderr-pattern>
+expect_abort() {
+  local label="$1" pattern="$2" status=0
+  run_pipeline 0 "$TEST_TMP/${label}.log" "$TEST_TMP/${label}.out" \
+    2>"$TEST_TMP/${label}.err" || status=$?
+  if (( status == 0 )); then
+    echo "Pipeline started despite: ${label}" >&2
+    exit 1
+  fi
+  if ! grep -q "$pattern" "$TEST_TMP/${label}.err"; then
+    echo "Pipeline aborted on ${label} without reporting '${pattern}':" >&2
+    cat "$TEST_TMP/${label}.err" >&2
+    exit 1
+  fi
+}
+
+# The nesting check covers results/*/results, not just the results/latest/ case: a
+# mistargeted snapshot nests under whichever folder it was pointed at.
+for nested_rel in results/latest/results results/runs/results; do
+  NESTED_DIR="$ROOT_DIR/$nested_rel"
+  if [[ -e "$NESTED_DIR" ]]; then
+    echo "${nested_rel} already exists — refusing to run the nesting test" >&2
+    exit 1
+  fi
+  mkdir -p "$NESTED_DIR"
+  trap 'rm -rf "$TEST_TMP"; rmdir "$NESTED_DIR" 2>/dev/null; rmdir "$ROOT_DIR/results/latest" 2>/dev/null; true' EXIT
+  expect_abort "nested-${nested_rel//\//-}" 'results/ is nested inside itself'
+  rmdir "$NESTED_DIR"
+  rmdir "$ROOT_DIR/results/latest" 2>/dev/null || true
+done
+trap 'rm -rf "$TEST_TMP"' EXIT
+
+# A results/ that cannot be measured must abort rather than fall through as "fine":
+# failing open here would wave through exactly the runaway growth the guard exists to
+# catch. Root ignores the permission bits, so the case is only meaningful unprivileged.
+if (( EUID != 0 )); then
+  UNREADABLE="$ROOT_DIR/results/.unreadable_probe"
+  mkdir -p "$UNREADABLE"
+  chmod 000 "$UNREADABLE"
+  trap 'chmod 755 "$UNREADABLE" 2>/dev/null; rm -rf "$UNREADABLE"; rm -rf "$TEST_TMP"' EXIT
+  expect_abort unreadable 'could not measure results/'
+  chmod 755 "$UNREADABLE"
+  rm -rf "$UNREADABLE"
+  trap 'rm -rf "$TEST_TMP"' EXIT
+else
+  echo "  (skipping unreadable-results/ case: running as root)" >&2
+fi
 
 echo "pipeline device selection tests passed"

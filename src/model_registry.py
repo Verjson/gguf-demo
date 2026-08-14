@@ -205,6 +205,7 @@ def resolve_model_lineage(
     Resolve registry name/version for tagging runs and traces.
 
     - baseline / rag → alias ``base`` (v1) when present, else HF id only
+    - *_gguf → GGUF Hub id + filename (llama.cpp), alias ``gguf`` when registered
     - fine_tuned* → alias ``champion`` / ``latest-lora``, else train_info.json
     """
     cfg = config or {}
@@ -222,16 +223,34 @@ def resolve_model_lineage(
         "model_role": "base",
     }
 
+    if "gguf" in approach:
+        from src.llm.runtime import gguf_section
+
+        gguf = gguf_section(cfg)
+        lineage["model_role"] = "gguf"
+        lineage["base_model_id"] = f"{gguf['repo_id']}/{gguf['filename']}"
+        lineage["weight_format"] = "gguf"
+        lineage["runtime"] = "gguf"
+        aliases = ("gguf",)
+    else:
+        lineage["weight_format"] = "safetensors"
+        lineage["runtime"] = "transformers"
+
     client = _client()
     want_lora = approach.startswith("fine_tuned")
-    aliases = ("champion", "latest-lora") if want_lora else ("base",)
+    if "gguf" not in approach:
+        aliases = ("champion", "latest-lora") if want_lora else ("base",)
 
     for alias in aliases:
         try:
             mv = client.get_model_version_by_alias(name, alias)
             lineage["model_version"] = str(mv.version)
             lineage["model_alias"] = alias
-            lineage["model_role"] = "lora_adapter" if want_lora else "base"
+            lineage["model_role"] = (
+                "lora_adapter"
+                if want_lora
+                else ("gguf" if "gguf" in approach else "base")
+            )
             return lineage
         except Exception:  # noqa: BLE001
             continue

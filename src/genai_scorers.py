@@ -60,33 +60,31 @@ def build_metric_scorers(
         gt = _ground_truth(expectations)
         if not gt:
             return None
-        return float(evaluator.rouge_scorer.score(gt, _answer(outputs))["rouge1"].fmeasure)
+        return float(evaluator.rouge(gt, _answer(outputs))[0])
 
     @scorer(name="rouge2", aggregations=["mean"])
     def rouge2(outputs, expectations):
         gt = _ground_truth(expectations)
         if not gt:
             return None
-        return float(evaluator.rouge_scorer.score(gt, _answer(outputs))["rouge2"].fmeasure)
+        return float(evaluator.rouge(gt, _answer(outputs))[1])
 
     @scorer(name="rougeL", aggregations=["mean"])
     def rougeL(outputs, expectations):  # noqa: N802 — metric name matches Grafana
         gt = _ground_truth(expectations)
         if not gt:
             return None
-        return float(evaluator.rouge_scorer.score(gt, _answer(outputs))["rougeL"].fmeasure)
+        return float(evaluator.rouge(gt, _answer(outputs))[2])
 
     @scorer(name="bert_score", aggregations=["mean"])
     def bert_score(outputs, expectations):
         gt = _ground_truth(expectations)
-        if not gt or not evaluator.enable_bertscore:
+        if not gt:
             return None
-        metrics = evaluator.evaluate_response(
-            question="",
-            response=_answer(outputs),
-            ground_truth=gt,
-        )
-        return metrics.get("bert_score")
+        # Ask for the one metric this scorer reports. Routing through
+        # evaluate_response computed the whole suite — heuristics, ROUGE, context
+        # metrics — and discarded all but this number.
+        return evaluator.bert_score(_answer(outputs), gt)
 
     @scorer(name="answer_relevancy", aggregations=["mean"])
     def answer_relevancy(inputs, outputs):

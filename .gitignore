@@ -82,3 +82,13 @@ logs/
 
 # Keep committed run results (results/ is tracked intentionally)
 # Do NOT add results/ here — export with scripts/07_export_results.py
+# results/latest/ is the exception: it is a regenerated copy of the newest
+# results/runs/<run_id>/, so committing it duplicates every export, and a bad
+# snapshot source once made it the path a 100GB recursive copy landed on.
+results/latest/
+
+# Local agent tooling residue — never belongs in the repo
+.claude/
+.worktrees/
+.tokensave/
+.ruff_cache/

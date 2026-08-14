@@ -24,8 +24,8 @@ from src.latency import (
     attach_generation_meta,
     attach_latency_metrics,
     attach_retrieval_meta,
-    llm_run_params,
 )
+from src.llm.runtime import llm_tracking_params, resolve_runtime
 from src.mlflow_tracker import MLflowTracker, calculate_quality_score
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
@@ -79,6 +79,7 @@ def run_stage_evaluation(
     evaluator = Evaluator(
         judge_fn=judge_fn,
         enable_bertscore=cfg.get("evaluation", {}).get("bertscore", True),
+        bertscore_device=cfg.get("evaluation", {}).get("bertscore_device"),
     )
     scorers = build_metric_scorers(evaluator, include_rag=use_rag)
     lineage = resolve_model_lineage(cfg, approach=approach)
@@ -152,13 +153,17 @@ def run_stage_evaluation(
         {
             "inputs": {"question": p["question"]},
             "expectations": {"ground_truth": p["ground_truth"]},
-            "tags": {"approach": approach, "device": hardware.device},
+            "tags": {
+                "approach": approach,
+                "device": hardware.device,
+                "runtime": resolve_runtime(cfg),
+            },
         }
         for p in test_prompts
     ]
 
     run_params = {
-        **llm_run_params(cfg),
+        **llm_tracking_params(cfg),
         **(params or {}),
         "use_rag": use_rag,
         "top_k": top_k if use_rag else 0,

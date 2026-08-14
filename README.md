@@ -24,12 +24,19 @@ Then open:
 
 | What | Where |
 |------|--------|
-| **Results (start here)** | [`results/latest/README.md`](results/latest/README.md) |
-| Per-question table | [`results/latest/by_question.md`](results/latest/by_question.md) |
+| **Results (start here)** | locally `results/latest/README.md`; on GitHub the newest folder in [`results/runs/`](results/runs/) |
+| Per-question table | `results/latest/by_question.md`, or `by_question.md` in that run folder |
 | Grafana | http://localhost:3000 (admin / admin) → **By Question** |
 | MLflow GenAI traces | http://localhost:5000 → **GenAI** → **gguf-demo** → Traces |
 | MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
 | Prometheus | http://localhost:9090/graph (see queries below) |
+
+> **Ports.** If one of these is already taken, `run_pipeline.sh` publishes that
+> service on the next free port and prints where it moved to — macOS in
+> particular runs an AirPlay Receiver on 5000, which otherwise stops MLflow from
+> starting. Pin a port yourself with `MLFLOW_PORT`, `GRAFANA_PORT`,
+> `PROMETHEUS_PORT`, `POSTGRES_PORT`, or `APP_PORT`. Only the host side moves;
+> the containers still talk to each other on the standard ports.
 
 Device selection can also be forced:
 
@@ -86,7 +93,8 @@ scoring are compute-bound and use 24–26 of the 28 threads; decode is not, beca
 token reads every weight to produce one token and runs ~224 small parallel regions with
 a barrier between them, so threads spend much of a token waiting (~1000% CPU, 14–18 GB/s
 of weight reads against ~48 GB/s for a pure stream). More threads make that worse, not
-better — see `NEXT.md` for the levers that would actually move it.
+better — see [docs/cpu-decode-ceiling.md](docs/cpu-decode-ceiling.md) for the levers that
+would actually move it, and [docs/](docs/) for why GGUF exists at all.
 
 ---
 
@@ -99,6 +107,15 @@ better — see `NEXT.md` for the levers that would actually move it.
 | **GPU** | None (slow; hours) | NVIDIA **8 GB+** VRAM (e.g. RTX 3060 / 4070 / 4080) |
 | **Disk free** | **~25 GB** | **40–60 GB** comfortable |
 | **OS** | Linux or **WSL2** + Docker Desktop | WSL2 + recent NVIDIA Windows driver |
+
+> **On macOS and Windows, the number that matters is the Docker VM's memory, not
+> the machine's.** Docker Desktop runs containers inside a fixed-size VM — often
+> 8 GB by default — so a 32 GB Mac still gives the app container 8 GB, and Phi-3
+> needs ~9 GB. The pipeline now sizes itself from `docker info` rather than from
+> the host, so it will warn instead of silently requesting more than the VM can
+> honor, but the fix is to raise it: **Docker Desktop → Settings → Resources →
+> Memory**, to 12 GB or more. Apple Silicon has no CUDA, so those runs are
+> CPU-only; GGUF (step 2b/4b) is by far the faster path there.
 
 ### What uses the space / RAM
 
@@ -136,12 +153,16 @@ better — see `NEXT.md` for the levers that would actually move it.
 
 | Approach | Description |
 |----------|-------------|
-| **Baseline** | Local LLM answers from parameters alone |
-| **RAG** | Retrieve PDF chunks from pgvector, then generate |
-| **Fine-tuned** | LoRA adapters trained on instruction Q&A from the corpus |
-| **Fine-tuned + RAG** | Domain-tuned model with retrieval |
+| **Baseline** | Transformers Phi-3 answers from parameters alone |
+| **Baseline GGUF** | Same questions via llama.cpp Q4 GGUF (`baseline_gguf`) |
+| **RAG** | Retrieve PDF chunks from pgvector, then Transformers generate |
+| **RAG GGUF** | Same retrieval, llama.cpp generate (`rag_gguf`) |
+| **Fine-tuned** | LoRA adapters on Transformers (not converted to GGUF in this demo) |
+| **Fine-tuned + RAG** | Domain-tuned Transformers with retrieval |
 
-Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latency** (`time_to_response` = retrieval + generation) tagged by **device** (`cpu` / `cuda`).
+Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latency** (`time_to_response` = retrieval + generation) tagged by **device** (`cpu` / `cuda`) and **runtime** (`transformers` / `gguf`).
+
+Generation is an `LlmEngine` port (`src/llm/`). RAG never imports Transformers or llama.cpp directly — register another backend with `src.llm.factory.register_engine`.
 
 ---
 
@@ -157,7 +178,7 @@ Every answer logs **quality** (ROUGE, BERTScore, faithfulness, …) and **latenc
 │        │             │             │              │             │
 │        └─────────────┴─────────────┴──────────────┘             │
 │                         app (GPU optional)                      │
-│              scripts/ + src/ + local Phi-3 LLM                  │
+│              scripts/ + src/llm engines (Transformers or GGUF)          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -199,19 +220,24 @@ This command builds and starts the stack. Shared setup runs once. Metric steps r
 | Step | CPU | GPU |
 |------|-----|-----|
 | 1 / 1b Download + QA | once | — |
-| 2 Baseline | ✓ | ✓ |
+| 2 Baseline (Transformers) | ✓ | ✓ |
+| 2b Baseline (GGUF / llama.cpp) | ✓ unless `SKIP_GGUF=1` | ✓ |
 | 3 Create RAG DB | once | — |
-| 4 RAG evaluation | ✓ | ✓ |
+| 4 RAG (Transformers) | ✓ | ✓ |
+| 4b RAG (GGUF) | ✓ unless `SKIP_GGUF=1` | ✓ |
 | 5 Fine-tune LoRA | optional (`SKIP_CPU_FINETUNE=0`) | ✓ (default) |
 | 6 Comparison | ✓ | ✓ |
 | 7 Export | `…_cpu` | `…_cuda` |
 | 8 Device summary | — | `…_cpu_vs_cuda/` |
+| 9 Runtime summary | `…_transformers_vs_gguf/` | same |
 
 ```bash
 SKIP_CPU_FINETUNE=0 ./scripts/run_pipeline.sh   # also train LoRA on CPU
 SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh       # GPU-only evals (safer on WSL)
+SKIP_GGUF=1 ./scripts/run_pipeline.sh           # Transformers only (no llama.cpp)
 COMPUTE_DEVICE=cpu ./scripts/run_pipeline.sh    # force the portable CPU image
 COMPUTE_DEVICE=cuda ./scripts/run_pipeline.sh   # require GPU startup; do not fall back
+LLM_RUNTIME=gguf python scripts/00_query.py --prompt "..." --pdf data/papers/x.pdf
 ```
 
 After code/compose changes:
@@ -227,13 +253,14 @@ After code/compose changes:
 | `check_cuda.py` | Verify GPU inside the container |
 | `01_download_papers.py` | Fetch ~5 arXiv `cs.LG` PDFs → `data/papers/` |
 | `01b_generate_qa_pairs.py` | Extractive Q&A → prompts + train pairs |
-| `02_baseline_evaluation.py` | LLM-only answers |
+| `02_baseline_evaluation.py` | LLM-only (`LLM_RUNTIME=gguf` → `baseline_gguf`) |
 | `03_create_rag_db.py` | Chunk, embed, store in pgvector |
-| `04_rag_evaluation.py` | Retrieve + generate |
+| `04_rag_evaluation.py` | Retrieve + generate (`LLM_RUNTIME=gguf` → `rag_gguf`) |
 | `05_fine_tune.py` | LoRA → `models/fine_tuned/adapter_*` |
 | `06_fine_tuned_evaluation.py` | Baseline / FT / FT+RAG comparison |
 | `07_export_results.py` | Snapshot → `results/runs/<id>/` |
 | `08_compare_devices.py` | CPU vs CUDA summary |
+| `09_compare_runtimes.py` | Transformers vs GGUF summary |
 
 ### Ad-hoc query
 
@@ -241,6 +268,8 @@ After code/compose changes:
 docker compose exec -T app python scripts/00_query.py \
   --prompt "What is the main contribution?" \
   --pdf data/papers/<paper>.pdf
+docker compose exec -T app python scripts/00_query.py \
+  --runtime gguf --prompt "..." --pdf data/papers/<paper>.pdf
 ```
 
 Add `--no-rag` for baseline. Add `--judge` for LLM groundedness scoring.
@@ -527,11 +556,22 @@ Grafana **Live Ops** reads the same series during a run; **By Question** / **Qua
 
 ### Grafana dashboards (provisioned)
 
-| Dashboard | When |
-|-----------|------|
-| **gguf-demo · By Question** | After a run — same layout as `by_question.md` |
-| **gguf-demo · Quality & Latency** | Aggregates + GPU speedup |
-| **gguf-demo · Live Ops** | While the pipeline is running (Prometheus) |
+| Dashboard | When | Scope |
+|-----------|------|-------|
+| **gguf-demo · By Question** | After a run — same layout as `by_question.md` | Run picker |
+| **gguf-demo · Quality & Latency** | Aggregates + GPU speedup, and A/B against an earlier run | Run picker |
+| **gguf-demo · Live Ops** | While the pipeline is running (Prometheus) | Time picker |
+| **gguf-demo · Transformers vs GGUF** | Same model, two engines (`baseline` vs `baseline_gguf`) | Run picker |
+
+The three Postgres dashboards are scoped by a **Run** picker, not the time picker — these
+are discrete benchmark runs, not a time series, and the Postgres volume outlives them. Pick
+the run at the top; every panel follows it, and the run header names the `run_id` and the
+`results/runs/<run_id>/` folder the same numbers were exported to. The time picker is hidden
+there because no panel filtered on it. **Live Ops** is a live Prometheus scrape and keeps its
+time picker.
+
+Rows written before run identity was added to the schema have no `run_id`, so they appear in
+no run and are excluded from every panel. They are not backfilled — they belong to no run.
 
 ```bash
 docker compose up -d prometheus grafana
@@ -546,8 +586,11 @@ docker compose restart grafana   # if panels missing
 
 | Key | Default | Notes |
 |-----|---------|-------|
-| `llm.model` | `microsoft/Phi-3-mini-4k-instruct` | Base model |
+| `llm.model` | `microsoft/Phi-3-mini-4k-instruct` | Transformers Hub id (safetensors) |
 | `llm.do_sample` | `false` | Greedy eval |
+| `gguf.repo_id` | `microsoft/Phi-3-mini-4k-instruct-gguf` | Official GGUF package |
+| `gguf.filename` | `Phi-3-mini-4k-instruct-q4.gguf` | Q4_K_M (~2.2 GB) |
+| `gguf.n_gpu_layers` | `-1` | Offload all layers if llama.cpp has CUDA |
 | `evaluation.llm_judge` | `false` | Slower groundedness judge |
 | `evaluation.bertscore` | `true` | Disable to speed up |
 | `vector_store.top_k` | `4` | Chunks per question |
@@ -562,8 +605,9 @@ docker compose restart grafana   # if panels missing
 ├── data/papers/             # PDFs (gitignored)
 ├── data/processed/          # Working artifacts (gitignored)
 ├── results/                 # Exported runs (commit)
-├── scripts/                 # 00–08 + run_pipeline.sh
-├── src/                     # RAG, evaluator, hardware, export
+├── scripts/                 # 00–09 + run_pipeline.sh
+├── src/                     # RAG, llm engines, evaluator, hardware, export
+├── src/llm/                 # LlmEngine port: Transformers + GGUF implementations
 ├── grafana/provisioning/
 ├── docker-compose.yml
 ├── Dockerfile.app

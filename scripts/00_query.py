@@ -4,7 +4,7 @@ CLI: run a single prompt against one PDF and print response quality + CUDA metri
 
 Usage:
   python scripts/00_query.py --prompt "What is the main contribution?" --pdf data/papers/foo.pdf
-  python scripts/00_query.py --prompt "..." --pdf data/papers/foo.pdf --no-rag
+  python scripts/00_query.py --runtime gguf --prompt "..." --pdf data/papers/foo.pdf --no-rag
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from src.evaluator import Evaluator
 from src.hardware import detect_hardware
 from src.latency import attach_generation_meta, attach_latency_metrics, attach_retrieval_meta
+from src.llm.runtime import approach_for_runtime, resolve_runtime
 from src.mlflow_tracker import MLflowTracker
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
@@ -50,6 +51,11 @@ def main() -> None:
     parser.add_argument("--config", default=CONFIG_PATH)
     parser.add_argument("--no-bertscore", action="store_true")
     parser.add_argument("--judge", action="store_true", help="Enable LLM-as-judge groundedness")
+    parser.add_argument(
+        "--runtime",
+        default=None,
+        help="LLM engine: transformers (default) or gguf. Overrides LLM_RUNTIME.",
+    )
     args = parser.parse_args()
 
     if not os.path.isfile(args.pdf):
@@ -57,16 +63,17 @@ def main() -> None:
 
     hardware = detect_hardware()
     config = load_config(args.config)
-    pipeline = RAGPipeline(config, hardware=hardware)
+    runtime = resolve_runtime(config, args.runtime)
+    pipeline = RAGPipeline(config, hardware=hardware, runtime=runtime)
 
     judge_fn = (lambda p: pipeline.judge_response(p)) if args.judge else None
     evaluator = Evaluator(judge_fn=judge_fn, enable_bertscore=not args.no_bertscore)
     tracker = MLflowTracker("single_query", hardware=hardware)
 
     use_rag = not args.no_rag
-    approach = "rag" if use_rag else "baseline"
+    approach = approach_for_runtime("rag" if use_rag else "baseline", runtime)
     lineage = resolve_model_lineage(config, approach=approach)
-    logger.info("Mode: %s | %s", approach, hardware.summary())
+    logger.info("Mode: %s runtime=%s | %s", approach, runtime, hardware.summary())
 
     with tracker.stage_run(
         approach,

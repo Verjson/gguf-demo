@@ -11,7 +11,9 @@ Tiers:
 from __future__ import annotations
 
 import logging
+import os
 import re
+from functools import lru_cache
 from typing import Callable, Dict, Optional
 
 import mlflow
@@ -23,31 +25,88 @@ logger = logging.getLogger(__name__)
 
 JudgeFn = Callable[[str], str]
 
-_BERT_SCORER: BERTScorer | None = None
+# Where roberta-large runs. bert_score's own default is "cuda when available",
+# which puts a second model on the card the LLM is generating on: Phi-3 fp16 is
+# ~7.6GB and roberta-large adds ~1.4GB plus activations, so a 12GB card is tight
+# and an 8GB one OOMs — at scoring time, after generation already looked fine.
+# CPU is the portable default because scoring is off the generation critical path
+# and, once cached below, runs once per answer.
+BERTSCORE_DEVICE_ENV = "BERTSCORE_DEVICE"
+# Answers are scored by up to three callers (see bert_f1); this only has to
+# outlive one stage's worth of prompts.
+_SCORE_CACHE_SIZE = 512
+
+_BERT_SCORERS: Dict[str, BERTScorer] = {}
 
 
-def _get_bert_scorer() -> BERTScorer:
+def resolve_bertscore_device(configured: str | None = None) -> str:
+    """Device for BERTScore: explicit arg → env → cpu."""
+    choice = (configured or os.environ.get(BERTSCORE_DEVICE_ENV) or "cpu").strip().lower()
+    if choice != "auto":
+        return choice
+    try:
+        import torch
+
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except Exception:  # noqa: BLE001 - scoring must not depend on a usable GPU
+        return "cpu"
+
+
+def _get_bert_scorer(device: str) -> BERTScorer:
     """
-    Reuse one BERTScorer for the process.
+    Reuse one BERTScorer per device for the process.
 
     ``bert_score.score()`` reloads roberta-large on every call, which costs seconds
     per scored answer on CPU and repeatedly allocates ~1.4GB.
     """
-    global _BERT_SCORER
-    if _BERT_SCORER is None:
-        _BERT_SCORER = BERTScorer(lang="en")
-    return _BERT_SCORER
+    scorer = _BERT_SCORERS.get(device)
+    if scorer is None:
+        scorer = BERTScorer(lang="en", device=device)
+        _BERT_SCORERS[device] = scorer
+    return scorer
+
+
+@lru_cache(maxsize=_SCORE_CACHE_SIZE)
+def bert_f1(response: str, ground_truth: str, device: str) -> float | None:
+    """
+    BERTScore F1 for one pair, computed at most once.
+
+    Three separate callers ask for this same number per answer — the ``bert_score``
+    scorer, the ``quality_score`` scorer, and the ops dual-write in
+    ``eval_runner`` — and roberta-large is the most expensive metric in the suite.
+    Keying on the pair rather than on the caller collapses them to one forward pass
+    without any of them having to know about the others.
+    """
+    try:
+        _, _, f1 = _get_bert_scorer(device).score([response], [ground_truth])
+        return f1.mean().item()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("BERTScore failed: %s", exc)
+        return None
+
+
+@lru_cache(maxsize=_SCORE_CACHE_SIZE)
+def _rouge_fmeasures(scorer: rouge_scorer.RougeScorer, ground_truth: str, response: str):
+    """All three ROUGE f-measures for one pair; scored once for the same reason."""
+    scores = scorer.score(ground_truth, response)
+    return tuple(scores[key].fmeasure for key in ("rouge1", "rouge2", "rougeL"))
 
 
 class Evaluator:
     """Score generated answers so you can compare approaches in MLflow/Grafana."""
 
-    def __init__(self, judge_fn: JudgeFn | None = None, enable_bertscore: bool = True):
+    def __init__(
+        self,
+        judge_fn: JudgeFn | None = None,
+        enable_bertscore: bool = True,
+        bertscore_device: str | None = None,
+    ):
         self.rouge_scorer = rouge_scorer.RougeScorer(
             ["rouge1", "rouge2", "rougeL"], use_stemmer=True
         )
         self.judge_fn = judge_fn
         self.enable_bertscore = enable_bertscore
+        self.bertscore_device = resolve_bertscore_device(bertscore_device)
 
         # Keywords tailored to ML/NLP paper domain — adjust for your PDF corpus
         self.domain_keywords = {
@@ -83,6 +142,16 @@ class Evaluator:
             ],
         }
 
+    def bert_score(self, response: str, ground_truth: str) -> float | None:
+        """BERTScore F1, or None when it is disabled or the model failed to score."""
+        if not self.enable_bertscore:
+            return None
+        return bert_f1(response, ground_truth, self.bertscore_device)
+
+    def rouge(self, ground_truth: str, response: str) -> tuple[float, float, float]:
+        """ROUGE-1 / -2 / -L f-measures for one pair."""
+        return _rouge_fmeasures(self.rouge_scorer, ground_truth, response)
+
     @mlflow.trace(name="evaluate_response", span_type=SpanType.PARSER)
     def evaluate_response(
         self,
@@ -96,17 +165,14 @@ class Evaluator:
         metrics: Dict[str, float] = {}
 
         if ground_truth:
-            rouge_scores = self.rouge_scorer.score(ground_truth, response)
-            metrics["rouge1"] = rouge_scores["rouge1"].fmeasure
-            metrics["rouge2"] = rouge_scores["rouge2"].fmeasure
-            metrics["rougeL"] = rouge_scores["rougeL"].fmeasure
+            metrics["rouge1"], metrics["rouge2"], metrics["rougeL"] = self.rouge(
+                ground_truth, response
+            )
 
             if self.enable_bertscore:
-                try:
-                    _, _, bert_f1 = _get_bert_scorer().score([response], [ground_truth])
-                    metrics["bert_score"] = bert_f1.mean().item()
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("BERTScore failed: %s", exc)
+                score = self.bert_score(response, ground_truth)
+                if score is not None:
+                    metrics["bert_score"] = score
 
         metrics["domain_relevance"] = self._calculate_domain_relevance(response)
 

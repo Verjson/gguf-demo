@@ -1,0 +1,7 @@
+question,baseline|cpu,baseline|cuda,baseline_gguf|cpu,baseline_gguf|cuda,rag|cpu,rag|cuda,rag_gguf|cpu,rag_gguf|cuda,fine_tuned|cpu,fine_tuned|cuda,fine_tuned_with_rag|cpu,fine_tuned_with_rag|cuda
+"According to this passage, what is the main claim or contribution?",8.241162,1.439418,10.050616,7.672814,45.601998,2.678453,28.586965,10.162379,9.357244,1.770643,28.515532,4.367449
+Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.,31.561489,5.699287,8.845922,9.544361,55.551467,4.179335,33.422614,13.836061,38.793007,5.057000,56.153677,5.256054
+What experimental result or finding is reported here?,9.697819,1.796744,8.284937,7.723562,107.873366,4.089718,39.211738,19.590406,14.064044,1.654715,74.005776,4.134408
+What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?,29.341290,5.364949,11.948021,9.891154,57.697592,5.481260,35.215750,15.310822,37.332163,3.987030,60.388690,4.933881
+What limitation or future work is mentioned in this text?,8.876026,1.726158,7.814354,7.924869,15.964578,2.340162,29.753272,11.073658,9.065156,1.094180,16.256027,0.836939
+What problem does this passage say the work addresses?,8.251586,1.754868,8.377754,7.525660,38.426254,4.250729,17.287263,7.180946,10.737113,1.122437,32.915230,4.299426

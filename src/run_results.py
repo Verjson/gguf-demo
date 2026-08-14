@@ -12,6 +12,8 @@ import json
 import logging
 import os
 import shutil
+import stat
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ import yaml
 
 from src.display_metrics import select_summary_metrics
 from src.hardware import HardwareInfo, detect_hardware
+from src.run_id import parse_run_id
 from src.score_colors import html_table, ranked_metric_row
 
 logger = logging.getLogger(__name__)
@@ -33,7 +36,9 @@ LATEST_DIR = RESULTS_DIR / "latest"
 PROCESSED_ARTIFACTS = (
     "comparison_report.json",
     "baseline_results.json",
+    "baseline_gguf_results.json",
     "rag_results.json",
+    "rag_gguf_results.json",
     "doc_stats.json",
     "qa_pairs.jsonl",
 )
@@ -164,10 +169,9 @@ def export_metrics_csv(
 
     rows: list[tuple] = []
     try:
-        with psycopg2.connect(**_postgres_conn_kwargs()) as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, params)
-                rows = cur.fetchall()
+        with psycopg2.connect(**_postgres_conn_kwargs()) as conn, conn.cursor() as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not export Postgres metrics: %s", exc)
         return 0
@@ -227,7 +231,6 @@ def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
     return legend + "\n" + body + ("\n".join(extras) + "\n" if extras else "")
 
 
-
 def _write_summary_md(
     dest: Path,
     manifest: dict[str, Any],
@@ -274,8 +277,10 @@ def _write_summary_md(
         "RAG's `retrieval_hit_at_k` is 0 even if overlap (`rougeL`) improved — trust rougeL",
         "for 'did RAG help?', and time_to_response / tokens_per_sec for device speed.",
         "",
-        "Per-metric cells are colored **green (best) / yellow (mid) / red (worst)** "
-        "across approaches (open in an HTML-capable Markdown preview).",
+        (
+            "Per-metric cells are colored **green (best) / yellow (mid) / red (worst)** "
+            "across approaches (open in an HTML-capable Markdown preview)."
+        ),
         "",
         "## Comparison by approach",
         "",
@@ -322,41 +327,259 @@ this export. Anything in `results/latest/` is replaced by the next run.
 """
 
 
+# results/latest/ is a bind mount onto the host, so anything copied here is written
+# to the host disk for real. Two invariants keep that bounded, and both are enforced
+# below rather than trusted: the source is one export folder that does not contain
+# latest_dir, and only flat text artifacts are copied — never a subtree, a cache, or
+# model weights. Copying a parent of latest_dir once recursed six levels deep and
+# wrote ~100GB of duplicated Hugging Face cache to the host.
+SNAPSHOT_SUFFIXES = frozenset({".csv", ".json", ".jsonl", ".md", ".txt", ".yaml", ".yml"})
+SNAPSHOT_MAX_BYTES = 64 * 1024 * 1024
+# Per-file size alone bounds nothing: a run folder of many just-under-cap files still
+# lands on the host disk. The total is what the host actually pays.
+#
+# It bounds the artifacts *copied from the source*, not the total bytes written: the
+# README refresh_latest generates afterwards embeds summary.md's body and is not
+# counted, so the directory can exceed this by roughly one summary. That is deliberate
+# — the README is the point of the folder, and dropping it to satisfy an accounting
+# rule would be the wrong trade. The number is a bound on what a runaway source can
+# push onto the host, not a promise about the directory's final size.
+SNAPSHOT_MAX_TOTAL_BYTES = 256 * 1024 * 1024
+# The half-written files _replace_artifact renames into place. A crash between mkstemp
+# and the rename leaves one behind, so the clear step removes them: they are this
+# function's own litter, and telling a human to delete them by hand would be reporting
+# our mess as theirs.
+SNAPSHOT_TEMP_PREFIX = ".snapshot-"
+
+# The files the snapshot README links, and why each is worth opening.
+SNAPSHOT_HIGHLIGHTS = {
+    "by_question.md": "every question, side by side across approaches",
+    "cpu_vs_cuda.json": "aggregate CPU vs GPU deltas, machine readable",
+    "evaluation_metrics.csv": "one row per question, straight from Postgres",
+    "manifest.json": "what ran, on which hardware",
+    "by_question_throughput.csv": "tokens/sec per question × approach × device",
+    "by_question_latency.csv": "time_to_response per question × approach × device",
+}
+
+# What the aggregate cap must keep when it cannot keep everything. Alphabetical order
+# sheds manifest.json before by_question*.json, which costs the snapshot its run
+# identity — which run, on which hardware — while keeping bulk per-question data that
+# is then unattributable. Identity and the human summary come first, then the files
+# the README links, then everything else.
+SNAPSHOT_PRIORITY = ("manifest.json", "summary.md") + tuple(
+    name for name in SNAPSHOT_HIGHLIGHTS if name != "manifest.json"
+)
+
+
+def _snapshot_order(source_dir: Path) -> list[Path]:
+    """`source_dir` entries, most worth keeping first, then the rest alphabetically."""
+    remaining = {entry.name: entry for entry in sorted(source_dir.iterdir())}
+    ordered = [remaining.pop(name) for name in SNAPSHOT_PRIORITY if name in remaining]
+    return ordered + list(remaining.values())
+
+
+def _atomic_write(dest: Path, fill) -> None:
+    """
+    Put bytes at `dest` without any step following a symlink that may sit there.
+
+    `fill(out)` writes to a descriptor mkstemp opened on a file it created
+    exclusively; the path is never reopened by name, so a link appearing at it
+    afterwards has nothing left to redirect. Permissions and timestamps are set on
+    that same descriptor rather than through `shutil.copystat`, which takes a path
+    and would follow such a link.
+
+    One window remains, between closing the descriptor and `os.replace`: a link
+    swapped in there is installed at `dest` by the rename — `os.replace` does not
+    follow symlinks — orphaning the bytes just written. Nothing follows that link:
+    the next refresh's clear loop removes it before anything reads or writes it. It
+    costs one stale snapshot, not a write outside results/latest, so it is left.
+    """
+    fd, tmp_name = tempfile.mkstemp(dir=dest.parent, prefix=SNAPSHOT_TEMP_PREFIX)
+    tmp = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as out:
+            fill(out)
+        os.replace(tmp, dest)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def _replace_artifact(src: Path, dest: Path) -> None:
+    """Copy `src` onto `dest`, carrying its mode and mtime, following no symlink."""
+    info = src.stat()
+
+    def fill(out):
+        with open(src, "rb") as reader:
+            shutil.copyfileobj(reader, out)
+        os.fchmod(out.fileno(), stat.S_IMODE(info.st_mode))
+        if os.utime in os.supports_fd:
+            os.utime(out.fileno(), ns=(info.st_atime_ns, info.st_mtime_ns))
+
+    _atomic_write(dest, fill)
+
+
+def _write_snapshot_text(dest: Path, text: str) -> None:
+    """Write generated text (the README) as safely as a copied artifact."""
+    _atomic_write(dest, lambda out: out.write(text.encode("utf-8")))
+
+
+def _report_snapshot_residue(latest_dir: Path) -> None:
+    """
+    Name whatever the clear step deliberately left behind.
+
+    Leaving unrelated files is the policy — it is what stops a mistargeted destination
+    from being destroyed. Leaving them *silently* is the problem: a directory here is
+    skipped by every step of a refresh, and a results/latest/results/ left by the old
+    recursive copy then aborts the pipeline at startup with nothing saying that the
+    export will not clear it either. Only a human deleting it resolves that state.
+    """
+    residue = sorted(
+        f"{entry.name}/" if entry.is_dir() else entry.name
+        for entry in latest_dir.iterdir()
+        if entry.is_dir() or entry.suffix.lower() not in SNAPSHOT_SUFFIXES
+    )
+    if residue:
+        logger.warning(
+            "Snapshot left %d unrelated entries in %s (refresh does not remove these; "
+            "delete them by hand if they are stale): %s",
+            len(residue),
+            latest_dir,
+            ", ".join(residue),
+        )
+
+
+def _snapshot_artifacts(source_dir: Path) -> list[Path]:
+    """Files in `source_dir` eligible for results/latest/ — flat, small, text."""
+    keep: list[Path] = []
+    skipped: list[str] = []
+    total = 0
+    for entry in _snapshot_order(source_dir):
+        if not entry.is_file() or entry.is_symlink():
+            skipped.append(f"{entry.name} (not a regular file)")
+            continue
+        if entry.suffix.lower() not in SNAPSHOT_SUFFIXES:
+            skipped.append(f"{entry.name} ({entry.suffix or 'no suffix'} is not an artifact type)")
+            continue
+        size = entry.stat().st_size
+        if size > SNAPSHOT_MAX_BYTES:
+            skipped.append(f"{entry.name} ({size} bytes, over the {SNAPSHOT_MAX_BYTES} per-file cap)")
+            continue
+        if total + size > SNAPSHOT_MAX_TOTAL_BYTES:
+            skipped.append(
+                f"{entry.name} ({size} bytes would pass the {SNAPSHOT_MAX_TOTAL_BYTES} total cap)"
+            )
+            continue
+        total += size
+        keep.append(entry)
+    if skipped:
+        logger.warning(
+            "Snapshot of %s kept %d files (%d bytes) and skipped %d: %s",
+            source_dir,
+            len(keep),
+            total,
+            len(skipped),
+            "; ".join(skipped),
+        )
+    return keep
+
+
 def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
     """
-    Replace results/latest/ with `source_dir`, led by a README.
+    Replace results/latest/ with the artifacts of `source_dir`, led by a README.
 
     The README is the folder's summary rather than a pointer to one, so it is what
     GitHub and most file browsers show first, and it names the run it came from.
     """
+    source_dir = Path(source_dir)
     latest_dir = Path(latest_dir or LATEST_DIR)
-    if latest_dir.exists():
-        shutil.rmtree(latest_dir)
-    shutil.copytree(source_dir, latest_dir)
 
+    if not source_dir.is_dir():
+        raise NotADirectoryError(f"Snapshot source is not a directory: {source_dir}")
+    source_resolved = source_dir.resolve()
+    latest_resolved = latest_dir.resolve()
+
+    # The destination is the one directory this function owns. Checking its shape
+    # first means transposed arguments — refresh_latest(run_dir, repo_root) — are
+    # rejected before anything is deleted, rather than clearing the repo.
+    #
+    # Deliberately name-based, not anchored to RESULTS_DIR: that constant is
+    # REPO_ROOT/results with REPO_ROOT defaulting to /app, while 08_compare_devices
+    # and 09_compare_runtimes both accept --repo-root and every test builds its tree
+    # under tmp_path. Anchoring would reject those legitimate callers and force a
+    # test-only escape hatch, which is worse than the narrow exposure it closes: any
+    # */results/latest passes, but a destination named neither cannot.
+    if latest_resolved.name != "latest" or latest_resolved.parent.name != "results":
+        raise ValueError(
+            f"Refusing to snapshot into {latest_dir}: the destination must be a "
+            "results/latest/ directory. Check the argument order — the source "
+            "folder comes first."
+        )
+    if latest_resolved == source_resolved or latest_resolved.is_relative_to(source_resolved):
+        raise ValueError(
+            f"Refusing to snapshot {source_dir} into {latest_dir}: the destination is "
+            "inside the source, which copies the tree into itself. Pass the single "
+            "export folder (results/runs/<run_id>/), not a parent of it."
+        )
+    if source_resolved.is_relative_to(latest_resolved):
+        raise ValueError(
+            f"Refusing to snapshot {source_dir} into {latest_dir}: the source is inside "
+            "the destination, so clearing the destination would delete the source first."
+        )
+
+    artifacts = _snapshot_artifacts(source_dir)
+    # Clear by unlinking the artifact types this function writes, never by removing
+    # the directory: a mistargeted destination that slipped past the checks above
+    # then loses at most files of those types instead of its whole tree. README.md
+    # is covered by `.md`.
+    #
+    # Symlinks go unconditionally, whatever they point at or are named. results/ is a
+    # container-writable bind mount, so a link planted there is a write outside
+    # results/ waiting for the next snapshot to follow it — copying onto a symlinked
+    # destination writes through to its target.
+    latest_dir.mkdir(parents=True, exist_ok=True)
+    for stale in latest_dir.iterdir():
+        if stale.is_symlink():
+            logger.warning("Snapshot removes symlink %s -> %s", stale, os.readlink(stale))
+            stale.unlink()
+        elif stale.is_file() and (
+            stale.suffix.lower() in SNAPSHOT_SUFFIXES
+            or stale.name.startswith(SNAPSHOT_TEMP_PREFIX)
+        ):
+            stale.unlink()
+
+    _report_snapshot_residue(latest_dir)
+
+    for artifact in artifacts:
+        _replace_artifact(artifact, latest_dir / artifact.name)
+
+    # A link here is never legitimate — the clear loop says so — and read_text would
+    # follow it, folding a host file's contents into the README this writes. Treat it
+    # as absent, exactly as if the source had no summary.
     summary = latest_dir / "summary.md"
-    body = summary.read_text(encoding="utf-8") if summary.is_file() else ""
+    if summary.is_symlink():
+        logger.warning("Snapshot ignores symlinked summary.md -> %s", os.readlink(summary))
+        summary.unlink()
+        body = ""
+    else:
+        body = summary.read_text(encoding="utf-8") if summary.is_file() else ""
     # summary.md's own H1 would collide with the README's, and keeping both files
     # would leave two copies of the same text to drift apart.
     body = "\n".join(line for line in body.splitlines() if not line.startswith("# "))
     summary.unlink(missing_ok=True)
 
-    interesting = {
-        "by_question.md": "every question, side by side across approaches",
-        "cpu_vs_cuda.json": "aggregate CPU vs GPU deltas, machine readable",
-        "evaluation_metrics.csv": "one row per question, straight from Postgres",
-        "manifest.json": "what ran, on which hardware",
-        "by_question_throughput.csv": "tokens/sec per question × approach × device",
-        "by_question_latency.csv": "time_to_response per question × approach × device",
-    }
     listed = [
         f"- [`{name}`](./{name}) — {why}"
-        for name, why in interesting.items()
+        for name, why in SNAPSHOT_HIGHLIGHTS.items()
         if (latest_dir / name).is_file()
     ]
     files = "**In this folder**\n\n" + "\n".join(listed) + "\n\n" if listed else ""
 
-    (latest_dir / "README.md").write_text(
+    # write_text follows a symlink planted here after the clear loop ran, which is an
+    # arbitrary host write. The one file written on every refresh takes the safest
+    # path, not the least safe one.
+    _write_snapshot_text(
+        latest_dir / "README.md",
         _LATEST_README_INTRO.format(
             title=source_dir.name,
             source=source_dir.name,
@@ -364,7 +587,6 @@ def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
             files=files,
         )
         + body.lstrip("\n"),
-        encoding="utf-8",
     )
     return latest_dir
 
@@ -373,20 +595,10 @@ def _run_scope(run_id: str) -> tuple[str | None, datetime | None]:
     """
     Device and start time encoded in a pipeline run id, e.g. ``2026-08-14_032911_cpu``.
 
-    Returns ``(None, None)`` components for ids that do not follow that shape, which
-    simply means the export is not scoped rather than that it fails.
+    src.run_id owns the shape: a suffix test here once read ``..._cpu_vs_cuda`` as a
+    CUDA run and stamped a comparison export with GPU hardware.
     """
-    device = None
-    stamp = run_id
-    for suffix in ("cpu", "cuda"):
-        if run_id.endswith(f"_{suffix}"):
-            device, stamp = suffix, run_id[: -len(suffix) - 1]
-            break
-    try:
-        started = datetime.strptime(stamp, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
-    except ValueError:
-        started = None
-    return device, started
+    return parse_run_id(run_id)
 
 
 def _hardware_for_run(hardware: HardwareInfo, device: str | None) -> dict[str, Any]:

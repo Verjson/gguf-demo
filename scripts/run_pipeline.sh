@@ -12,7 +12,8 @@
 #   COMPUTE_DEVICE=auto  (default) — use NVIDIA GPU when Docker supports it, else CPU
 #   COMPUTE_DEVICE=cpu|cuda       — force a device mode (cuda fails instead of falling back)
 #   SKIP_CPU_FINETUNE=1  (default) — skip CPU LoRA train (RAM-heavy)
-#   SKIP_CPU_EVAL=1      — skip all CPU eval/export passes (safer on WSL/16–24GB hosts)
+#   SKIP_GGUF=0          (default) — also eval baseline/RAG with llama.cpp GGUF
+#   SKIP_GGUF=1          — Transformers-only (skip GGUF download + llama.cpp)
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -22,6 +23,7 @@ CPU_RUN_ID="${TIMESTAMP}_cpu"
 CUDA_RUN_ID="${TIMESTAMP}_cuda"
 SKIP_CPU_FINETUNE="${SKIP_CPU_FINETUNE:-1}"
 SKIP_CPU_EVAL="${SKIP_CPU_EVAL:-0}"
+SKIP_GGUF="${SKIP_GGUF:-0}"
 COMPUTE_DEVICE="${COMPUTE_DEVICE:-auto}"
 CPU_TORCH_INDEX_URL="https://download.pytorch.org/whl/cpu"
 CUDA_TORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
@@ -75,25 +77,121 @@ gpu_is_available() {
     docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -q '"nvidia"'
 }
 
-# Memory this script may account for, in bytes. Reads the cgroup limit first so
-# the number is right when the pipeline is itself driven from a container.
+# Memory this script may account for, in bytes.
+#
+# The number that matters is what Docker can actually give a container, not what
+# the machine running this script has. On Linux those are the same. On macOS and
+# Windows they are not: Docker Desktop runs a fixed-size VM, often 8GB, on a Mac
+# with far more RAM — and /proc/meminfo does not exist there at all, so the old
+# reading fell through to a 10g default that the VM could not honor and the app
+# container was killed on load. `docker info` reports the VM, so it is right on
+# every platform; the host reading is only a fallback for when Docker cannot be
+# queried, and a cgroup limit still wins when the pipeline itself runs in a
+# container.
 available_memory_bytes() {
-  local physical="" limit="" kb
+  local docker_total="" physical="" limit="" kb
+  docker_total="$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)"
+  [[ "$docker_total" =~ ^[0-9]+$ ]] && (( docker_total > 0 )) || docker_total=""
+
   if [[ -r /proc/meminfo ]]; then
     kb="$(awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo)"
     [[ "$kb" =~ ^[0-9]+$ ]] && physical=$(( kb * 1024 ))
+  elif [[ "$(uname -s)" == "Darwin" ]]; then
+    physical="$(sysctl -n hw.memsize 2>/dev/null || true)"
+    [[ "$physical" =~ ^[0-9]+$ ]] || physical=""
   fi
+
+  # Prefer Docker's view; fall back to the host's only when it is unavailable.
+  local budget="${docker_total:-$physical}"
+
   for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
     [[ -r "$f" ]] || continue
     local value
     value="$(cat "$f")"
     # cgroup v2 reports "max"; v1 reports a sentinel larger than real RAM.
-    if [[ "$value" =~ ^[0-9]+$ ]] && { [[ -z "$physical" ]] || (( value < physical )); }; then
+    if [[ "$value" =~ ^[0-9]+$ ]] && { [[ -z "$budget" ]] || (( value < budget )); }; then
       limit="$value"
       break
     fi
   done
-  echo "${limit:-${physical:-0}}"
+  echo "${limit:-${budget:-0}}"
+}
+
+# First free TCP port at or after $1, so a published port that the host already
+# uses does not fail the whole stack. macOS runs an AirPlay Receiver on 5000,
+# which is what stopped MLflow from starting there.
+first_free_port() {
+  local port="$1" limit=$(( $1 + 20 ))
+  while (( port < limit )); do
+    if ! port_in_use "$port"; then
+      echo "$port"
+      return 0
+    fi
+    port=$(( port + 1 ))
+  done
+  echo "$1"  # Nothing free nearby; let Docker report the conflict itself.
+}
+
+# A port this stack already publishes is not a conflict. Without this, re-running
+# the pipeline against a live stack sees its own MLflow on 5000, moves to 5001,
+# recreates the container, and walks one port further on every subsequent run.
+#
+# Decision: matching any `rag-*` container name is deliberately loose. A container
+# outside this stack that is both named rag-* and holding one of these ports would
+# be misread as ours, and Docker would then refuse the bind — a loud, immediate
+# failure at `up`, not a silent one. Tightening this to the exact container names
+# would buy a better error message for a case that has not occurred; the ports these
+# services want are the real constraint.
+port_held_by_this_stack() {
+  local port="$1" names
+  names="$(docker ps --filter "publish=${port}" --format '{{.Names}}' 2>/dev/null || true)"
+  [[ -n "$names" ]] && grep -q '^rag-' <<<"$names"
+}
+
+port_in_use() {
+  local port="$1"
+  port_held_by_this_stack "$port" && return 1
+  # Try the tools most likely to exist, newest first.
+  #
+  # Decision: fail open — a host with none of lsof/ss/netstat reports every port
+  # free. This is the right default *here*, and deliberately unlike the results
+  # budget guard, which fails closed. The two differ in what a wrong answer costs:
+  # an unnoticed port conflict surfaces immediately as a Docker bind error at `up`
+  # and nothing is lost, whereas an unmeasured results/ lets a runaway copy keep
+  # writing to the host disk. Blocking the whole pipeline because a probe binary is
+  # missing would trade a guaranteed stop for a recoverable, self-announcing error.
+  if command -v lsof >/dev/null 2>&1; then
+    lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1 && return 0
+    return 1
+  fi
+  if command -v ss >/dev/null 2>&1; then
+    ss -lntH "sport = :$port" 2>/dev/null | grep -q . && return 0
+    return 1
+  fi
+  if command -v netstat >/dev/null 2>&1; then
+    netstat -an 2>/dev/null | grep -qE "[.:]${port}[[:space:]]+.*LISTEN" && return 0
+    return 1
+  fi
+  return 1
+}
+
+# Publish each service on a port the host actually has free, and say so when the
+# preferred one was taken — otherwise the UI URLs printed later are wrong.
+resolve_published_ports() {
+  local name preferred chosen
+  for spec in "MLFLOW_PORT 5000" "GRAFANA_PORT 3000" "PROMETHEUS_PORT 9090" \
+              "POSTGRES_PORT 5432" "APP_PORT 8000"; do
+    name="${spec%% *}"
+    preferred="${spec##* }"
+    if [[ -n "${!name:-}" ]]; then
+      continue  # Explicitly set by the caller; respect it even if it is busy.
+    fi
+    chosen="$(first_free_port "$preferred")"
+    export "$name=$chosen"
+    if [[ "$chosen" != "$preferred" ]]; then
+      echo "    Port ${preferred} is in use; publishing ${name%_PORT} on ${chosen}." >&2
+    fi
+  done
 }
 
 # Leave roughly a third of memory to the rest of the machine: the app container
@@ -109,6 +207,18 @@ default_mem_limit_gb() {
   echo "$gb"
 }
 
+# The run id a step's rows are stamped with. It must follow the device, not the
+# pipeline: a CPU step and a GPU step of the same invocation write different ids
+# (${TIMESTAMP}_cpu, ${TIMESTAMP}_cuda) sharing the TIMESTAMP prefix, which is what
+# lets the dashboards group them into one run while keeping the two legs separable.
+# Stamping both with TIMESTAMP would make CPU and GPU rows indistinguishable.
+run_id_for_device() {
+  case "$1" in
+    cpu) echo "$CPU_RUN_ID" ;;
+    *)   echo "$CUDA_RUN_ID" ;;
+  esac
+}
+
 # Run a script inside the app container on a given device.
 # Usage: run_app cpu|cuda scripts/foo.py [args...]
 run_app() {
@@ -119,10 +229,12 @@ run_app() {
       -e CUDA_VISIBLE_DEVICES=-1 \
       -e COMPUTE_DEVICE=cpu \
       -e SKIP_AUTO_EXPORT=1 \
+      -e "RUN_ID=$(run_id_for_device cpu)" \
       app python "$@"
   else
     "${COMPOSE[@]}" exec -T \
       -e SKIP_AUTO_EXPORT=1 \
+      -e "RUN_ID=$(run_id_for_device "$device")" \
       app python "$@"
   fi
 }
@@ -133,7 +245,7 @@ run_app_env() {
   local device="$1"
   local extra_env="$2"
   shift 2
-  local -a env_flags=(-e SKIP_AUTO_EXPORT=1)
+  local -a env_flags=(-e SKIP_AUTO_EXPORT=1 -e "RUN_ID=$(run_id_for_device "$device")")
   if [[ -n "$extra_env" ]]; then
     env_flags+=(-e "$extra_env")
   fi
@@ -155,7 +267,7 @@ stage_for_export() {
   # Copy device-tagged artifacts back to canonical names before export
   local device="$1"
   "${COMPOSE[@]}" exec -T app bash -c "
-    for f in baseline_results rag_results comparison_report; do
+    for f in baseline_results baseline_gguf_results rag_results rag_gguf_results comparison_report; do
       if [ -f data/processed/\${f}_${device}.json ]; then
         cp data/processed/\${f}_${device}.json data/processed/\${f}.json
       fi
@@ -170,6 +282,51 @@ export_results() {
   local run_id="$1"
   local device="${2:-cuda}"
   run_app "$device" scripts/07_export_results.py --run-id "$run_id"
+  assert_results_budget "after exporting ${run_id}"
+}
+
+compare_runtimes() {
+  "${COMPOSE[@]}" exec -T app python scripts/09_compare_runtimes.py "$@"
+  assert_results_budget "after 09_compare_runtimes"
+}
+
+# results/ is bind-mounted onto the host disk, so a snapshot that copies a parent of
+# results/latest/ writes the duplicated tree to the host for real — that filled a
+# 200GB volume and deadlocked WSL before any step failed. Fail loudly on both the
+# shape (results/ nested inside itself) and the size, rather than silently doubling.
+RESULTS_MAX_MB="${RESULTS_MAX_MB:-5000}"
+
+assert_results_budget() {
+  local when="${1:-at startup}" used_mb nested
+  # Any results/<anything>/results, not just results/latest/results: a wrong snapshot
+  # destination nests under whatever folder it was pointed at.
+  nested="$(compgen -G 'results/*/results' || true)"
+  if [[ -n "$nested" ]]; then
+    echo "ERROR: results/ is nested inside itself (${when}): ${nested//$'\n'/ }" >&2
+    echo "       A snapshot copied results/ into itself. Deleting it by hand is the" >&2
+    echo "       only way out: an export never removes a directory from results/latest/," >&2
+    echo "       so rerunning the pipeline stops here again. Check the folder, then:" >&2
+    echo "         rm -rf ${nested//$'\n'/ }" >&2
+    echo "       results/runs/ holds the real exports and is not affected." >&2
+    return 1
+  fi
+  # Nothing exported yet is fine; a results/ that exists but cannot be measured is not.
+  # Failing open here would let the runaway growth this guard exists to catch through
+  # exactly when the tree is too broken to walk.
+  [[ -d results ]] || return 0
+  if ! used_mb="$(du -sm results 2>/dev/null | cut -f1)" || [[ ! "$used_mb" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: could not measure results/ (${when})." >&2
+    echo "       du failed or returned no total — check permissions and ownership" >&2
+    echo "       (scripts/run_pipeline.sh reclaim_outputs chowns container-written files)." >&2
+    return 1
+  fi
+  if (( used_mb > RESULTS_MAX_MB )); then
+    echo "ERROR: results/ is ${used_mb}MB, over the ${RESULTS_MAX_MB}MB budget (${when})." >&2
+    echo "       Exports are text artifacts and should be a few MB per run. Check for" >&2
+    echo "       a model, cache, or nested copy under results/ before rerunning." >&2
+    echo "       Raise RESULTS_MAX_MB only once you know why it grew." >&2
+    return 1
+  fi
 }
 
 # Files the container writes land as root on a bind mount unless the app runs as
@@ -193,14 +350,21 @@ export APP_GID="${APP_GID:-$(id -g)}"
 if [[ "$APP_MEM_LIMIT" =~ ^([0-9]+)g$ ]] && (( BASH_REMATCH[1] < 9 )); then
   echo "WARNING: app container capped at ${APP_MEM_LIMIT}; Phi-3 needs ~9GB." >&2
   echo "         Expect the container to be killed, or set a smaller LLM_MODEL." >&2
+  if [[ "$(uname -s)" != "Linux" ]]; then
+    echo "         On Docker Desktop this cap comes from the VM's memory, not the" >&2
+    echo "         machine's: raise it in Settings > Resources > Memory." >&2
+  fi
 fi
 
+assert_results_budget "at startup"
+resolve_published_ports
 start_stack
 reclaim_outputs
 
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
 echo "  App budget: ${APP_MEM_LIMIT} RAM, ${APP_CPUS:-auto-detected} CPUs, uid ${APP_UID}"
+echo "  UIs: MLflow http://localhost:${MLFLOW_PORT}  Grafana http://localhost:${GRAFANA_PORT}"
 if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
   echo "  Mode: GPU-only evals (SKIP_CPU_EVAL=1)"
 else
@@ -247,16 +411,28 @@ run_app cuda scripts/01b_generate_qa_pairs.py
 
 if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   echo ""
-  echo "==> Step 2: Baseline evaluation [CPU]"
+  echo "==> Step 2: Baseline evaluation [CPU / Transformers]"
   run_app cpu scripts/02_baseline_evaluation.py
   snapshot baseline_results cpu
+  if [[ "$SKIP_GGUF" != "1" ]]; then
+    echo ""
+    echo "==> Step 2b: Baseline evaluation [CPU / GGUF llama.cpp]"
+    run_app_env cpu "LLM_RUNTIME=gguf" scripts/02_baseline_evaluation.py
+    snapshot baseline_gguf_results cpu
+  fi
 fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
-  echo "==> Step 2: Baseline evaluation [GPU]"
+  echo "==> Step 2: Baseline evaluation [GPU / Transformers]"
   run_app cuda scripts/02_baseline_evaluation.py
   snapshot baseline_results cuda
+  if [[ "$SKIP_GGUF" != "1" ]]; then
+    echo ""
+    echo "==> Step 2b: Baseline evaluation [GPU / GGUF llama.cpp]"
+    run_app_env cuda "LLM_RUNTIME=gguf" scripts/02_baseline_evaluation.py
+    snapshot baseline_gguf_results cuda
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -273,16 +449,28 @@ run_app cuda scripts/03_create_rag_db.py
 
 if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   echo ""
-  echo "==> Step 4: RAG evaluation [CPU]"
+  echo "==> Step 4: RAG evaluation [CPU / Transformers]"
   run_app cpu scripts/04_rag_evaluation.py
   snapshot rag_results cpu
+  if [[ "$SKIP_GGUF" != "1" ]]; then
+    echo ""
+    echo "==> Step 4b: RAG evaluation [CPU / GGUF llama.cpp]"
+    run_app_env cpu "LLM_RUNTIME=gguf" scripts/04_rag_evaluation.py
+    snapshot rag_gguf_results cpu
+  fi
 fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
-  echo "==> Step 4: RAG evaluation [GPU]"
+  echo "==> Step 4: RAG evaluation [GPU / Transformers]"
   run_app cuda scripts/04_rag_evaluation.py
   snapshot rag_results cuda
+  if [[ "$SKIP_GGUF" != "1" ]]; then
+    echo ""
+    echo "==> Step 4b: RAG evaluation [GPU / GGUF llama.cpp]"
+    run_app_env cuda "LLM_RUNTIME=gguf" scripts/04_rag_evaluation.py
+    snapshot rag_gguf_results cuda
+  fi
 fi
 
 # ---------------------------------------------------------------------------
@@ -340,6 +528,13 @@ if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   echo "==> Step 7a: Export CPU results → results/runs/${CPU_RUN_ID}"
   stage_for_export cpu
   export_results "$CPU_RUN_ID" cpu
+  if [[ "$SKIP_GGUF" != "1" && "$HAS_CUDA" -eq 0 ]]; then
+    echo ""
+    echo "==> Step 9: Transformers vs GGUF [CPU run]"
+    compare_runtimes \
+      --cpu-run-id "$CPU_RUN_ID" \
+      --out "results/runs/${TIMESTAMP}_transformers_vs_gguf"
+  fi
 fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
@@ -367,6 +562,21 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
       --cpu-run-id "$CPU_RUN_ID" \
       --cuda-run-id "$CUDA_RUN_ID" \
       --out "results/runs/${TIMESTAMP}_cpu_vs_cuda"
+    assert_results_budget "after 08_compare_devices"
+    if [[ "$SKIP_GGUF" != "1" ]]; then
+      echo ""
+      echo "==> Step 9: Transformers vs GGUF (same device pairs)"
+      compare_runtimes \
+        --cpu-run-id "$CPU_RUN_ID" \
+        --cuda-run-id "$CUDA_RUN_ID" \
+        --out "results/runs/${TIMESTAMP}_transformers_vs_gguf"
+    fi
+  elif [[ "$SKIP_GGUF" != "1" ]]; then
+    echo ""
+    echo "==> Step 9: Transformers vs GGUF [GPU run]"
+    compare_runtimes \
+      --cuda-run-id "$CUDA_RUN_ID" \
+      --out "results/runs/${TIMESTAMP}_transformers_vs_gguf"
   fi
 fi
 

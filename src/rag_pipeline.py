@@ -1,8 +1,8 @@
 """
-RAG pipeline: load a local LLM, embed PDF chunks, store vectors in Postgres/pgvector,
-retrieve relevant context, and generate answers.
+RAG pipeline: embed PDF chunks, retrieve context, generate with a swappable LLM engine.
 
-Exposes `hardware` (CUDA vs CPU) so callers can log and display device metrics.
+Generation is an ``LlmEngine`` from ``src.llm.factory`` (Transformers or GGUF today).
+Retrieval stays LangChain + pgvector regardless of which generator is plugged in.
 """
 
 from __future__ import annotations
@@ -21,50 +21,41 @@ from langchain_community.vectorstores import PGVector
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from mlflow.entities import SpanType
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 
 from src.cpu_runtime import configure_threads
 from src.hardware import HardwareInfo, detect_hardware
+from src.llm.factory import build_engine
+from src.llm.port import LlmEngine
+from src.llm.runtime import decode_settings, resolve_runtime
 from src.resource_metrics import memory_snapshot
 
 logger = logging.getLogger(__name__)
-
-
-def _sdpa_available() -> bool:
-    """
-    True once scaled-dot-product attention can be requested for Phi-3.
-
-    transformers 4.44 ships ``Phi3SdpaAttention`` but leaves ``_supports_sdpa``
-    False, so the loader refuses an implementation it already has. Eager attention
-    dominates CPU prefill: a 440-token prompt generating 64 tokens took 75s eager
-    against 36s with SDPA, for byte-identical output. Flip the flag when the class
-    is really present, and let callers fall back if a model rejects it anyway.
-    """
-    try:
-        from transformers.models.phi3 import modeling_phi3
-    except ImportError:
-        return False
-    if "sdpa" not in getattr(modeling_phi3, "PHI3_ATTENTION_CLASSES", {}):
-        return False
-    modeling_phi3.Phi3PreTrainedModel._supports_sdpa = True
-    return True
 
 
 class RAGPipeline:
     """
     End-to-end helper for:
       1. Splitting PDFs into chunks
-      2. Embedding chunks into Postgres (pgvector) via LangChain PGVector
+      2. Embedding chunks into Postgres (pgvector)
       3. Retrieving top-k similar chunks for a question
-      4. Generating an answer with a locally hosted Hugging Face model
+      4. Generating an answer with whatever ``LlmEngine`` the factory built
     """
 
-    def __init__(self, config: Dict, hardware: HardwareInfo | None = None):
+    def __init__(
+        self,
+        config: Dict,
+        hardware: HardwareInfo | None = None,
+        *,
+        runtime: str | None = None,
+        engine: LlmEngine | None = None,
+    ):
         self.config = config
         self.hardware = hardware or detect_hardware()
+        self.runtime = resolve_runtime(config, runtime)
         self.embeddings = None
         self.vector_store: Optional[PGVector] = None
-        self.llm = None
+        self.engine: LlmEngine | None = engine
+        self.llm = None  # alias of the engine for older callers
         self.tokenizer = None
         self.last_generation_meta: dict = {}
         self.last_retrieval_meta: dict = {}
@@ -73,13 +64,12 @@ class RAGPipeline:
         self.setup_components()
 
     def setup_components(self) -> None:
-        """Initialize embeddings and the text-generation LLM (no eager Postgres connect)."""
+        """Initialize embeddings and the configured LLM engine."""
         use_cuda = self.hardware.cuda_available
-        # Also worth doing on GPU hosts: tokenization, embeddings and BERTScore
-        # still run through torch's CPU pools.
         configure_threads()
         logger.info(
-            "Initializing pipeline on %s (cuda_available=%s)",
+            "Initializing pipeline runtime=%s device=%s cuda_available=%s",
+            self.runtime,
             self.hardware.device,
             use_cuda,
         )
@@ -90,20 +80,26 @@ class RAGPipeline:
                 model_name=self.config["embeddings"]["model"],
                 model_kwargs={"device": "cuda" if use_cuda else "cpu"},
             )
-
-            if self.config.get("llm", {}).get("fine_tuned_path"):
-                self.llm = self._load_fine_tuned_model()
-            else:
-                self.llm = self._load_base_model()
+            if self.engine is None:
+                self.engine = build_engine(self.config, self.hardware, runtime=self.runtime)
+            self.llm = self.engine
+            self.tokenizer = getattr(self.engine, "tokenizer", None)
 
             elapsed = time.perf_counter() - t0
+            engine_meta = self.engine.load_meta() if self.engine is not None else {}
             self.last_load_meta = {
                 "model_load_seconds": elapsed,
                 **memory_snapshot(),
+                **{
+                    k: v
+                    for k, v in engine_meta.items()
+                    if isinstance(v, (int, float)) and not isinstance(v, bool)
+                },
             }
-            span.set_outputs(dict(self.last_load_meta))
+            span.set_outputs({**dict(self.last_load_meta), **{k: str(v) for k, v in engine_meta.items()}})
         logger.info(
-            "Pipeline loaded in %.1fs rss=%.0fMiB gpu=%.0fMiB",
+            "Pipeline loaded runtime=%s in %.1fs rss=%.0fMiB gpu=%.0fMiB",
+            self.runtime,
             self.last_load_meta["model_load_seconds"],
             self.last_load_meta.get("peak_rss_mb", 0.0),
             self.last_load_meta.get("peak_gpu_mem_mb", 0.0),
@@ -116,151 +112,12 @@ class RAGPipeline:
         db = os.getenv("POSTGRES_DB", "rag_eval")
         return f"postgresql+psycopg2://{user}:{password}@{host}/{db}"
 
-    def _generation_kwargs(self) -> dict:
-        """Deterministic defaults for evaluation; override via config.llm."""
-        llm = self.config.get("llm", {})
-        do_sample = bool(llm.get("do_sample", False))
-        temperature = float(llm.get("temperature", 0.0))
-        kwargs: dict = {
-            "max_new_tokens": llm.get("max_new_tokens", 512),
-            "do_sample": do_sample,
-            "return_full_text": False,
-        }
-        # Hugging Face rejects temperature=0 with some pipelines; only pass when sampling
-        if do_sample:
-            kwargs["temperature"] = max(temperature, 1e-5)
-        return kwargs
-
-    def _cpu_dtype(self) -> torch.dtype:
-        """
-        Weight dtype for CPU inference.
-
-        bfloat16 is the default because it is the dtype Phi-3 ships in, and because
-        single-token decode is memory-bandwidth bound: halving the bytes read per
-        token roughly halves latency and keeps resident memory near 8GB instead of
-        the ~15GB an upcast float32 load needs. Set `llm.cpu_dtype: float32` for
-        hosts that prefer float32 (faster prompt prefill on AVX2-only CPUs).
-        """
-        name = str(self.config.get("llm", {}).get("cpu_dtype", "bfloat16"))
-        dtype = getattr(torch, name, None)
-        if not isinstance(dtype, torch.dtype):
-            logger.warning("Unknown llm.cpu_dtype %r; using bfloat16", name)
-            return torch.bfloat16
-        return dtype
-
-    def _model_load_kwargs(self) -> dict:
-        """Shared dtype / device / 8-bit policy for base and PEFT loads."""
-        use_cuda = self.hardware.cuda_available
-        kwargs: dict = {
-            "low_cpu_mem_usage": True,
-        }
-        if _sdpa_available():
-            kwargs["attn_implementation"] = "sdpa"
-        if use_cuda:
-            # fp16 on a single GPU. 8-bit (bitsandbytes) is disabled by default because
-            # current accelerate+transformers stacks often fail with:
-            #   ValueError: `.to` is not supported for 8-bit bitsandbytes models
-            # when dispatch_model runs after quantization. Phi-3-mini fits in 12GB fp16.
-            load_8bit = bool(self.config.get("llm", {}).get("load_in_8bit", False))
-            if load_8bit:
-                kwargs["quantization_config"] = BitsAndBytesConfig(load_in_8bit=True)
-            else:
-                kwargs["torch_dtype"] = torch.float16
-            kwargs["device_map"] = {"": 0}
-        else:
-            kwargs["torch_dtype"] = self._cpu_dtype()
-        return kwargs
-
-    def _from_pretrained(self, model_id: str):
-        """Load causal LM; fall back to fp16 if an 8-bit dispatch fails."""
-        model_kwargs = self._model_load_kwargs()
-        try:
-            return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
-        except ValueError as exc:
-            msg = str(exc)
-            if "scaled_dot_product_attention" in msg and "attn_implementation" in model_kwargs:
-                logger.warning("%s does not support SDPA; using the default attention", model_id)
-                model_kwargs.pop("attn_implementation")
-                return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
-            if "8-bit" not in msg and "4-bit" not in msg:
-                raise
-            logger.warning("Quantized load failed (%s); falling back to float16", exc)
-            return AutoModelForCausalLM.from_pretrained(
-                model_id,
-                torch_dtype=torch.float16,
-                device_map={"": 0},
-                low_cpu_mem_usage=True,
-            )
-
-    @mlflow.trace(name="load_base_model", span_type=SpanType.CHAIN)
-    def _load_base_model(self):
-        """
-        Load the base causal LM from Hugging Face.
-
-        When CUDA is available: float16 + optional 8-bit to fit smaller GPUs.
-        When CUDA is not available: bfloat16 on CPU (slower; metrics will show cuda_used=0).
-        """
-        model_id = self.config["llm"]["model"]
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-        use_cuda = self.hardware.cuda_available
-        load_8bit = bool(self.config.get("llm", {}).get("load_in_8bit", False)) and use_cuda
-
-        if use_cuda:
-            logger.info("Loading %s with CUDA (8-bit=%s)", model_id, load_8bit)
-        else:
-            logger.info("Loading %s on CPU (no CUDA)", model_id)
-
-        model = self._from_pretrained(model_id)
-        return pipeline(
-            "text-generation",
-            model=model,
-            tokenizer=self.tokenizer,
-            **self._generation_kwargs(),
-        )
-
-    @mlflow.trace(name="load_fine_tuned_model", span_type=SpanType.CHAIN)
-    def _load_fine_tuned_model(self):
-        """Load LoRA/full fine-tuned weights saved by scripts/05_fine_tune.py."""
-        model_path = self.config["llm"]["fine_tuned_path"]
-        use_cuda = self.hardware.cuda_available
-        logger.info(
-            "Loading fine-tuned model from %s on %s",
-            model_path,
-            "CUDA" if use_cuda else "CPU",
-        )
-
-        adapter_config = os.path.join(model_path, "adapter_config.json")
-        if os.path.isfile(adapter_config):
-            from peft import PeftModel
-
-            base_id = self.config["fine_tuning"]["base_model"]
-            self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-            # Same quantization / dtype policy as the base model path
-            base = self._from_pretrained(base_id)
-            model = PeftModel.from_pretrained(base, model_path)
-            return pipeline(
-                "text-generation",
-                model=model,
-                tokenizer=self.tokenizer,
-                **self._generation_kwargs(),
-            )
-
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        return pipeline(
-            "text-generation",
-            model=model_path,
-            tokenizer=self.tokenizer,
-            device=0 if use_cuda else -1,
-            **self._generation_kwargs(),
-        )
-
     @mlflow.trace(name="process_pdf", span_type=SpanType.PARSER)
     def process_pdf(self, pdf_path: str) -> List[Document]:
         """Read one PDF, split into overlapping chunks, return LangChain Documents."""
         loader = PyPDFLoader(pdf_path)
         documents = loader.load()
 
-        # Postgres rejects strings containing NUL (0x00); PDF extractors sometimes emit them.
         for doc in documents:
             if doc.page_content:
                 doc.page_content = doc.page_content.replace("\x00", " ")
@@ -293,11 +150,7 @@ class RAGPipeline:
 
     @mlflow.trace(name="create_vector_store", span_type=SpanType.RETRIEVER)
     def create_vector_store(self, documents_dir: str, *, replace: bool = True) -> None:
-        """
-        Embed every PDF in `documents_dir` and persist vectors in Postgres/pgvector.
-
-        When replace=True (default), clears the collection first to avoid duplicates.
-        """
+        """Embed every PDF in `documents_dir` and persist vectors in Postgres/pgvector."""
         all_documents: List[Document] = []
         doc_stats: List[dict] = []
         t0 = time.perf_counter()
@@ -392,88 +245,39 @@ class RAGPipeline:
         return context
 
     def _format_user_prompt(self, user_text: str) -> str:
-        """Apply the tokenizer chat template when available (e.g. Phi-3 Instruct)."""
-        tok = self.tokenizer
-        if tok is not None and getattr(tok, "chat_template", None):
-            try:
-                return tok.apply_chat_template(
-                    [{"role": "user", "content": user_text}],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("chat_template failed (%s); using raw prompt", exc)
-        return user_text
+        if self.engine is None:
+            return user_text
+        return self.engine.format_user_prompt(user_text)
 
-    def _count_tokens(self, text: str) -> int:
-        tok = self.tokenizer
-        if tok is None or not text:
-            return 0
-        try:
-            return len(tok.encode(text, add_special_tokens=False))
-        except Exception:  # noqa: BLE001
-            return 0
+    def _complete(self, full_prompt: str):
+        if self.engine is None:
+            raise RuntimeError("LLM engine not initialized")
+        return self.engine.complete(full_prompt, decode_settings(self.config))
 
-    def _complete(self, full_prompt: str) -> tuple[str, float]:
-        """Run the HF text-generation pipeline; return (answer, wall seconds)."""
-        start = time.perf_counter()
-        cuda_live = bool(self.hardware.cuda_available and torch.cuda.is_available())
-        if cuda_live:
-            torch.cuda.synchronize()
-
-        raw = self.llm(full_prompt)[0]["generated_text"]
-
-        if cuda_live:
-            torch.cuda.synchronize()
-        elapsed = time.perf_counter() - start
-
-        if raw.startswith(full_prompt):
-            answer = raw[len(full_prompt) :].strip()
-        else:
-            answer = raw.strip()
-        return answer, elapsed
-
-    def _record_generation_meta(self, full_prompt: str, answer: str, elapsed: float) -> None:
-        prompt_tokens = float(self._count_tokens(full_prompt))
-        completion_tokens = float(self._count_tokens(answer))
-        cuda_live = bool(self.hardware.cuda_available and torch.cuda.is_available())
+    def _record_generation_meta(self, full_prompt: str, result) -> None:
+        cuda_used = float(result.extra.get("cuda_used", 0.0))
         self.last_generation_meta = {
-            "generation_time": elapsed,
-            "cuda_used": 1.0 if cuda_live else 0.0,
-            "device": "cuda" if cuda_live else "cpu",
+            "generation_time": result.elapsed_seconds,
+            "cuda_used": cuda_used,
+            "device": "cuda" if cuda_used else "cpu",
             "prompt_chars": float(len(full_prompt)),
-            "response_chars": float(len(answer)),
-            "prompt_tokens": prompt_tokens,
-            "completion_tokens": completion_tokens,
-            "tokens_per_sec": (completion_tokens / elapsed) if elapsed > 0 else 0.0,
+            "response_chars": float(len(result.text)),
+            "prompt_tokens": result.prompt_tokens,
+            "completion_tokens": result.completion_tokens,
+            "tokens_per_sec": result.tokens_per_sec,
+            "runtime": self.runtime,
         }
 
     @mlflow.trace(name="judge", span_type=SpanType.LLM)
     def judge_response(self, prompt: str) -> str:
-        """
-        Extra LLM call for groundedness judging.
-
-        Does **not** update last_generation_meta so it cannot clobber the
-        answer-generation timings used for latency metrics.
-        """
+        """Extra LLM call for groundedness; does not clobber last_generation_meta."""
         full_prompt = self._format_user_prompt(prompt)
-        answer, _elapsed = self._complete(full_prompt)
-        return answer
+        result = self._complete(full_prompt)
+        return result.text
 
     @mlflow.trace(name="generate", span_type=SpanType.LLM)
     def generate_response(self, prompt: str, context: Optional[str] = None) -> str:
-        """
-        Generate text with the local LLM.
-
-        Records last_generation_meta including cuda_used, token counts, and
-        wall-clock time so callers can show CUDA vs CPU performance side by side.
-
-        `cuda_used` here means CUDA was available for this process (same as hardware
-        detection). Timing uses CUDA synchronize when available so wall time reflects
-        GPU compute, not just CPU-side queueing.
-
-        Live ``@mlflow.trace`` so GenAI spans match real retrieve/generate timing.
-        """
+        """Generate with the plugged-in engine; record last_generation_meta."""
         if context:
             user_text = self.config["prompts"]["rag_template"].format(
                 context=context,
@@ -483,16 +287,17 @@ class RAGPipeline:
             user_text = prompt
 
         full_prompt = self._format_user_prompt(user_text)
-        answer, elapsed = self._complete(full_prompt)
-        self._record_generation_meta(full_prompt, answer, elapsed)
+        result = self._complete(full_prompt)
+        self._record_generation_meta(full_prompt, result)
         logger.info(
-            "Generated %d chars (%d tok) in %.2fs on %s",
-            len(answer),
+            "Generated %d chars (%d tok) in %.2fs runtime=%s cuda_used=%s",
+            len(result.text),
             int(self.last_generation_meta.get("completion_tokens", 0)),
-            elapsed,
-            "CUDA" if self.last_generation_meta.get("cuda_used") else "CPU",
+            result.elapsed_seconds,
+            self.runtime,
+            bool(self.last_generation_meta.get("cuda_used")),
         )
-        return answer
+        return result.text
 
     def query_pdf(
         self,
@@ -513,13 +318,15 @@ class RAGPipeline:
         return {"question": question, "context": context, "response": response}
 
     def cleanup(self) -> None:
-        """
-        Drop the model so the next pipeline in the same process starts from a clean
-        budget. Step 06 builds three pipelines back to back; reference cycles inside
-        a transformers pipeline can otherwise keep the previous ~8GB copy alive until
-        the next collection and double peak memory.
-        """
+        """Drop embeddings + engine so the next pipeline in-process starts clean."""
         self.vector_store = None
+        # The sentence-transformer is small next to the LLM, but it is a second model
+        # holding VRAM on a GPU run, and leaving it resident contradicts what this
+        # method promises its callers.
+        self.embeddings = None
+        if self.engine is not None:
+            self.engine.cleanup()
+        self.engine = None
         self.llm = None
         self.tokenizer = None
         gc.collect()
