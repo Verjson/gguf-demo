@@ -1,0 +1,10 @@
+---
+description: Push every commit to origin without waiting to be asked
+alwaysApply: true
+---
+
+# Always push
+
+After creating commits on the current branch, push them to `origin` in the same turn. Do not leave local commits unpushed or ask whether to push.
+
+If the remote rejects a direct push (branch protection), open a PR from the branch instead of stopping at a local-only commit.
