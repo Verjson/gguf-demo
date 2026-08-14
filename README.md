@@ -24,8 +24,8 @@ Then open:
 
 | What | Where |
 |------|--------|
-| **Results (start here)** | [`results/latest/by_question.md`](results/latest/by_question.md) |
-| Device summary | `results/latest/summary.md` (or `results/runs/*_cpu_vs_cuda/`) |
+| **Results (start here)** | [`results/latest/README.md`](results/latest/README.md) |
+| Per-question table | [`results/latest/by_question.md`](results/latest/by_question.md) |
 | Grafana | http://localhost:3000 (admin / admin) → **By Question** |
 | MLflow GenAI traces | http://localhost:5000 → **GenAI** → **gguf-demo** → Traces |
 | MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
@@ -322,7 +322,8 @@ fine_tuned + RAG  → often best quality_score
 ### Visualization: by question
 
 ```
-results/latest/by_question.md
+results/latest/README.md          ← start here (summary + hardware)
+results/latest/by_question.md     ← every question, side by side
 ```
 
 Also: `by_question.json`, `by_question_quality.csv`, `by_question_latency.csv`.

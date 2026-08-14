@@ -374,12 +374,17 @@ def cpu_budget(allow_calibration: bool | None = None) -> int:
             logger.warning("Ignoring invalid %s=%r", CPU_BUDGET_ENV, override)
 
     ceiling = cpu_ceiling()
-    if ceiling >= MIN_CORES_TO_CALIBRATE and allow_calibration:
+    if ceiling >= MIN_CORES_TO_CALIBRATE:
         try:
             signature = _signature(ceiling)
+            # Reading the cache is not calibrating. Export and reporting processes
+            # ask for no measurement but must still report the budget a run used.
             cached = _load_cached(signature)
             if cached:
                 _budget_cache, _budget_source = min(cached, ceiling), "cached"
+                return _budget_cache
+            if not allow_calibration:
+                _budget_cache, _budget_source = heuristic_budget(), "heuristic"
                 return _budget_cache
             logger.info("Measuring the best thread count for this machine once...")
             budget, timings = calibrate(ceiling)

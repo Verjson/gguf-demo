@@ -24,6 +24,11 @@ SKIP_RANK: frozenset[str] = frozenset(
         "cuda_used",
         "cuda_device_count",
         "cuda_available",
+        "cpu_threads",
+        "cpu_logical",
+        "peak_rss_mb",
+        "peak_gpu_mem_mb",
+        "model_load_seconds",
     }
 )
 

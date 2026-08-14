@@ -72,11 +72,13 @@ AutoModelForCausalLM.from_pretrained('${LLM_MODEL}')"; \
 SentenceTransformer('${EMBED_MODEL}')"; \
     fi
 
-RUN mkdir -p /app/data/papers /app/data/processed /app/models
+RUN mkdir -p /app/data/papers /app/data/processed /app/models \
+        /app/.cache/huggingface /tmp/prometheus_multiproc /mlflow-artifacts \
+    && chmod 1777 /tmp/prometheus_multiproc /mlflow-artifacts
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
-ENV HF_HOME=/root/.cache/huggingface
+ENV HF_HOME=/app/.cache/huggingface
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
 ENV MLFLOW_EXPERIMENT_NAME=gguf-demo
 

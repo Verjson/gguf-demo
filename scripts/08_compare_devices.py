@@ -19,7 +19,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,6 +28,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
 from src.question_view import build_question_view
+from src.run_results import refresh_latest
 
 
 def load_comparison(run_dir: Path) -> dict:
@@ -50,6 +50,20 @@ def load_manifest(run_dir: Path) -> dict:
     return {}
 
 
+def _device_line(run_dir: Path, device: str) -> str:
+    """One-line description of the hardware a run used, from its manifest."""
+    try:
+        hw = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["hardware"]
+    except (OSError, ValueError, KeyError):
+        return "unknown"
+    if device == "cuda":
+        return str(hw.get("cuda_device_name") or "unknown")
+    return (
+        f"{hw.get('cpu_model', 'unknown')} "
+        f"({hw.get('cpu_threads', '?')} of {hw.get('cpu_logical', '?')} threads)"
+    )
+
+
 def write_aggregate_summary(
     out_dir: Path,
     cpu_run_id: str,
@@ -67,7 +81,10 @@ def write_aggregate_summary(
         "retrieval_time",
         "generation_time",
         "time_to_response",
+        "tokens_per_sec",
         "speed_chars_per_sec",
+        "peak_rss_mb",
+        "cpu_threads",
         "cuda_used",
     ]
     lines = [
@@ -75,6 +92,9 @@ def write_aggregate_summary(
         "",
         f"- **Generated:** {datetime.now(timezone.utc).isoformat()}",
         f"- **Per-question view:** [by_question.md](./by_question.md) ← start here",
+        # A speedup figure is only meaningful next to the two machines behind it.
+        f"- **CPU:** {_device_line(out_dir.parent / cpu_run_id, 'cpu')}",
+        f"- **GPU:** {_device_line(out_dir.parent / cuda_run_id, 'cuda')}",
         "",
         "Higher quality metrics are better. **Lower `time_to_response` is better.**",
         "`time_to_response` = `retrieval_time` + `generation_time` (end-to-end wait for an answer).",
@@ -206,10 +226,7 @@ def main() -> None:
             mlflow.log_artifact(str(out_dir / "cpu_vs_cuda.json"))
 
     # Point latest at this combined folder (best single place to look)
-    latest = root / "results" / "latest"
-    if latest.exists():
-        shutil.rmtree(latest)
-    shutil.copytree(out_dir, latest)
+    refresh_latest(out_dir, root / "results" / "latest")
 
     print("\n" + "=" * 72)
     print("QUESTION-CENTRIC VIEW READY")
@@ -217,7 +234,7 @@ def main() -> None:
     print(f"  Open: {out_dir / 'by_question.md'}")
     print(f"  Columns: {', '.join(pivot.get('columns', []))}")
     print(f"  Questions: {len(pivot.get('questions', []))}")
-    print(f"  Also: results/latest/by_question.md")
+    print(f"  Also: results/latest/README.md")
     print("=" * 72)
 
 

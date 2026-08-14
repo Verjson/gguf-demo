@@ -26,7 +26,7 @@ from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 from src.hardware import HardwareInfo, detect_hardware
 from src.metrics_store import MetricsStore
-from src.resource_metrics import percentile
+from src.resource_metrics import memory_snapshot, percentile
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +72,17 @@ CUDA_AVAILABLE = Gauge(
 CUDA_DEVICE_COUNT = Gauge(
     "cuda_device_count",
     "Number of CUDA devices",
+    multiprocess_mode="livemostrecent",
+)
+CPU_THREADS = Gauge(
+    "cpu_threads",
+    "Thread budget configured for this process",
+    multiprocess_mode="livemostrecent",
+)
+PEAK_RSS_MB = Gauge(
+    "peak_rss_mb",
+    "Peak resident set size in MiB",
+    ["device"],
     multiprocess_mode="livemostrecent",
 )
 RETRIEVAL_HIT = Gauge(
@@ -215,6 +226,7 @@ class MLflowTracker:
 
         CUDA_AVAILABLE.set(1.0 if self.hardware.cuda_available else 0.0)
         CUDA_DEVICE_COUNT.set(float(self.hardware.cuda_device_count))
+        CPU_THREADS.set(float(self.hardware.cpu_threads))
         logger.info(
             "Tracking stage=%s experiment=%s uri=%s | %s",
             self.stage,
@@ -343,6 +355,7 @@ class MLflowTracker:
 
         merged = dict(metrics)
         merged.update(self.hardware.as_metrics())
+        merged.update(memory_snapshot())
         quality_score = calculate_quality_score(merged)
         merged["quality_score"] = quality_score
         numeric = _numeric_metrics(merged)
@@ -361,6 +374,8 @@ class MLflowTracker:
             duration = merged.get("time_to_response") or merged.get("generation_time")
             if duration is not None:
                 EVALUATION_DURATION.labels(device=device, approach=approach).observe(duration)
+        if "peak_rss_mb" in merged:
+            PEAK_RSS_MB.labels(device=device).set(merged["peak_rss_mb"])
 
         if self._mlflow_ok:
             if not skip_assessments:

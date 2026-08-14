@@ -28,6 +28,11 @@ class HardwareInfo:
     cuda_capability: str | None
     torch_version: str
     cuda_version: str | None
+    # A CPU run's seconds mean nothing without the machine behind them, and the
+    # thread count is measured per machine rather than fixed — so record both.
+    cpu_model: str
+    cpu_logical: int
+    cpu_threads: int
 
     def as_params(self) -> dict[str, Any]:
         """Flat dict suitable for MLflow params / Prometheus labels."""
@@ -39,20 +44,26 @@ class HardwareInfo:
             "cuda_capability": self.cuda_capability or "none",
             "torch_version": self.torch_version,
             "cuda_version": self.cuda_version or "none",
+            "cpu_model": self.cpu_model,
+            "cpu_logical": self.cpu_logical,
+            "cpu_threads": self.cpu_threads,
         }
 
     def as_metrics(self) -> dict[str, float]:
         """
-        Numeric metrics so CUDA vs CPU shows up in MLflow charts.
+        Numeric metrics so CUDA vs CPU shows up in MLflow charts and CSV exports.
 
         `cuda_used` means CUDA was *available* to this process (1.0 / 0.0),
         not a guarantee that every kernel ran on the GPU. Generation timing
         still uses cuda.synchronize() when available so wall clocks reflect
-        GPU compute.
+        GPU compute. `cpu_threads` is the budget the process actually configured,
+        which is what a CPU run's seconds are measured against.
         """
         return {
             "cuda_used": 1.0 if self.cuda_available else 0.0,
             "cuda_device_count": float(self.cuda_device_count),
+            "cpu_threads": float(self.cpu_threads),
+            "cpu_logical": float(self.cpu_logical),
         }
 
     def summary(self) -> str:
@@ -61,7 +72,10 @@ class HardwareInfo:
                 f"CUDA ON | device={self.cuda_device_name} "
                 f"| count={self.cuda_device_count} | capability={self.cuda_capability}"
             )
-        return "CUDA OFF | running on CPU"
+        return (
+            f"CUDA OFF | running on CPU | {self.cpu_model} "
+            f"| {self.cpu_threads}/{self.cpu_logical} threads"
+        )
 
 
 def _env_forces_cpu() -> bool:
@@ -101,6 +115,11 @@ def detect_hardware() -> HardwareInfo:
         major, minor = torch.cuda.get_device_capability(0)
         capability = f"{major}.{minor}"
 
+    # Never measure from here: detection runs in export and reporting processes too,
+    # and cpu_budget() only reads the override, the per-machine cache, or the
+    # heuristic unless a caller explicitly asks it to calibrate.
+    from src.cpu_runtime import allowed_cpus, cpu_budget, cpu_model
+
     info = HardwareInfo(
         cuda_available=cuda_available,
         device="cuda" if cuda_available else "cpu",
@@ -109,6 +128,9 @@ def detect_hardware() -> HardwareInfo:
         cuda_capability=capability,
         torch_version=torch.__version__,
         cuda_version=getattr(torch.version, "cuda", None),
+        cpu_model=cpu_model(),
+        cpu_logical=len(allowed_cpus()),
+        cpu_threads=cpu_budget(allow_calibration=False),
     )
     logger.info("Hardware: %s", info.summary())
     return info

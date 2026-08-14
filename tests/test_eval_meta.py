@@ -51,3 +51,24 @@ def test_llm_run_params_defaults():
     assert params["max_new_tokens"] == 128
     assert params["cpu_dtype"] == "bfloat16"
     assert params["load_in_8bit"] is False
+
+
+def test_hardware_as_metrics_includes_cpu_budget():
+    from src.hardware import HardwareInfo
+
+    info = HardwareInfo(
+        cuda_available=False,
+        device="cpu",
+        cuda_device_count=0,
+        cuda_device_name=None,
+        cuda_capability=None,
+        torch_version="2.13.0",
+        cuda_version=None,
+        cpu_model="Intel i9",
+        cpu_logical=32,
+        cpu_threads=28,
+    )
+    metrics = info.as_metrics()
+    assert metrics["cuda_used"] == 0.0
+    assert metrics["cpu_threads"] == 28.0
+    assert metrics["cpu_logical"] == 32.0

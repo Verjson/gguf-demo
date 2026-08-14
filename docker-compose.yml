@@ -88,7 +88,11 @@ services:
       - ./prompts:/app/prompts
       - ./results:/app/results
       - ./pyproject.toml:/app/pyproject.toml
-      - huggingface_cache:/root/.cache/huggingface
+      - huggingface_cache:/app/.cache/huggingface
+      # Same artifact store the MLflow server uses. The tracking server advertises
+      # a file:// root, so the app writes artifacts itself rather than uploading.
+      - mlflow_data:/mlflow-artifacts
+    user: "${APP_UID:-1000}:${APP_GID:-1000}"
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       MLFLOW_EXPERIMENT_NAME: gguf-demo
@@ -99,6 +103,8 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
       METRICS_PORT: "8000"
+      HF_HOME: /app/.cache/huggingface
+      HOME: /app
       # Thread pools are sized at runtime from the CPU budget this container is
       # actually granted (src/cpu_runtime.py) rather than from the host's core
       # count, so the demo behaves the same on a laptop and on a slice of a

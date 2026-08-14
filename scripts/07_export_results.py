@@ -4,7 +4,7 @@ Step 7 — Export run results for git commit.
 
 Snapshots processed artifacts + Postgres metrics into:
   results/runs/<YYYY-MM-DD_HHMMSS>/
-  results/latest/          (always the most recent export)
+  results/latest/README.md   (always the most recent export's summary)
 
 Commit the results/ folder to track improvement over time:
   git add results/

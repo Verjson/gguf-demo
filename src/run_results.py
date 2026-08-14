@@ -68,6 +68,10 @@ METRICS_COLUMNS = (
     "tokens_per_sec",
     "context_chars",
     "n_chunks_retrieved",
+    "cpu_threads",
+    "cpu_logical",
+    "peak_rss_mb",
+    "peak_gpu_mem_mb",
 )
 
 
@@ -118,8 +122,23 @@ def _postgres_conn_kwargs() -> dict[str, str]:
     }
 
 
-def export_metrics_csv(dest: Path) -> int:
-    """Dump evaluation_metrics table to CSV; return row count."""
+def export_metrics_csv(
+    dest: Path,
+    device: str | None = None,
+    since: datetime | None = None,
+    fill: dict[str, Any] | None = None,
+) -> int:
+    """
+    Dump the evaluation_metrics table to CSV; return the row count.
+
+    `device` and `since` scope the dump to one run. Without them a run folder ends
+    up holding every row the database ever collected — a "cpu" export carrying the
+    previous GPU run's rows, which is worse than useless when comparing devices.
+    """
+    from src.metrics_store import MetricsStore
+
+    MetricsStore()  # add any new columns before SELECT lists them
+
     sql = """
         SELECT timestamp, approach, device, cuda_available, model_name, question,
                rouge1, rouge2, "rougeL", bert_score, retrieval_hit_at_k, faithfulness,
@@ -127,15 +146,26 @@ def export_metrics_csv(dest: Path) -> int:
                generation_time, retrieval_time, time_to_response, speed_chars_per_sec,
                cuda_used, domain_relevance, coherence,
                prompt_chars, response_chars, prompt_tokens, completion_tokens,
-               tokens_per_sec, context_chars, n_chunks_retrieved
+               tokens_per_sec, context_chars, n_chunks_retrieved,
+               cpu_threads, cpu_logical, peak_rss_mb, peak_gpu_mem_mb
         FROM evaluation_metrics
-        ORDER BY timestamp DESC
     """
+    where, params = [], []
+    if device:
+        where.append("device = %s")
+        params.append(device)
+    if since:
+        where.append("timestamp >= %s")
+        params.append(since)
+    if where:
+        sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY timestamp DESC"
+
     rows: list[tuple] = []
     try:
         with psycopg2.connect(**_postgres_conn_kwargs()) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql)
+                cur.execute(sql, params)
                 rows = cur.fetchall()
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not export Postgres metrics: %s", exc)
@@ -145,7 +175,12 @@ def export_metrics_csv(dest: Path) -> int:
         writer = csv.writer(f)
         writer.writerow(METRICS_COLUMNS)
         for row in rows:
-            writer.writerow(row)
+            values = list(row)
+            if fill:
+                for index, column in enumerate(METRICS_COLUMNS):
+                    if index < len(values) and values[index] in (None, "") and column in fill:
+                        values[index] = fill[column]
+            writer.writerow(values)
     return len(rows)
 
 
@@ -163,6 +198,10 @@ def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
         "faithfulness",
         "quality_score",
         "generation_time",
+        "time_to_response",
+        "tokens_per_sec",
+        "peak_rss_mb",
+        "cpu_threads",
         "cuda_used",
     ]
     all_keys = set()
@@ -209,14 +248,37 @@ def _write_summary_md(
     comparison: dict[str, dict[str, float]] | None,
 ) -> None:
     hw = manifest.get("hardware", {})
+    device = hw.get("device", "unknown")
     lines = [
         f"# Run summary — {manifest['run_id']}",
         "",
         f"- **Exported:** {manifest['exported_at']}",
-        f"- **Device:** {hw.get('device', 'unknown')} (cuda_available={hw.get('cuda_available')})",
-        f"- **GPU:** {hw.get('cuda_device_name', 'n/a')}",
+        f"- **Device:** {device}",
+    ]
+    # Describe the hardware that produced these seconds. A CPU run's timings are
+    # meaningless without the CPU and the thread count behind them.
+    if device == "cuda":
+        lines.append(f"- **GPU:** {hw.get('cuda_device_name', 'n/a')}")
+    else:
+        lines.append(
+            f"- **CPU:** {hw.get('cpu_model', 'unknown')} "
+            f"({hw.get('cpu_threads', '?')} of {hw.get('cpu_logical', '?')} threads)"
+        )
+    lines += [
         f"- **Model:** {manifest.get('llm_model', 'n/a')}",
-        f"- **Postgres metric rows:** {manifest.get('postgres_rows', 0)}",
+        f"- **Metric rows (this run):** {manifest.get('postgres_rows', 0)}",
+    ]
+    resources = manifest.get("resources") or {}
+    rss = resources.get("peak_rss_mb")
+    load_s = resources.get("model_load_seconds")
+    if isinstance(rss, (int, float)) and rss > 0:
+        lines.append(f"- **Peak RSS:** {rss:.0f} MiB")
+    gpu_mem = resources.get("peak_gpu_mem_mb")
+    if isinstance(gpu_mem, (int, float)) and gpu_mem > 0:
+        lines.append(f"- **Peak GPU memory:** {gpu_mem:.0f} MiB")
+    if isinstance(load_s, (int, float)) and load_s > 0:
+        lines.append(f"- **Model load:** {load_s:.1f}s")
+    lines += [
         "",
         "## How to read improvements",
         "",
@@ -259,6 +321,134 @@ def _write_summary_md(
     dest.write_text("\n".join(lines), encoding="utf-8")
 
 
+_LATEST_README_INTRO = """<!-- Generated by the pipeline: edits here are overwritten. -->
+# Latest results — {title}
+
+Copied from [`results/runs/{source}/`]({source_link}), which is the permanent home of
+this export. Anything in `results/latest/` is replaced by the next run.
+
+{files}
+---
+
+"""
+
+
+def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
+    """
+    Replace results/latest/ with `source_dir`, led by a README.
+
+    The README is the folder's summary rather than a pointer to one, so it is what
+    GitHub and most file browsers show first, and it names the run it came from.
+    """
+    latest_dir = Path(latest_dir or LATEST_DIR)
+    if latest_dir.exists():
+        shutil.rmtree(latest_dir)
+    shutil.copytree(source_dir, latest_dir)
+
+    summary = latest_dir / "summary.md"
+    body = summary.read_text(encoding="utf-8") if summary.is_file() else ""
+    # summary.md's own H1 would collide with the README's, and keeping both files
+    # would leave two copies of the same text to drift apart.
+    body = "\n".join(line for line in body.splitlines() if not line.startswith("# "))
+    summary.unlink(missing_ok=True)
+
+    interesting = {
+        "by_question.md": "every question, side by side across approaches",
+        "cpu_vs_cuda.json": "aggregate CPU vs GPU deltas, machine readable",
+        "evaluation_metrics.csv": "one row per question, straight from Postgres",
+        "manifest.json": "what ran, on which hardware",
+        "comparison_report.json": "full per-approach comparison",
+        "config.yaml": "the config this run used",
+    }
+    listed = [
+        f"- [`{name}`](./{name}) — {why}"
+        for name, why in interesting.items()
+        if (latest_dir / name).is_file()
+    ]
+    files = "**In this folder**\n\n" + "\n".join(listed) + "\n\n" if listed else ""
+
+    (latest_dir / "README.md").write_text(
+        _LATEST_README_INTRO.format(
+            title=source_dir.name,
+            source=source_dir.name,
+            source_link=f"../runs/{source_dir.name}/",
+            files=files,
+        )
+        + body.lstrip("\n"),
+        encoding="utf-8",
+    )
+    return latest_dir
+
+
+def _run_scope(run_id: str) -> tuple[str | None, datetime | None]:
+    """
+    Device and start time encoded in a pipeline run id, e.g. ``2026-08-14_032911_cpu``.
+
+    Returns ``(None, None)`` components for ids that do not follow that shape, which
+    simply means the export is not scoped rather than that it fails.
+    """
+    device = None
+    stamp = run_id
+    for suffix in ("cpu", "cuda"):
+        if run_id.endswith(f"_{suffix}"):
+            device, stamp = suffix, run_id[: -len(suffix) - 1]
+            break
+    try:
+        started = datetime.strptime(stamp, "%Y-%m-%d_%H%M%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        started = None
+    return device, started
+
+
+def _hardware_for_run(hardware: HardwareInfo, device: str | None) -> dict[str, Any]:
+    """
+    Machine facts, corrected to the device the run actually used.
+
+    The export can run in a process that still sees the GPU — that is how a CPU run
+    came to report an RTX 4080 as its device — so the run id wins over detection.
+    """
+    params = hardware.as_params()
+    if not device or device == hardware.device:
+        return params
+    params["device"] = device
+    if device == "cpu":
+        params.update(
+            cuda_available=False,
+            cuda_device_count=0,
+            cuda_device_name="none",
+            cuda_capability="none",
+        )
+    return params
+
+
+def _stamp_copied_json(run_dir: Path, hardware: dict[str, Any]) -> dict[str, Any]:
+    """
+    Put this run's hardware on copied stage JSON, and collect any load-time
+    resource snapshot those files already carry.
+
+    Stage JSON written before HardwareInfo recorded cpu_model still says the
+    export process's GPU was the device. Overwriting the top-level hardware
+    object is cheap and stops a CPU folder from advertising an RTX 4080.
+    """
+    resources: dict[str, Any] = {}
+    for name in PROCESSED_ARTIFACTS:
+        path = run_dir / name
+        if path.suffix != ".json" or not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        data["hardware"] = hardware
+        found = data.get("resources")
+        if isinstance(found, dict) and found:
+            resources = found
+        path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    return resources
+
+
 def export_run(
     run_id: str | None = None,
     repo_root: str | Path | None = None,
@@ -278,19 +468,30 @@ def export_run(
     if run_id is None:
         run_id = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
 
+    run_device, run_started = _run_scope(run_id)
     hardware = detect_hardware()
     run_dir = runs_dir / run_id
     if run_dir.exists():
         shutil.rmtree(run_dir)
     run_dir.mkdir(parents=True)
 
-    # Copy processed artifacts
+    # Copy processed artifacts, preferring this run's device-tagged snapshot. The
+    # pipeline writes both baseline_results_cpu.json and baseline_results.json, and
+    # the untagged one belongs to whichever device ran last — so exporting a CPU run
+    # from the untagged copy silently fills the folder with the GPU's answers.
     copied = []
     for name in PROCESSED_ARTIFACTS:
         src = processed_dir / name
+        if run_device:
+            tagged = processed_dir / f"{Path(name).stem}_{run_device}{Path(name).suffix}"
+            if tagged.is_file():
+                src = tagged
         if src.is_file():
             shutil.copy2(src, run_dir / name)
             copied.append(name)
+
+    hw_params = _hardware_for_run(hardware, run_device)
+    resources = _stamp_copied_json(run_dir, hw_params)
 
     # Config + prompts snapshot
     if config_path.is_file():
@@ -302,8 +503,15 @@ def export_run(
         shutil.copy2(prompts_src, run_dir / "evaluation_prompts.txt")
         copied.append("evaluation_prompts.txt")
 
-    # Postgres CSV
-    n_rows = export_metrics_csv(run_dir / "evaluation_metrics.csv")
+    n_rows = export_metrics_csv(
+        run_dir / "evaluation_metrics.csv",
+        device=run_device,
+        since=run_started,
+        fill={
+            "cpu_threads": hw_params.get("cpu_threads"),
+            "cpu_logical": hw_params.get("cpu_logical"),
+        },
+    )
     if n_rows:
         copied.append("evaluation_metrics.csv")
 
@@ -329,7 +537,8 @@ def export_run(
     manifest = {
         "run_id": run_id,
         "exported_at": datetime.now(timezone.utc).isoformat(),
-        "hardware": hardware.as_params(),
+        "hardware": hw_params,
+        "resources": resources,
         "llm_model": llm_model,
         "artifacts_copied": copied,
         "postgres_rows": n_rows,
@@ -350,10 +559,7 @@ def export_run(
     except Exception as exc:  # noqa: BLE001
         logger.warning("Could not build by_question view: %s", exc)
 
-    # Refresh results/latest/
-    if latest_dir.exists():
-        shutil.rmtree(latest_dir)
-    shutil.copytree(run_dir, latest_dir)
+    refresh_latest(run_dir, latest_dir)
 
     logger.info("Exported run to %s (%d artifacts)", run_dir, len(copied))
     return run_dir

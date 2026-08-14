@@ -43,6 +43,10 @@ METRIC_COLUMNS = (
     "tokens_per_sec",
     "context_chars",
     "n_chunks_retrieved",
+    "cpu_threads",
+    "cpu_logical",
+    "peak_rss_mb",
+    "peak_gpu_mem_mb",
 )
 
 # Safe to re-run; matches scripts/migrate_metrics_table.sql
@@ -91,6 +95,10 @@ _ENSURE_SCHEMA_STATEMENTS = (
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS tokens_per_sec FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS context_chars FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS n_chunks_retrieved FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cpu_threads FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cpu_logical FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_rss_mb FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_gpu_mem_mb FLOAT",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC)",

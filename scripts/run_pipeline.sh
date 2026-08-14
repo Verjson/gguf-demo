@@ -164,22 +164,43 @@ stage_for_export() {
 }
 
 export_results() {
+  # export_results <run_id> <cpu|cuda>. The device matters: the export records the
+  # hardware it detects, so exporting a CPU run from a GPU-visible process is how
+  # a CPU run came to report an RTX 4080 as its device.
   local run_id="$1"
-  "${COMPOSE[@]}" exec -T app python scripts/07_export_results.py --run-id "$run_id"
+  local device="${2:-cuda}"
+  run_app "$device" scripts/07_export_results.py --run-id "$run_id"
+}
+
+# Files the container writes land as root on a bind mount unless the app runs as
+# the host user. Compose sets user: $APP_UID:$APP_GID; this chown covers the
+# Hugging Face cache volume (created as root on first pull) and anything that
+# still slipped through.
+reclaim_outputs() {
+  local uid gid
+  uid="${APP_UID:-$(id -u)}"
+  gid="${APP_GID:-$(id -g)}"
+  "${COMPOSE[@]}" exec -T -u 0 app chown -R "${uid}:${gid}" \
+    /app/results /app/data /app/models /app/.cache /tmp/prometheus_multiproc \
+    /mlflow-artifacts \
+    2>/dev/null || true
 }
 
 APP_MEM_LIMIT="${APP_MEM_LIMIT:-$(default_mem_limit_gb)g}"
 export APP_MEM_LIMIT
+export APP_UID="${APP_UID:-$(id -u)}"
+export APP_GID="${APP_GID:-$(id -g)}"
 if [[ "$APP_MEM_LIMIT" =~ ^([0-9]+)g$ ]] && (( BASH_REMATCH[1] < 9 )); then
   echo "WARNING: app container capped at ${APP_MEM_LIMIT}; Phi-3 needs ~9GB." >&2
   echo "         Expect the container to be killed, or set a smaller LLM_MODEL." >&2
 fi
 
 start_stack
+reclaim_outputs
 
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
-echo "  App budget: ${APP_MEM_LIMIT} RAM, ${APP_CPUS:-auto-detected} CPUs"
+echo "  App budget: ${APP_MEM_LIMIT} RAM, ${APP_CPUS:-auto-detected} CPUs, uid ${APP_UID}"
 if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
   echo "  Mode: GPU-only evals (SKIP_CPU_EVAL=1)"
 else
@@ -318,7 +339,7 @@ if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   echo ""
   echo "==> Step 7a: Export CPU results → results/runs/${CPU_RUN_ID}"
   stage_for_export cpu
-  export_results "$CPU_RUN_ID"
+  export_results "$CPU_RUN_ID" cpu
 fi
 
 if [[ "$HAS_CUDA" -eq 1 ]]; then
@@ -337,7 +358,7 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   echo ""
   echo "==> Step 7b: Export CUDA results → results/runs/${CUDA_RUN_ID}"
   stage_for_export cuda
-  export_results "$CUDA_RUN_ID"
+  export_results "$CUDA_RUN_ID" cuda
 
   if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
     echo ""
@@ -348,6 +369,8 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
       --out "results/runs/${TIMESTAMP}_cpu_vs_cuda"
   fi
 fi
+
+reclaim_outputs
 
 echo ""
 echo "========================================================================"
@@ -361,8 +384,8 @@ if [[ "$HAS_CUDA" -eq 1 ]]; then
   if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
     echo "  Combined    : results/runs/${TIMESTAMP}_cpu_vs_cuda/"
   fi
-  echo "  ★ Open first: results/latest/by_question.md"
 fi
+echo "  ★ Open first: results/latest/README.md"
 echo ""
 echo "Review then commit:"
 echo "  git add results/"

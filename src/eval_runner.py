@@ -29,6 +29,7 @@ from src.latency import (
 from src.mlflow_tracker import MLflowTracker, calculate_quality_score
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
+from src.resource_metrics import memory_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +234,7 @@ def run_stage_evaluation(
             if use_rag:
                 attach_retrieval_meta(metrics, row)
             metrics.update(hardware.as_metrics())
+            metrics.update(memory_snapshot())
             metrics["quality_score"] = calculate_quality_score(metrics)
 
             tracker.log_evaluation(
@@ -311,6 +313,7 @@ def _manual_fallback(
             if use_rag:
                 attach_retrieval_meta(metrics, pipeline.last_retrieval_meta)
             metrics.update(hardware.as_metrics())
+            metrics.update(memory_snapshot())
             tracker.log_evaluation(
                 approach=approach,
                 question=question,

@@ -70,6 +70,7 @@ def main() -> None:
         results,
         hardware,
         config.get("paths", {}).get("processed_dir", "/app/data/processed"),
+        extra={"resources": dict(pipeline.last_load_meta)},
     )
 
     pipeline.cleanup()
