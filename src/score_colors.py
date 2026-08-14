@@ -29,6 +29,12 @@ SKIP_RANK: frozenset[str] = frozenset(
         "peak_rss_mb",
         "peak_gpu_mem_mb",
         "model_load_seconds",
+        "prompt_chars",
+        "prompt_tokens",
+        "response_chars",
+        "completion_tokens",
+        "context_chars",
+        "n_chunks_retrieved",
     }
 )
 
@@ -51,9 +57,8 @@ def rank_scores(
     """
     Return ``best`` / ``mid`` / ``worst`` / ``None`` per value.
 
-    - Only numeric values participate; ``None`` stays unranked.
-    - Single distinct numeric → no coloring.
-    - Ties share the same rank (e.g. two bests).
+    Values within a small absolute (0–1 scores) or relative (seconds, tok/s)
+    band are treated as a tie so a 0.001 quality wobble is not painted red.
     """
     indexed = [(i, float(v)) for i, v in enumerate(values) if v is not None]
     ranks: list[str | None] = [None] * len(values)
@@ -61,17 +66,25 @@ def rank_scores(
         return ranks
 
     nums = [v for _, v in indexed]
-    if max(nums) == min(nums):
+    hi, lo = max(nums), min(nums)
+    span = hi - lo
+    # 0–1 scores: 0.015 is measurement noise. Seconds / tok/s: 2% relative.
+    eps = 0.015 if hi <= 1.5 else 0.02 * max(abs(hi), abs(lo), 1e-9)
+    if span <= eps:
         return ranks
 
+    # Values within the noise band of the extreme share that rank so RAG 0.0952
+    # and fine-tuned+RAG 0.0957 both read as the quality win, not yellow vs green.
     ordered = sorted(indexed, key=lambda iv: iv[1], reverse=not lower_is_better)
     best_val = ordered[0][1]
     worst_val = ordered[-1][1]
 
     for i, v in indexed:
-        if v == best_val:
+        d_best = abs(v - best_val)
+        d_worst = abs(v - worst_val)
+        if d_best <= eps and d_best <= d_worst:
             ranks[i] = "best"
-        elif v == worst_val:
+        elif d_worst <= eps:
             ranks[i] = "worst"
         else:
             ranks[i] = "mid"

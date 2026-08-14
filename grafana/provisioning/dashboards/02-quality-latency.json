@@ -23,7 +23,7 @@
       "id": 100,
       "options": {
         "mode": "markdown",
-        "content": "## Quality & latency comparison (Postgres)\nAggregates from `evaluation_metrics`. Compare **baseline / RAG / fine-tuned** and **CPU vs GPU**. Primary latency metric is **time_to_response** (= retrieval + generation). Speedup = CPU seconds ÷ GPU seconds."
+        "content": "## Quality & latency comparison (Postgres)\nAggregates from `evaluation_metrics`. **Quality story:** `rougeL` (did RAG help?). **Device story:** `time_to_response` and `tokens_per_sec`. `quality_score` is a blend that can fall on RAG when hit@k is 0 even if overlap improved. Speedup = CPU seconds ÷ GPU seconds."
       }
     },
     {
@@ -32,13 +32,13 @@
         "defaults": {
           "unit": "short",
           "min": 0,
-          "max": 1,
+          "max": 0.15,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.3 },
-              { "color": "green", "value": 0.5 }
+              { "color": "yellow", "value": 0.07 },
+              { "color": "green", "value": 0.09 }
             ]
           },
           "custom": { "axisPlacement": "auto" }
@@ -58,11 +58,11 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach || ' | ' || COALESCE(device, 'unknown') AS series, AVG(quality_score) AS quality FROM evaluation_metrics WHERE quality_score IS NOT NULL GROUP BY 1 ORDER BY 1",
+          "rawSql": "SELECT approach || ' | ' || COALESCE(device, 'unknown') AS series, AVG(\"rougeL\") AS rouge_l FROM evaluation_metrics WHERE \"rougeL\" IS NOT NULL GROUP BY 1 ORDER BY 1",
           "refId": "A"
         }
       ],
-      "title": "Avg quality_score by approach × device",
+      "title": "Avg rougeL by approach × device (RAG quality story)",
       "type": "bargauge"
     },
     {
@@ -186,11 +186,11 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT approach,\n       COALESCE(device, 'unknown') AS device,\n       COUNT(*) AS n_answers,\n       ROUND(AVG(quality_score)::numeric, 3) AS avg_quality,\n       ROUND(AVG(\"rougeL\")::numeric, 3) AS avg_rouge_l,\n       ROUND(AVG(bert_score)::numeric, 3) AS avg_bert,\n       ROUND(AVG(faithfulness)::numeric, 3) AS avg_faithfulness,\n       ROUND(AVG(retrieval_hit_at_k)::numeric, 3) AS avg_hit_at_k,\n       ROUND(AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0)))::numeric, 2) AS avg_ttr_sec,\n       ROUND(AVG(generation_time)::numeric, 2) AS avg_gen_sec,\n       ROUND(AVG(COALESCE(retrieval_time, 0))::numeric, 3) AS avg_retrieval_sec\nFROM evaluation_metrics\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY approach, device",
+          "rawSql": "SELECT approach,\n       COALESCE(device, 'unknown') AS device,\n       COUNT(*) AS n_answers,\n       ROUND(AVG(\"rougeL\")::numeric, 3) AS avg_rouge_l,\n       ROUND(AVG(bert_score)::numeric, 3) AS avg_bert,\n       ROUND(AVG(faithfulness)::numeric, 3) AS avg_faithfulness,\n       ROUND(AVG(quality_score)::numeric, 3) AS avg_quality,\n       ROUND(AVG(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0)))::numeric, 2) AS avg_ttr_sec,\n       ROUND(AVG(tokens_per_sec)::numeric, 2) AS avg_tok_per_sec\nFROM evaluation_metrics\nGROUP BY approach, COALESCE(device, 'unknown')\nORDER BY approach, device",
           "refId": "A"
         }
       ],
-      "title": "Summary table — approach × device (all metrics)",
+      "title": "Summary — approach × device (headline metrics)",
       "type": "table"
     }
   ],

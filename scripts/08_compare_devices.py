@@ -6,11 +6,12 @@ Builds a view where each question is a row/section and columns are:
   baseline|cpu, baseline|cuda, rag|cpu, rag|cuda, fine_tuned|cpu, ...
 
 Outputs (under --out):
-  by_question.md          ← primary human view
+  summary.md / README.md  ← start here: speed + quality callouts, then compact tables
+  by_question.md          ← every question, side by side
   by_question.json        ← full metrics + answer snippets
-  by_question_quality.csv ← wide table of quality_score
-  by_question_latency.csv ← wide table of generation_time
-  summary.md              ← short aggregate deltas
+  by_question_quality.csv ← wide table of rougeL
+  by_question_latency.csv ← wide table of time_to_response
+  by_question_throughput.csv ← wide table of tokens_per_sec
   cpu_vs_cuda.json        ← aggregate payloads
 """
 
@@ -25,10 +26,12 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.display_metrics import select_summary_metrics
 from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
 from src.question_view import build_question_view
 from src.run_results import refresh_latest
+from src.score_colors import html_table, ranked_metric_row
 
 
 def load_comparison(run_dir: Path) -> dict:
@@ -72,55 +75,22 @@ def write_aggregate_summary(
     cuda_sum: dict,
 ) -> None:
     approaches = sorted(set(cpu_sum) | set(cuda_sum))
-    highlight = [
-        "rougeL",
-        "bert_score",
-        "retrieval_hit_at_k",
-        "faithfulness",
-        "quality_score",
-        "retrieval_time",
-        "generation_time",
-        "time_to_response",
-        "tokens_per_sec",
-        "speed_chars_per_sec",
-        "peak_rss_mb",
-        "cpu_threads",
-        "cuda_used",
-    ]
     lines = [
         f"# Aggregate CPU vs CUDA — {cpu_run_id} vs {cuda_run_id}",
         "",
         f"- **Generated:** {datetime.now(timezone.utc).isoformat()}",
-        f"- **Per-question view:** [by_question.md](./by_question.md) ← start here",
-        # A speedup figure is only meaningful next to the two machines behind it.
         f"- **CPU:** {_device_line(out_dir.parent / cpu_run_id, 'cpu')}",
         f"- **GPU:** {_device_line(out_dir.parent / cuda_run_id, 'cuda')}",
+        f"- **Per-question breakdown:** [by_question.md](./by_question.md)",
         "",
-        "Higher quality metrics are better. **Lower `time_to_response` is better.**",
-        "`time_to_response` = `retrieval_time` + `generation_time` (end-to-end wait for an answer).",
-        "GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).",
+        "Quality (`rougeL`, `bert_score`, `faithfulness`) should stay within noise across",
+        "devices. **Speed is the device story:** lower `time_to_response`, higher `tokens_per_sec`.",
+        "",
+        "## What changed",
+        "",
+        "### Speed (CPU → GPU, `time_to_response`)",
         "",
     ]
-    for approach in approaches:
-        lines.append(f"## Approach: `{approach}`")
-        lines.append("")
-        lines.append("| Metric | CPU | CUDA | Delta (CUDA − CPU) |")
-        lines.append("|--------|-----|------|---------------------|")
-        cpu_m = cpu_sum.get(approach, {})
-        cuda_m = cuda_sum.get(approach, {})
-        keys = [k for k in highlight if k in cpu_m or k in cuda_m]
-        keys += sorted((set(cpu_m) | set(cuda_m)) - set(keys))
-        for key in keys:
-            c = cpu_m.get(key)
-            g = cuda_m.get(key)
-            c_s = f"{c:.4f}" if c is not None else "—"
-            g_s = f"{g:.4f}" if g is not None else "—"
-            d_s = f"{g - c:+.4f}" if c is not None and g is not None else "—"
-            lines.append(f"| {key} | {c_s} | {g_s} | {d_s} |")
-        lines.append("")
-
-    lines.append("## Latency callout (`time_to_response`)")
-    lines.append("")
     for approach in approaches:
         c = cpu_sum.get(approach, {}).get("time_to_response") or cpu_sum.get(approach, {}).get(
             "generation_time"
@@ -130,9 +100,33 @@ def write_aggregate_summary(
         )
         if c and g and g > 0:
             lines.append(
-                f"- **{approach}:** CPU {c:.2f}s → CUDA {g:.2f}s (**{c / g:.1f}×** faster time-to-response)"
+                f"- **{approach}:** {c:.2f}s → {g:.2f}s (**{c / g:.1f}×** faster on GPU)"
             )
     lines.append("")
+    lines.append("### Quality (RAG vs baseline, `rougeL`)")
+    lines.append("")
+    for device, summary in (("CPU", cpu_sum), ("GPU", cuda_sum)):
+        b = summary.get("baseline", {}).get("rougeL")
+        r = summary.get("rag", {}).get("rougeL")
+        if b and r:
+            lines.append(f"- **{device}:** RAG rougeL {b:.4f} → {r:.4f} ({(r - b) / b * 100:+.1f}%)")
+    lines.append("")
+
+    for approach in approaches:
+        cpu_m = cpu_sum.get(approach, {})
+        cuda_m = cuda_sum.get(approach, {})
+        paired = {"cpu": cpu_m, "cuda": cuda_m}
+        metrics = select_summary_metrics(paired)
+        lines.append(f"## Approach: `{approach}`")
+        lines.append("")
+        rows: list[list[str]] = []
+        for key in metrics:
+            rows.append(ranked_metric_row(key, [cpu_m.get(key), cuda_m.get(key)], precision=4))
+        lines.append(
+            html_table(["Metric", "CPU", "CUDA"], rows, metric_col=0).rstrip()
+        )
+        lines.append("")
+
     (out_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
 
 

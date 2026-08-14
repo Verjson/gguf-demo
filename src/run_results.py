@@ -19,8 +19,9 @@ from typing import Any
 import psycopg2
 import yaml
 
+from src.display_metrics import select_summary_metrics
 from src.hardware import HardwareInfo, detect_hardware
-from src.score_colors import SKIP_RANK, html_table, ranked_metric_row
+from src.score_colors import html_table, ranked_metric_row
 
 logger = logging.getLogger(__name__)
 
@@ -185,30 +186,14 @@ def export_metrics_csv(
 
 
 def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
-    """HTML table with green / yellow / red cells for best / mid / worst per metric."""
+    """HTML table of headline metrics only — green / yellow / red per row."""
     approaches = list(comparison.keys())
     if not approaches:
         return "_No comparison data._\n"
 
-    # Key metrics to highlight
-    highlight = [
-        "rougeL",
-        "bert_score",
-        "retrieval_hit_at_k",
-        "faithfulness",
-        "quality_score",
-        "generation_time",
-        "time_to_response",
-        "tokens_per_sec",
-        "peak_rss_mb",
-        "cpu_threads",
-        "cuda_used",
-    ]
-    all_keys = set()
-    for m in comparison.values():
-        all_keys.update(m.keys())
-    metrics = [k for k in highlight if k in all_keys]
-    metrics += sorted(k for k in all_keys if k not in metrics)
+    metrics = select_summary_metrics(comparison)
+    if not metrics:
+        return "_No headline metrics in this export._\n"
 
     rows: list[list[str]] = []
     for metric in metrics:
@@ -218,25 +203,26 @@ def _improvement_table(comparison: dict[str, dict[str, float]]) -> str:
     legend = (
         "_Cell colors (per row): "
         "🟢 best · 🟡 mid · 🔴 worst "
-        f"(latency metrics lower-is-better; skipped for {', '.join(sorted(SKIP_RANK))}). "
-        "Colors show in HTML-capable Markdown previews._\n"
+        "across approaches. Differences smaller than measurement noise are left uncolored. "
+        "Latency (`time_to_response`) is lower-is-better._\n"
     )
     body = html_table(["Metric", *approaches], rows, metric_col=0)
 
     extras: list[str] = []
     if "baseline" in comparison and "rag" in comparison:
-        b = comparison["baseline"].get("quality_score", 0)
-        r = comparison["rag"].get("quality_score", 0)
-        if b:
-            pct = (r - b) / b * 100
-            extras.append(f"**RAG quality_score vs baseline:** {pct:+.1f}%")
-
-    if "baseline" in comparison and "fine_tuned_with_rag" in comparison:
-        b = comparison["baseline"].get("quality_score", 0)
-        f = comparison["fine_tuned_with_rag"].get("quality_score", 0)
-        if b:
-            pct = (f - b) / b * 100
-            extras.append(f"**Fine-tuned+RAG quality_score vs baseline:** {pct:+.1f}%")
+        b = comparison["baseline"].get("rougeL")
+        r = comparison["rag"].get("rougeL")
+        if b and r:
+            extras.append(f"**RAG rougeL vs baseline:** {(r - b) / b * 100:+.1f}%")
+        b_t = comparison["baseline"].get("time_to_response") or comparison["baseline"].get(
+            "generation_time"
+        )
+        r_t = comparison["rag"].get("time_to_response") or comparison["rag"].get("generation_time")
+        if b_t and r_t and b_t > 0:
+            extras.append(
+                f"**RAG time_to_response vs baseline:** {r_t / b_t:.1f}× longer "
+                f"({b_t:.1f}s → {r_t:.1f}s)"
+            )
 
     return legend + "\n" + body + ("\n".join(extras) + "\n" if extras else "")
 
@@ -282,9 +268,11 @@ def _write_summary_md(
         "",
         "## How to read improvements",
         "",
-        "Higher is better for quality metrics (ROUGE, BERTScore, faithfulness, quality_score).",
-        "Lower is better for `generation_time` / `time_to_response` (latency).",
-        "`retrieval_hit_at_k` shows whether retrieved chunks contain the ground-truth answer.",
+        "Higher is better for `rougeL`, `bert_score`, `faithfulness`.",
+        "Lower is better for `time_to_response` (retrieval + generation — the wait for an answer).",
+        "Higher is better for `tokens_per_sec`. `quality_score` is a blend and can fall when",
+        "RAG's `retrieval_hit_at_k` is 0 even if overlap (`rougeL`) improved — trust rougeL",
+        "for 'did RAG help?', and time_to_response / tokens_per_sec for device speed.",
         "",
         "Per-metric cells are colored **green (best) / yellow (mid) / red (worst)** "
         "across approaches (open in an HTML-capable Markdown preview).",
@@ -304,16 +292,17 @@ def _write_summary_md(
             "",
             "| Approach | What improves |",
             "|----------|----------------|",
-            "| **RAG** | rougeL, faithfulness, retrieval_hit@k |",
-            "| **Fine-tuned** | domain_relevance, answer style |",
-            "| **Fine-tuned + RAG** | best combined quality_score |",
+            "| **RAG** | rougeL, faithfulness (costs time_to_response) |",
+            "| **Fine-tuned** | modest style shift, similar rougeL |",
+            "| **Fine-tuned + RAG** | same RAG quality lift, same latency cost |",
+            "| **CPU vs GPU** | quality within noise; GPU wins time_to_response and tokens_per_sec |",
             "",
             "## Files in this folder",
             "",
-            "- `manifest.json` — run metadata",
-            "- `comparison_report.json` — full step-06 output",
-            "- `baseline_results.json` / `rag_results.json` — per-stage details",
-            "- `evaluation_metrics.csv` — all rows from Postgres",
+            "- `by_question.md` — every question, side by side",
+            "- `manifest.json` — run metadata and CPU/GPU identity",
+            "- `evaluation_metrics.csv` — one row per question (full column set)",
+            "- `comparison_report.json` / `baseline_results.json` / `rag_results.json` — raw stage output",
             "- `config.yaml` — config snapshot",
             "",
         ]
@@ -357,8 +346,8 @@ def refresh_latest(source_dir: Path, latest_dir: Path | None = None) -> Path:
         "cpu_vs_cuda.json": "aggregate CPU vs GPU deltas, machine readable",
         "evaluation_metrics.csv": "one row per question, straight from Postgres",
         "manifest.json": "what ran, on which hardware",
-        "comparison_report.json": "full per-approach comparison",
-        "config.yaml": "the config this run used",
+        "by_question_throughput.csv": "tokens/sec per question × approach × device",
+        "by_question_latency.csv": "time_to_response per question × approach × device",
     }
     listed = [
         f"- [`{name}`](./{name}) — {why}"

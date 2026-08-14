@@ -35,7 +35,7 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "quality" },
+            "matcher": { "id": "byName", "options": "rouge_l" },
             "properties": [
               { "id": "decimals", "value": 3 },
               {
@@ -49,8 +49,8 @@
                   "steps": [
                     { "color": "transparent", "value": null },
                     { "color": "red", "value": 0 },
-                    { "color": "yellow", "value": 0.3 },
-                    { "color": "green", "value": 0.5 }
+                    { "color": "yellow", "value": 0.07 },
+                    { "color": "green", "value": 0.09 }
                   ]
                 }
               }
@@ -93,7 +93,7 @@
         {
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT LEFT(question, 100) AS question,\n       approach,\n       COALESCE(device, 'unknown') AS device,\n       ROUND(quality_score::numeric, 3) AS quality,\n       ROUND(\"rougeL\"::numeric, 3) AS rouge_l,\n       ROUND(bert_score::numeric, 3) AS bert,\n       ROUND(faithfulness::numeric, 3) AS faithfulness,\n       ROUND(retrieval_hit_at_k::numeric, 3) AS hit_at_k,\n       ROUND(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))::numeric, 2) AS time_to_response_sec,\n       ROUND(generation_time::numeric, 2) AS gen_sec,\n       ROUND(COALESCE(tokens_per_sec, 0)::numeric, 2) AS tok_per_sec,\n       ROUND(cpu_threads::numeric, 0) AS cpu_threads,\n       ROUND(peak_rss_mb::numeric, 0) AS peak_rss_mb,\n       ROUND(COALESCE(retrieval_time, 0)::numeric, 3) AS retrieval_sec,\n       ROUND(COALESCE(speed_chars_per_sec, 0)::numeric, 1) AS chars_per_sec,\n       LEFT(REPLACE(COALESCE(response, ''), E'\\n', ' '), 120) AS answer_preview\nFROM (\n  SELECT DISTINCT ON (question, approach, COALESCE(device, 'unknown'))\n         question, approach, device, quality_score, \"rougeL\", bert_score, faithfulness,\n         retrieval_hit_at_k, time_to_response, generation_time, retrieval_time,\n         tokens_per_sec, cpu_threads, peak_rss_mb,\n         speed_chars_per_sec, response, timestamp\n  FROM evaluation_metrics\n  WHERE question IS NOT NULL\n    AND $__timeFilter(timestamp)\n    AND COALESCE(device, 'unknown') IN ($device)\n  ORDER BY question, approach, COALESCE(device, 'unknown'), timestamp DESC\n) t\nORDER BY question, approach, device",
+          "rawSql": "SELECT LEFT(question, 100) AS question,\n       approach,\n       COALESCE(device, 'unknown') AS device,\n       ROUND(\"rougeL\"::numeric, 3) AS rouge_l,\n       ROUND(quality_score::numeric, 3) AS quality,\n       ROUND(bert_score::numeric, 3) AS bert,\n       ROUND(faithfulness::numeric, 3) AS faithfulness,\n       ROUND(COALESCE(time_to_response, generation_time + COALESCE(retrieval_time, 0))::numeric, 2) AS time_to_response_sec,\n       ROUND(COALESCE(tokens_per_sec, 0)::numeric, 2) AS tok_per_sec,\n       LEFT(REPLACE(COALESCE(response, ''), E'\\n', ' '), 120) AS answer_preview\nFROM (\n  SELECT DISTINCT ON (question, approach, COALESCE(device, 'unknown'))\n         question, approach, device, quality_score, \"rougeL\", bert_score, faithfulness,\n         time_to_response, generation_time, retrieval_time,\n         tokens_per_sec, response, timestamp\n  FROM evaluation_metrics\n  WHERE question IS NOT NULL\n    AND $__timeFilter(timestamp)\n    AND COALESCE(device, 'unknown') IN ($device)\n  ORDER BY question, approach, COALESCE(device, 'unknown'), timestamp DESC\n) t\nORDER BY question, approach, device",
           "refId": "A"
         }
       ],

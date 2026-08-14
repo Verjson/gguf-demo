@@ -292,11 +292,21 @@ Ground truth from `prompts/evaluation_prompts.txt` (`question|answer`, from step
 
 | Metric | Meaning | Prefer |
 |--------|---------|--------|
-| **time_to_response** | Retrieval + generation | lower |
-| **generation_time** | LLM only (CUDA-synced on GPU) | lower |
+| **time_to_response** | Retrieval + generation (the wait for an answer) | lower |
+| **tokens_per_sec** | Decode throughput | higher |
+| **generation_time** | LLM only (CUDA-synced on GPU); folded into time_to_response | lower |
 | **retrieval_time** | pgvector search | lower |
-| **speed_chars_per_sec** | Throughput proxy | higher |
-| **cuda_used** | 1.0 if CUDA available | — |
+
+Human summaries (`results/latest/README.md`, `by_question.md`) show `rougeL`,
+`bert_score`, `faithfulness`, `quality_score`, `time_to_response`, and
+`tokens_per_sec`. Device flags, prompt sizes, retrieval microseconds, and
+heuristic scores (`answer_relevancy`, `coherence`, …) stay in the CSV / JSON.
+`quality_score` is a blend that currently **falls** on RAG when
+`retrieval_hit_at_k` is 0 even if `rougeL` improved — use `rougeL` to judge
+"did RAG help?" and `time_to_response` / `tokens_per_sec` to judge devices.
+
+`speed_chars_per_sec` and `cuda_used` remain in Postgres for Grafana ops panels
+but are not headline comparison metrics.
 
 **GPU speedup** = `time_to_response_cpu ÷ time_to_response_gpu` (e.g. `4.2×`).
 
@@ -313,10 +323,11 @@ Ground truth from `prompts/evaluation_prompts.txt` (`question|answer`, from step
 ### Expected pattern
 
 ```
-baseline          → lowest rougeL / faithfulness
-rag               → ↑ rougeL, ↑ hit@k, ↑ faithfulness
-fine_tuned        → modest domain lift
-fine_tuned + RAG  → often best quality_score
+baseline          → lowest rougeL
+rag               → ↑ rougeL, ↑ faithfulness; ↓ tokens_per_sec (longer prompts)
+fine_tuned        → small style shift, similar rougeL
+fine_tuned + RAG  → same RAG quality lift, same latency cost
+CPU vs GPU        → quality within noise; GPU 6–15× faster time_to_response
 ```
 
 ### Visualization: by question

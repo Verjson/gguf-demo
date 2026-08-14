@@ -18,6 +18,7 @@ from typing import Any
 
 import psycopg2
 
+from src.display_metrics import QUESTION_DISPLAY
 from src.score_colors import (
     format_ranked_cell,
     html_table,
@@ -38,17 +39,7 @@ APPROACH_ORDER = (
 DEVICE_ORDER = ("cpu", "cuda")
 
 # Metrics shown in the compact table (full metrics stay in JSON)
-DISPLAY_METRICS = (
-    "quality_score",
-    "rougeL",
-    "bert_score",
-    "retrieval_hit_at_k",
-    "faithfulness",
-    "retrieval_time",
-    "generation_time",
-    "time_to_response",
-    "speed_chars_per_sec",
-)
+DISPLAY_METRICS = QUESTION_DISPLAY
 
 
 def _postgres_conn_kwargs() -> dict[str, str]:
@@ -82,6 +73,7 @@ def fetch_latest_cells_from_postgres() -> list[dict[str, Any]]:
             generation_time,
             retrieval_time,
             time_to_response,
+            tokens_per_sec,
             speed_chars_per_sec,
             cuda_used,
             domain_relevance,
@@ -125,7 +117,13 @@ def merge_cells(
         if key[0]:
             by_key[key] = dict(row)
 
-    latency_keys = ("generation_time", "retrieval_time", "time_to_response", "speed_chars_per_sec")
+    latency_keys = (
+        "generation_time",
+        "retrieval_time",
+        "time_to_response",
+        "tokens_per_sec",
+        "speed_chars_per_sec",
+    )
     for row in fallback:
         key = _cell_key(row)
         if not key[0]:
@@ -337,7 +335,7 @@ def _speedup_lines_for_question(item: dict[str, Any], columns: list[str]) -> lis
     return lines
 
 
-def render_by_question_markdown(pivot: dict[str, Any], primary_metric: str = "quality_score") -> str:
+def render_by_question_markdown(pivot: dict[str, Any], primary_metric: str = "rougeL") -> str:
     """Human-friendly view: one section per question, table of approach×device."""
     columns: list[str] = pivot.get("columns", [])
     lines = [
@@ -345,20 +343,21 @@ def render_by_question_markdown(pivot: dict[str, Any], primary_metric: str = "qu
         "",
         "Each question shows quality **and** latency across approach × device.",
         "",
-        "- **Quality:** higher `quality_score` / `rougeL` is better",
-        "- **Time to response:** `retrieval_time` + `generation_time` (seconds) — **lower is better**",
-        "- **GPU speedup:** CPU time ÷ GPU time (values **> 1×** mean GPU was faster)",
-        "- **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row "
-        "(HTML Markdown preview; emoji also visible on GitHub)",
+        "- **rougeL:** overlap with the ground-truth answer — **higher is better** (the RAG quality story)",
+        "- **Time to response:** retrieval + generation (seconds) — **lower is better** (the device story)",
+        "- **tokens_per_sec:** decode throughput — **higher is better**",
+        "- **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row; ties within noise are left uncolored",
         "",
         f"_Generated: {pivot.get('generated_at', '')}_",
         "",
-        "## Overview — quality (`quality_score`)",
+        "## Overview — overlap with ground truth (`rougeL`)",
         "",
     ]
-    lines.extend(_overview_table(pivot, "quality_score"))
+    lines.extend(_overview_table(pivot, "rougeL"))
     lines.extend(["", "## Overview — time to response (seconds, lower is better)", ""])
     lines.extend(_overview_table(pivot, "time_to_response"))
+    lines.extend(["", "## Overview — throughput (`tokens_per_sec`, higher is better)", ""])
+    lines.extend(_overview_table(pivot, "tokens_per_sec"))
     lines.extend(["", "---", ""])
 
     for i, item in enumerate(pivot.get("questions", []), 1):
@@ -473,8 +472,9 @@ def build_question_view(
     (out_dir / "by_question.md").write_text(
         render_by_question_markdown(pivot), encoding="utf-8"
     )
-    write_by_question_csv(pivot, out_dir / "by_question_quality.csv", "quality_score")
+    write_by_question_csv(pivot, out_dir / "by_question_quality.csv", "rougeL")
     write_by_question_csv(pivot, out_dir / "by_question_latency.csv", "time_to_response")
+    write_by_question_csv(pivot, out_dir / "by_question_throughput.csv", "tokens_per_sec")
     write_by_question_csv(pivot, out_dir / "by_question_generation_time.csv", "generation_time")
 
     logger.info(
