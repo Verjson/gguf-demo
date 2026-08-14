@@ -33,7 +33,7 @@ def _sql_targets(dash: dict):
 @pytest.mark.parametrize("name", RUN_SCOPED)
 def test_every_sql_panel_is_scoped_to_the_selected_run(name: str):
     dash = _load(name)
-    unscoped = [p["title"] for p, sql in _sql_targets(dash) if "$run" not in sql]
+    unscoped = [p["title"] for p, sql in _sql_targets(dash) if "${run:sqlstring}" not in sql]
     assert not unscoped, f"{name} has panels that aggregate across runs: {unscoped}"
 
 
@@ -53,6 +53,8 @@ def test_run_picker_exists_and_lists_newest_first(name: str):
     query = variables["run"]["query"]
     assert "ORDER BY 1 DESC" in query
     assert "run_id IS NOT NULL" in query
+    # "on time range change" would never fire: the time picker is hidden.
+    assert variables["run"]["refresh"] == 1, "the run list would not refresh on load"
 
 
 @pytest.mark.parametrize("name", RUN_SCOPED)
@@ -107,3 +109,27 @@ def test_every_dashboard_leads_with_the_run_header(name: str):
     top_sql = [p for p in dash["panels"] if p["gridPos"]["y"] <= header["gridPos"]["y"] + 3]
     titles = [p.get("title", "") for p in top_sql]
     assert any("Run —" in t for t in titles), f"{name} has no run header near the top: {titles}"
+
+
+@pytest.mark.parametrize("name", RUN_SCOPED)
+def test_variables_are_interpolated_through_grafanas_sql_escaping(name: str):
+    """
+    `'$run'` pastes the value straight into a SQL string literal.
+
+    Run ids reach the table from RUN_ID in the environment, so a crafted value would
+    be interpolated into every panel's query with the datasource's own privileges.
+    `${run:sqlstring}` makes Grafana quote and escape it instead.
+    """
+    dash = _load(name)
+    for panel, sql in _sql_targets(dash):
+        assert "'$" not in sql, (
+            f"{name} :: {panel['title']} quotes a variable by hand instead of :sqlstring"
+        )
+
+
+@pytest.mark.parametrize("name", RUN_SCOPED)
+def test_the_run_picker_only_offers_well_formed_run_stamps(name: str):
+    dash = _load(name)
+    for variable in dash["templating"]["list"]:
+        if variable["name"] in ("run", "baseline_run"):
+            assert variable["regex"], f"{name} :: {variable['name']} accepts any value"
