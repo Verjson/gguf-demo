@@ -1,0 +1,39 @@
+{
+  "run_id": "2026-08-14_181632_cpu",
+  "exported_at": "2026-08-14T19:19:02.582541+00:00",
+  "hardware": {
+    "cuda_available": false,
+    "device": "cpu",
+    "cuda_device_count": 0,
+    "cuda_device_name": "none",
+    "cuda_capability": "none",
+    "torch_version": "2.13.0+cu130",
+    "cuda_version": "13.0",
+    "cpu_model": "Intel(R) Core(TM) i9-14900HX",
+    "cpu_logical": 32,
+    "cpu_threads": 28
+  },
+  "resources": {
+    "model_load_seconds": 12.699328525000965,
+    "peak_rss_mb": 5886.65625,
+    "peak_gpu_mem_mb": 0.0,
+    "n_ctx": 4096.0,
+    "n_gpu_layers": 0.0,
+    "n_threads": 28.0,
+    "n_threads_batch": 28.0
+  },
+  "llm_model": "microsoft/Phi-3-mini-4k-instruct",
+  "artifacts_copied": [
+    "comparison_report.json",
+    "baseline_results.json",
+    "baseline_gguf_results.json",
+    "rag_results.json",
+    "rag_gguf_results.json",
+    "doc_stats.json",
+    "qa_pairs.jsonl",
+    "config.yaml",
+    "evaluation_prompts.txt",
+    "evaluation_metrics.csv"
+  ],
+  "postgres_rows": 105
+}

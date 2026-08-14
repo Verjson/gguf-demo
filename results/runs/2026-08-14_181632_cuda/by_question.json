@@ -1,0 +1,1828 @@
+{
+  "generated_at": "2026-08-14T19:22:05.427436+00:00",
+  "columns": [
+    "baseline|cpu",
+    "baseline|cuda",
+    "baseline_gguf|cpu",
+    "baseline_gguf|cuda",
+    "rag|cpu",
+    "rag|cuda",
+    "rag_gguf|cpu",
+    "rag_gguf|cuda",
+    "fine_tuned|cpu",
+    "fine_tuned|cuda",
+    "fine_tuned_with_rag|cpu",
+    "fine_tuned_with_rag|cuda"
+  ],
+  "questions": [
+    {
+      "question": "According to this passage, what is the main claim or contribution?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.26986306950098576,
+            "rouge1": 0.06557377049180328,
+            "rouge2": 0.0,
+            "rougeL": 0.06557377049180328,
+            "bert_score": 0.7959402203559875,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 8.241161761001422,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.241161761001422,
+            "tokens_per_sec": 3.7616055720077317,
+            "speed_chars_per_sec": 16.381185555517543,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.26986306950098576,
+            "rouge1": 0.06557377049180328,
+            "rouge2": 0.0,
+            "rougeL": 0.06557377049180328,
+            "bert_score": 0.7959402203559875,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 1.4394183749991498,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.4394183749991498,
+            "tokens_per_sec": 21.536476495249904,
+            "speed_chars_per_sec": 93.78788151157215,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.329798360823177,
+            "rouge1": 0.15,
+            "rouge2": 0.016949152542372878,
+            "rougeL": 0.09999999999999999,
+            "bert_score": 0.7902303338050842,
+            "answer_relevancy": 0.7272727272727273,
+            "generation_time": 10.050615689000551,
+            "retrieval_time": 0.0,
+            "time_to_response": 10.050615689000551,
+            "tokens_per_sec": 12.735538195941956,
+            "speed_chars_per_sec": 50.14618164652145,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.17456828885400313
+          },
+          "response": "To provide an accurate answer, I would need the specific passage in question. However, I can guide you on how to determine the main claim or contribution from a passage.\n\n\nTo identify the main claim or contribution of a passage, follow these steps:\n\n\n1. **Read the Passage Thoroughly**: Ensure you have a clear understanding of the content and context.\n\n\n2. **Identify the Purpose**: Determine what the author is trying to achieve. Is it to inform, persuade, argue, or present a new idea?\n\n\n3. **Look"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.329798360823177,
+            "rouge1": 0.15,
+            "rouge2": 0.016949152542372878,
+            "rougeL": 0.09999999999999999,
+            "bert_score": 0.7902303338050842,
+            "answer_relevancy": 0.7272727272727273,
+            "generation_time": 7.672814251000091,
+            "retrieval_time": 0.0,
+            "time_to_response": 7.672814251000091,
+            "tokens_per_sec": 16.682275344188895,
+            "speed_chars_per_sec": 65.68645916774378,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.17456828885400313
+          },
+          "response": "To provide an accurate answer, I would need the specific passage in question. However, I can guide you on how to determine the main claim or contribution from a passage.\n\n\nTo identify the main claim or contribution of a passage, follow these steps:\n\n\n1. **Read the Passage Thoroughly**: Ensure you have a clear understanding of the content and context.\n\n\n2. **Identify the Purpose**: Determine what the author is trying to achieve. Is it to inform, persuade, argue, or present a new idea?\n\n\n3. **Look"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.26986306950098576,
+            "rouge1": 0.06557377049180328,
+            "rouge2": 0.0,
+            "rougeL": 0.06557377049180328,
+            "bert_score": 0.7959402203559875,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 9.357243854999979,
+            "retrieval_time": 0.0,
+            "time_to_response": 9.357243854999979,
+            "tokens_per_sec": 3.3129413404605637,
+            "speed_chars_per_sec": 14.42732519232826,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.26986306950098576,
+            "rouge1": 0.06557377049180328,
+            "rouge2": 0.0,
+            "rougeL": 0.06557377049180328,
+            "bert_score": 0.7959402203559875,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 1.7706429909994768,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.7706429909994768,
+            "tokens_per_sec": 17.507764217619837,
+            "speed_chars_per_sec": 76.24348933479605,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no passage provided for me to analyze. Could you please provide the passage you're referring to?"
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.2836042644392218,
+            "rouge1": 0.1149425287356322,
+            "rouge2": 0.0,
+            "rougeL": 0.09195402298850576,
+            "bert_score": 0.7879845499992371,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.5142857142857142,
+            "context_utilization": 0.176,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 28.51553185800003,
+            "retrieval_time": 0.21246671676635742,
+            "time_to_response": 28.72799857476639,
+            "tokens_per_sec": 2.5249397541852407,
+            "speed_chars_per_sec": 12.344149909350065,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 1.0
+          },
+          "response": "Question: What are the key assumptions about the nature of RAG documents in the discussed setup?\n\nQuestion: What are the failure cases observed during the attack analysis?\n\nQuestion: What are the financial costs involved in launching the attack?\n\nQuestion: What potential countermeasures against the attack are explored, and what are their limitations?"
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.30017684733767525,
+            "rouge1": 0.13223140495867766,
+            "rouge2": 0.0,
+            "rougeL": 0.09917355371900825,
+            "bert_score": 0.7841781377792358,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6222222222222222,
+            "context_utilization": 0.24427480916030533,
+            "answer_relevancy": 0.2727272727272727,
+            "generation_time": 4.367448828999841,
+            "retrieval_time": 0.2429671287536621,
+            "time_to_response": 4.610415957753503,
+            "tokens_per_sec": 29.307727465535617,
+            "speed_chars_per_sec": 114.4833104122485,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.3473304473304473
+          },
+          "response": "1. What are the assumptions regarding the nature of the RAG documents in the setup?\n2. What are the failure cases observed during the attack?\n3. What are the financial costs involved in launching the attack?\n4. What potential countermeasures against the attack are discussed, and what are their limitations?\n5. What are the antagonistic IC(50) values for flavones and flavonols?\n6. How do the IC(50) values for flavones and flavonols compare?\n7. What is the significance of the IC(50) values for flav"
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.29468971234741714,
+            "rouge1": 0.13008130081300814,
+            "rouge2": 0.0,
+            "rougeL": 0.09756097560975609,
+            "bert_score": 0.7861059308052063,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6170212765957447,
+            "context_utilization": 0.23308270676691728,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 45.601998444000856,
+            "retrieval_time": 0.18060016632080078,
+            "time_to_response": 45.78259861032166,
+            "tokens_per_sec": 2.806894530229496,
+            "speed_chars_per_sec": 11.468795619609581,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.305982905982906
+          },
+          "response": "1. What are the key assumptions about the nature of RAG documents in the setup discussed?\n2. What are the failure cases observed during the attack analysis?\n3. What are the financial costs involved in launching the attack?\n4. What potential countermeasures against the attack are explored, and what are their limitations?\n5. How do the antagonistic IC(50) values for flavones and flavonols range in the context of the passage?\n6. What are the implications of the antagonistic IC(50) values for flavon"
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.2836042644392218,
+            "rouge1": 0.1149425287356322,
+            "rouge2": 0.0,
+            "rougeL": 0.09195402298850576,
+            "bert_score": 0.7879845499992371,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.5142857142857142,
+            "context_utilization": 0.176,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 2.6784530770000856,
+            "retrieval_time": 0.15320968627929688,
+            "time_to_response": 2.8316627632793825,
+            "tokens_per_sec": 26.881187734168282,
+            "speed_chars_per_sec": 131.4191400337116,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 1.0
+          },
+          "response": "Question: What are the key assumptions about the nature of RAG documents in the discussed setup?\n\nQuestion: What are the failure cases observed during the attack analysis?\n\nQuestion: What are the financial costs involved in launching the attack?\n\nQuestion: What potential countermeasures against the attack are explored, and what are their limitations?"
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.26766536890449844,
+            "rouge1": 0.11382113821138212,
+            "rouge2": 0.0,
+            "rougeL": 0.09756097560975609,
+            "bert_score": 0.7866058349609375,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.46296296296296297,
+            "context_utilization": 0.20689655172413793,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 28.586964654999974,
+            "retrieval_time": 0.14521169662475586,
+            "time_to_response": 28.73217635162473,
+            "tokens_per_sec": 4.477565266014078,
+            "speed_chars_per_sec": 19.204557273763506,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.15634920634920638
+          },
+          "response": "1. What assumptions are made about the RAG documents in the discussed setup?\n2. What failure cases were observed during the attack analysis?\n3. How are the financial costs of launching the attack quantified in the context?\n4. What potential countermeasures against the attack are explored, and what are their limitations?\n5. Are flavones and flavonols' antagonistic IC(50) values within the specified range?\n6. What details can be found in Appendix C regarding the context?\n7. How does the discussion"
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.26766536890449844,
+            "rouge1": 0.11382113821138212,
+            "rouge2": 0.0,
+            "rougeL": 0.09756097560975609,
+            "bert_score": 0.7866058349609375,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.46296296296296297,
+            "context_utilization": 0.20689655172413793,
+            "answer_relevancy": 0.18181818181818182,
+            "generation_time": 10.162379286999567,
+            "retrieval_time": 0.14141535758972168,
+            "time_to_response": 10.303794644589289,
+            "tokens_per_sec": 12.595475565820166,
+            "speed_chars_per_sec": 54.022781919025554,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.15634920634920638
+          },
+          "response": "1. What assumptions are made about the RAG documents in the discussed setup?\n2. What failure cases were observed during the attack analysis?\n3. How are the financial costs of launching the attack quantified in the context?\n4. What potential countermeasures against the attack are explored, and what are their limitations?\n5. Are flavones and flavonols' antagonistic IC(50) values within the specified range?\n6. What details can be found in Appendix C regarding the context?\n7. How does the discussion"
+        }
+      }
+    },
+    {
+      "question": "Summarize the contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation'.",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.49169622721679435,
+            "rouge1": 0.48484848484848475,
+            "rouge2": 0.19999999999999998,
+            "rougeL": 0.2727272727272727,
+            "bert_score": 0.8769567012786865,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 302.47778674200003,
+            "retrieval_time": 0.0,
+            "time_to_response": 302.47778674200003,
+            "speed_chars_per_sec": 2.0166770147663855,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.21428571428571427
+          },
+          "response": "The contribution of \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to automatically scan, understand, and categorize vast amounts of scholarly articles and research papers. By integrating Large Language Models (LLMs) for retrieval-augmented generation, the system "
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.43831717724825514,
+            "rouge1": 0.3185840707964602,
+            "rouge2": 0.14285714285714285,
+            "rougeL": 0.20353982300884957,
+            "bert_score": 0.8706305027008057,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 525.1757540180006,
+            "retrieval_time": 0.0,
+            "time_to_response": 525.1757540180006,
+            "speed_chars_per_sec": 2.4734576759525657,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.1590096618357488
+          },
+          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques to efficiently parse and understand vast amounts of textual data from scholarly articles, books, and other academic resources. By integrating Large Language Models (LLMs) for retrieval-augmented ge"
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.39361980068192837,
+            "rouge1": 0.2,
+            "rouge2": 0.11320754716981132,
+            "rougeL": 0.14375000000000002,
+            "bert_score": 0.8535135388374329,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 528.0416115480002,
+            "retrieval_time": 0.0,
+            "time_to_response": 528.0416115480002,
+            "speed_chars_per_sec": 3.567900632824919,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.20973376669508384
+          },
+          "response": "The contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation' lies in the development of a system that streamlines the process of conducting literature reviews in academic research. This system leverages Natural Language Processing (NLP) techniques and Large Language Models (LLMs) to enhance the retrieval and generation of relevant literature.\n\nThe system works by first using NLP techniques to analyze and extract key information from existing"
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.5832624054448077,
+            "rouge1": 0.43410852713178294,
+            "rouge2": 0.1417322834645669,
+            "rougeL": 0.2635658914728682,
+            "bert_score": 0.8537702560424805,
+            "retrieval_hit_at_k": 1.0,
+            "faithfulness": 0.75,
+            "context_utilization": 0.27380952380952384,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 960.4589217360001,
+            "retrieval_time": 1.6987667083740234,
+            "time_to_response": 962.1576884443741,
+            "speed_chars_per_sec": 0.5799311010545246,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.15873015873015872
+          },
+          "response": "The research paper titled \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" by Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim focuses on developing an automated system for generating literature reviews. The primary objective of this research is to create a system that can automatically generate literature review segments for research articles, reducing the chance of errors or bias in the review process. The paper highlights that all thre"
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.5661247852011839,
+            "rouge1": 0.31759656652360513,
+            "rouge2": 0.19913419913419914,
+            "rougeL": 0.19742489270386263,
+            "bert_score": 0.8775701522827148,
+            "retrieval_hit_at_k": 1.0,
+            "faithfulness": 0.6992481203007519,
+            "context_utilization": 0.3717277486910995,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 761.4322260470035,
+            "retrieval_time": 0.1375102996826172,
+            "time_to_response": 761.5697363466861,
+            "speed_chars_per_sec": 1.6849825317490568,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.18528011949064582
+          },
+          "response": "The research paper titled \"Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation\" by Nurshat Fateh Ali, Shakil Mosharrof, and Md. Mahdi Mohtasim focuses on developing an automated system for generating literature reviews. The primary objective of this research is to address the challenges posed by the ever-increasing number of research articles, which makes manual literature review time-consuming and error-prone. The paper highlights the use of Natural Lan"
+        }
+      }
+    },
+    {
+      "question": "Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.38554655308348135,
+            "rouge1": 0.22666666666666666,
+            "rouge2": 0.02702702702702703,
+            "rougeL": 0.1466666666666667,
+            "bert_score": 0.8459017872810364,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 31.561488936999012,
+            "retrieval_time": 0.0,
+            "time_to_response": 31.561488936999012,
+            "tokens_per_sec": 4.055575459557858,
+            "speed_chars_per_sec": 22.210612477734827,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.15
+          },
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and effectiveness of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieval process is more aligned with user intent, improving the accuracy of search results. This"
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.38947371078098514,
+            "rouge1": 0.2533333333333333,
+            "rouge2": 0.02702702702702703,
+            "rougeL": 0.1466666666666667,
+            "bert_score": 0.8441118597984314,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 5.699286951999966,
+            "retrieval_time": 0.0,
+            "time_to_response": 5.699286951999966,
+            "tokens_per_sec": 22.458949878823503,
+            "speed_chars_per_sec": 120.89231614460464,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.16296296296296298
+          },
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach reduces computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience. This method"
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.39701201288958854,
+            "rouge1": 0.2692307692307693,
+            "rouge2": 0.03896103896103897,
+            "rougeL": 0.16666666666666666,
+            "bert_score": 0.8384860157966614,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 8.845922017000703,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.845922017000703,
+            "tokens_per_sec": 14.469944427952312,
+            "speed_chars_per_sec": 81.84562317060526,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.19230769230769232,
+            "coherence": 0.3096179183135705
+          },
+          "response": "\"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is a research paper that focuses on improving the efficiency and accuracy of information retrieval systems. The paper introduces a novel approach that combines lightweight models and direct relevance optimization techniques to enhance the performance of generative information retrieval systems.\n\nThe main contribution of the paper is the development of a lightweight model that can effectively capture the"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.39701201288958854,
+            "rouge1": 0.2692307692307693,
+            "rouge2": 0.03896103896103897,
+            "rougeL": 0.16666666666666666,
+            "bert_score": 0.8384860157966614,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 9.544361053000102,
+            "retrieval_time": 0.0,
+            "time_to_response": 9.544361053000102,
+            "tokens_per_sec": 13.41106013165391,
+            "speed_chars_per_sec": 75.85630886966743,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.19230769230769232,
+            "coherence": 0.3096179183135705
+          },
+          "response": "\"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is a research paper that focuses on improving the efficiency and accuracy of information retrieval systems. The paper introduces a novel approach that combines lightweight models and direct relevance optimization techniques to enhance the performance of generative information retrieval systems.\n\nThe main contribution of the paper is the development of a lightweight model that can effectively capture the"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.38830795956322967,
+            "rouge1": 0.24489795918367344,
+            "rouge2": 0.027586206896551724,
+            "rougeL": 0.14965986394557823,
+            "bert_score": 0.8439862132072449,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 38.793007245998524,
+            "retrieval_time": 0.0,
+            "time_to_response": 38.793007245998524,
+            "tokens_per_sec": 3.299563738080737,
+            "speed_chars_per_sec": 17.60626588366518,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.11666666666666665
+          },
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach minimizes computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieval system prioritizes documents that are most pertinent to the user's query, improving the relev"
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.38947371078098514,
+            "rouge1": 0.2533333333333333,
+            "rouge2": 0.02702702702702703,
+            "rougeL": 0.1466666666666667,
+            "bert_score": 0.8441118597984314,
+            "answer_relevancy": 0.8571428571428571,
+            "generation_time": 5.057000101000085,
+            "retrieval_time": 0.0,
+            "time_to_response": 5.057000101000085,
+            "tokens_per_sec": 25.311448970445223,
+            "speed_chars_per_sec": 136.2467839112247,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.16296296296296298
+          },
+          "response": "The contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval' lies in enhancing the efficiency and accuracy of information retrieval systems. By focusing on lightweight algorithms, the approach reduces computational overhead, making it feasible to process large volumes of data quickly. Direct document relevance optimization ensures that the retrieved information is highly pertinent to the user's query, improving the user experience. This method"
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.39055352906146806,
+            "rouge1": 0.32857142857142857,
+            "rouge2": 0.08695652173913043,
+            "rougeL": 0.2,
+            "bert_score": 0.8477766513824463,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6607142857142857,
+            "context_utilization": 0.23626373626373626,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 56.153677084001174,
+            "retrieval_time": 0.1722545623779297,
+            "time_to_response": 56.325931646379104,
+            "tokens_per_sec": 2.279458917864324,
+            "speed_chars_per_sec": 10.293181675981087,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.13269841269841268
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.3887545597015573,
+            "rouge1": 0.32857142857142857,
+            "rouge2": 0.08695652173913043,
+            "rougeL": 0.2,
+            "bert_score": 0.8468567728996277,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6491228070175439,
+            "context_utilization": 0.23626373626373626,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 5.2560540150007,
+            "retrieval_time": 0.17565321922302246,
+            "time_to_response": 5.4317072342237225,
+            "tokens_per_sec": 24.352869973308856,
+            "speed_chars_per_sec": 109.58791487988985,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.14603174603174604
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a "
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.38661596186102587,
+            "rouge1": 0.35211267605633806,
+            "rouge2": 0.0857142857142857,
+            "rougeL": 0.2112676056338028,
+            "bert_score": 0.8457087874412537,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6071428571428571,
+            "context_utilization": 0.22702702702702704,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 55.55146736699862,
+            "retrieval_time": 0.15077829360961914,
+            "time_to_response": 55.70224566060824,
+            "tokens_per_sec": 2.304169557833152,
+            "speed_chars_per_sec": 10.31475903623747,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.14109347442680775
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the performance of Generative Information Retrieval (GenIR) models. These models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) in response to a query string. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amsterdam proposes a method to "
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.38442470099422926,
+            "rouge1": 0.326241134751773,
+            "rouge2": 0.08633093525179855,
+            "rougeL": 0.19858156028368795,
+            "bert_score": 0.8454601764678955,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.625,
+            "context_utilization": 0.22826086956521738,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 4.179334785001629,
+            "retrieval_time": 0.1446988582611084,
+            "time_to_response": 4.324033643262737,
+            "tokens_per_sec": 30.62688360342736,
+            "speed_chars_per_sec": 139.25661138433378,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.17363636363636364
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is focused on improving the efficiency and effectiveness of Generative Information Retrieval (GenIR) models. GenIR models, which are based on large pre-trained language models like T5 and BART, generate a ranked list of document identifiers (docids) based on their generation probabilities. The paper by Kidist Amde Mekonnen, Yubao Tang, and Maarten de Rijke from the University of Amst"
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.33105207484957966,
+            "rouge1": 0.28187919463087246,
+            "rouge2": 0.06802721088435375,
+            "rougeL": 0.17449664429530198,
+            "bert_score": 0.8433072566986084,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.3492063492063492,
+            "context_utilization": 0.10837438423645321,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 33.42261441399933,
+            "retrieval_time": 0.18329548835754395,
+            "time_to_response": 33.60590990235687,
+            "tokens_per_sec": 3.82974229407937,
+            "speed_chars_per_sec": 20.016387458899207,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.34329004329004326
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is not explicitly detailed in the provided context. However, based on the title and the context surrounding Generative Information Retrieval (GenIR), it can be inferred that the contribution likely involves optimizing the relevance of documents retrieved by GenIR models. This optimization may focus on making the retrieval process more lightweight and direct, potentially improving the"
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.33105207484957966,
+            "rouge1": 0.28187919463087246,
+            "rouge2": 0.06802721088435375,
+            "rougeL": 0.17449664429530198,
+            "bert_score": 0.8433072566986084,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.3492063492063492,
+            "context_utilization": 0.10837438423645321,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 13.836061238000184,
+            "retrieval_time": 0.14972853660583496,
+            "time_to_response": 13.985789774606019,
+            "tokens_per_sec": 9.251187733142809,
+            "speed_chars_per_sec": 48.35191088650421,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.34329004329004326
+          },
+          "response": "The contribution of \"Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval\" is not explicitly detailed in the provided context. However, based on the title and the context surrounding Generative Information Retrieval (GenIR), it can be inferred that the contribution likely involves optimizing the relevance of documents retrieved by GenIR models. This optimization may focus on making the retrieval process more lightweight and direct, potentially improving the"
+        }
+      }
+    },
+    {
+      "question": "What experimental result or finding is reported here?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.2730174041208856,
+            "rouge1": 0.041666666666666664,
+            "rouge2": 0.0,
+            "rougeL": 0.041666666666666664,
+            "bert_score": 0.8014603853225708,
+            "answer_relevancy": 0.375,
+            "generation_time": 9.697818713000743,
+            "retrieval_time": 0.0,
+            "time_to_response": 9.697818713000743,
+            "tokens_per_sec": 4.640218726678579,
+            "speed_chars_per_sec": 23.61355752020877,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.2730174041208856,
+            "rouge1": 0.041666666666666664,
+            "rouge2": 0.0,
+            "rougeL": 0.041666666666666664,
+            "bert_score": 0.8014603853225708,
+            "answer_relevancy": 0.375,
+            "generation_time": 1.7967438510004285,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.7967438510004285,
+            "tokens_per_sec": 25.045306249382158,
+            "speed_chars_per_sec": 127.45278069130032,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.3177321801571445,
+            "rouge1": 0.1466666666666667,
+            "rouge2": 0.0,
+            "rougeL": 0.08,
+            "bert_score": 0.8040134310722351,
+            "answer_relevancy": 0.625,
+            "generation_time": 8.284936808000566,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.284936808000566,
+            "tokens_per_sec": 15.449725564158008,
+            "speed_chars_per_sec": 72.42058858199067,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.13821892393320964
+          },
+          "response": "To provide you with the experimental result or finding reported here, I would need the specific details of the experiment or study in question. Since you haven't provided any context or details, I can't give you a specific result. However, I can guide you on how to extract and report experimental findings from a given study or experiment.\n\nWhen reporting experimental results, you should include the following elements:\n\n1. **Objective**: Clearly state the purpose of the experiment.\n2. **Methodolo"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.3177321801571445,
+            "rouge1": 0.1466666666666667,
+            "rouge2": 0.0,
+            "rougeL": 0.08,
+            "bert_score": 0.8040134310722351,
+            "answer_relevancy": 0.625,
+            "generation_time": 7.723561638000319,
+            "retrieval_time": 0.0,
+            "time_to_response": 7.723561638000319,
+            "tokens_per_sec": 16.572665047461193,
+            "speed_chars_per_sec": 77.68436740997433,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.13821892393320964
+          },
+          "response": "To provide you with the experimental result or finding reported here, I would need the specific details of the experiment or study in question. Since you haven't provided any context or details, I can't give you a specific result. However, I can guide you on how to extract and report experimental findings from a given study or experiment.\n\nWhen reporting experimental results, you should include the following elements:\n\n1. **Objective**: Clearly state the purpose of the experiment.\n2. **Methodolo"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.2730174041208856,
+            "rouge1": 0.041666666666666664,
+            "rouge2": 0.0,
+            "rougeL": 0.041666666666666664,
+            "bert_score": 0.8014603853225708,
+            "answer_relevancy": 0.375,
+            "generation_time": 14.064043839998703,
+            "retrieval_time": 0.0,
+            "time_to_response": 14.064043839998703,
+            "tokens_per_sec": 3.1996487291953826,
+            "speed_chars_per_sec": 16.282656866349836,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.2730174041208856,
+            "rouge1": 0.041666666666666664,
+            "rouge2": 0.0,
+            "rougeL": 0.041666666666666664,
+            "bert_score": 0.8014603853225708,
+            "answer_relevancy": 0.375,
+            "generation_time": 1.6547151020004094,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.6547151020004094,
+            "tokens_per_sec": 27.195013779471065,
+            "speed_chars_per_sec": 138.3924034555305,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "I'm sorry, but it seems like you haven't provided any context or content for me to identify an experimental result or finding. Please provide the relevant information or details about the experiment or study you are referring to."
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.22799009189991948,
+            "rouge1": 0.07751937984496123,
+            "rouge2": 0.0,
+            "rougeL": 0.06201550387596899,
+            "bert_score": 0.8034987449645996,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2127659574468085,
+            "context_utilization": 0.05687203791469194,
+            "answer_relevancy": 0.25,
+            "generation_time": 74.00577595999857,
+            "retrieval_time": 0.1744694709777832,
+            "time_to_response": 74.18024543097636,
+            "tokens_per_sec": 1.729594728784227,
+            "speed_chars_per_sec": 6.499492691759478,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.27735042735042736
+          },
+          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC (Area Under the Curve). The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different datasets (MIMIC-III and MIMIC-IV). The results show that increasing"
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.22600205653888272,
+            "rouge1": 0.07936507936507937,
+            "rouge2": 0.0,
+            "rougeL": 0.06349206349206349,
+            "bert_score": 0.8047080636024475,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2,
+            "context_utilization": 0.052132701421800945,
+            "answer_relevancy": 0.25,
+            "generation_time": 4.134407898998688,
+            "retrieval_time": 0.22041106224060059,
+            "time_to_response": 4.354818961239289,
+            "tokens_per_sec": 28.782839745643045,
+            "speed_chars_per_sec": 112.71263295352654,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.2111111111111111
+          },
+          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC-ROC. The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different models. The results are given as mean values with confidence intervals."
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.22799009189991948,
+            "rouge1": 0.07751937984496123,
+            "rouge2": 0.0,
+            "rougeL": 0.06201550387596899,
+            "bert_score": 0.8034987449645996,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2127659574468085,
+            "context_utilization": 0.05687203791469194,
+            "answer_relevancy": 0.25,
+            "generation_time": 107.87336632300139,
+            "retrieval_time": 0.18294167518615723,
+            "time_to_response": 108.05630799818755,
+            "tokens_per_sec": 1.1865764865141424,
+            "speed_chars_per_sec": 4.458931953228926,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.27735042735042736
+          },
+          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC (Area Under the Curve). The results are presented for different numbers of prototypes (64, 128, 256, and 5120) and for different datasets (MIMIC-III and MIMIC-IV). The results show that increasing"
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.24565234608451117,
+            "rouge1": 0.1068702290076336,
+            "rouge2": 0.031007751937984496,
+            "rougeL": 0.07633587786259541,
+            "bert_score": 0.8059518933296204,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2653061224489796,
+            "context_utilization": 0.06572769953051644,
+            "answer_relevancy": 0.25,
+            "generation_time": 4.089718434001043,
+            "retrieval_time": 0.1627366542816162,
+            "time_to_response": 4.252455088282659,
+            "tokens_per_sec": 31.29799815455153,
+            "speed_chars_per_sec": 122.25780529121691,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.25235042735042734
+          },
+          "response": "The experimental results reported here are the performance metrics of various retrieval-based models on the ICU readmission prediction task. The models evaluated are REMed, VanillaEHR-RAGp, and Mistral 7b. The performance metrics include accuracy, precision, recall, F1-score, and AUC (Area Under the Curve). The results are presented for different numbers of prototypes (64, 128, 256, and 5120) used in the models. The findings show that increasing the number of prototypes consistently improves the"
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.25846280689573253,
+            "rouge1": 0.1313868613138686,
+            "rouge2": 0.014814814814814815,
+            "rougeL": 0.10218978102189781,
+            "bert_score": 0.8078261613845825,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.25,
+            "context_utilization": 0.04524886877828054,
+            "answer_relevancy": 0.5,
+            "generation_time": 39.211738402000265,
+            "retrieval_time": 0.18599867820739746,
+            "time_to_response": 39.39773708020766,
+            "tokens_per_sec": 3.264328622407378,
+            "speed_chars_per_sec": 13.28683759589253,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.08333333333333334
+          },
+          "response": "The experimental result reported in the context is the effect of varying the number of prototypes on performance. As the number of prototypes increases, the performance consistently improves for ICU readmissions. This is shown in Table 6, which displays the performance metrics (e.g., accuracy, precision, recall, F1 score) for different numbers of prototypes (e.g., 64, 128, 256, 5120). The specific performance metrics are not provided in the context, but the general trend indicates that more prot"
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.25846280689573253,
+            "rouge1": 0.1313868613138686,
+            "rouge2": 0.014814814814814815,
+            "rougeL": 0.10218978102189781,
+            "bert_score": 0.8078261613845825,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.25,
+            "context_utilization": 0.04524886877828054,
+            "answer_relevancy": 0.5,
+            "generation_time": 19.59040622000066,
+            "retrieval_time": 0.14741730690002441,
+            "time_to_response": 19.737823526900684,
+            "tokens_per_sec": 6.5338104050808035,
+            "speed_chars_per_sec": 26.59465016443046,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.15384615384615385,
+            "coherence": 0.08333333333333334
+          },
+          "response": "The experimental result reported in the context is the effect of varying the number of prototypes on performance. As the number of prototypes increases, the performance consistently improves for ICU readmissions. This is shown in Table 6, which displays the performance metrics (e.g., accuracy, precision, recall, F1 score) for different numbers of prototypes (e.g., 64, 128, 256, 5120). The specific performance metrics are not provided in the context, but the general trend indicates that more prot"
+        }
+      }
+    },
+    {
+      "question": "What is the paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' about?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.35179135574201187,
+            "rouge1": 0.1897810218978102,
+            "rouge2": 0.04444444444444444,
+            "rougeL": 0.0875912408759124,
+            "bert_score": 0.8293403387069702,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 302.651922796,
+            "retrieval_time": 0.0,
+            "time_to_response": 302.651922796,
+            "speed_chars_per_sec": 1.8139650160757408,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.3817663817663817
+          },
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" introduces a novel approach to answering questions about music-related texts. The acronym MUST-RAG stands for \"MUSical Text Question Answering with Retrieval Augmented Generation.\"\n\nThe main idea behind MUST-RAG is to combine the strengths of retrieval-based and generative models to improve the performance of text question answering (QA) systems in the context of music-related texts. Music-related texts can"
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.3475160523213392,
+            "rouge1": 0.17307692307692304,
+            "rouge2": 0.04516129032258064,
+            "rougeL": 0.08974358974358974,
+            "bert_score": 0.8269315958023071,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 596.0873066780005,
+            "retrieval_time": 0.0,
+            "time_to_response": 596.0873066780005,
+            "speed_chars_per_sec": 2.833477547798847,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.19998681143417985
+          },
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.3477810589587921,
+            "rouge1": 0.17363344051446944,
+            "rouge2": 0.04530744336569579,
+            "rougeL": 0.090032154340836,
+            "bert_score": 0.8270712494850159,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 494.0062864419997,
+            "retrieval_time": 0.0,
+            "time_to_response": 494.0062864419997,
+            "speed_chars_per_sec": 3.392669376884085,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.20194759574790533
+          },
+          "response": "The paper \"MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation\" focuses on developing a system for answering questions about musical texts, such as lyrics or scores, using a combination of retrieval-augmented generation (RAG) and a pre-trained language model.\n\nThe main goal of the paper is to create a system that can accurately answer questions related to musical texts, which can be challenging due to the unique structure and terminology used in this domain. To achieve "
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.5176298748357544,
+            "rouge1": 0.2677165354330709,
+            "rouge2": 0.08,
+            "rougeL": 0.1259842519685039,
+            "bert_score": 0.8346342444419861,
+            "retrieval_hit_at_k": 1.0,
+            "faithfulness": 0.660377358490566,
+            "context_utilization": 0.20108695652173914,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 961.0260705499998,
+            "retrieval_time": 0.5200862884521484,
+            "time_to_response": 961.5461568384519,
+            "speed_chars_per_sec": 0.5005067133347605,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 0.1875
+          },
+          "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, introduces the MusT-RAG framework. This framework aims to adapt general-purpose Large Language Models (LLMs) for text-only music question answering (MQA) tasks by utilizing Retrieval Augmented Generation (RAG) techniques. The paper addresses the limitations of LLMs in music"
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.5374795473717908,
+            "rouge1": 0.25098039215686274,
+            "rouge2": 0.09486166007905138,
+            "rougeL": 0.1568627450980392,
+            "bert_score": 0.8478357195854187,
+            "retrieval_hit_at_k": 1.0,
+            "faithfulness": 0.7164179104477612,
+            "context_utilization": 0.375,
+            "answer_relevancy": 0.7857142857142857,
+            "generation_time": 772.3765849849988,
+            "retrieval_time": 0.67295241355896,
+            "time_to_response": 773.0495373985577,
+            "speed_chars_per_sec": 1.7879879152820537,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.20357142857142854
+          },
+          "response": "The paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' by Daeyong Kwon, SeungHeon Doh, and Juhan Nam, from the Graduate School of Culture Technology at KAIST, South Korea, focuses on addressing the limitations of Large Language Models (LLMs) in music-related applications. The authors propose the MusT-RAG framework, which stands for Musical Text Question Answering with Retrieval Augmented Generation. This framework aims to enhance general-purpose LLMs for music-"
+        }
+      }
+    },
+    {
+      "question": "What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.4202736672178466,
+            "rouge1": 0.37681159420289856,
+            "rouge2": 0.1323529411764706,
+            "rougeL": 0.1739130434782609,
+            "bert_score": 0.8483384847640991,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 29.341289907000828,
+            "retrieval_time": 0.0,
+            "time_to_response": 29.341289907000828,
+            "tokens_per_sec": 4.362453062074112,
+            "speed_chars_per_sec": 19.42654879204878,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.18287037037037038
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the issue of membership inference attacks in the context of retrieval-augmented generation (RAG) models. Membership inference attacks aim to determine whether a particular data point was part of the training dataset of a machine learning model.\n\nIn this paper, the authors propose a novel attack method called \"Riddle Me This!\" that targets RAG models. RAG models combine the strengths of large lan"
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.4297937465036983,
+            "rouge1": 0.37241379310344824,
+            "rouge2": 0.1258741258741259,
+            "rougeL": 0.20689655172413796,
+            "bert_score": 0.8601073622703552,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 5.364949496999543,
+            "retrieval_time": 0.0,
+            "time_to_response": 5.364949496999543,
+            "tokens_per_sec": 23.858565690429444,
+            "speed_chars_per_sec": 116.86969287421297,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.08585858585858586
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the issue of membership inference attacks in the context of retrieval-augmented generation (RAG) models. These models combine large language models with external knowledge sources, such as databases or the internet, to generate more informative and contextually relevant text.\n\nMembership inference attacks aim to determine whether a particular data point was part of the training dataset used to t"
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.39846520960986975,
+            "rouge1": 0.29931972789115646,
+            "rouge2": 0.06896551724137931,
+            "rougeL": 0.17687074829931973,
+            "bert_score": 0.8445139527320862,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 11.948021029998927,
+            "retrieval_time": 0.0,
+            "time_to_response": 11.948021029998927,
+            "tokens_per_sec": 10.713071200546045,
+            "speed_chars_per_sec": 54.98818577155275,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.2333333333333333
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the vulnerability of retrieval-augmented generation models to membership inference attacks. Membership inference attacks aim to determine whether a particular data record was used in the training of a machine learning model. The paper presents a novel approach to conducting such attacks on models that utilize external knowledge sources, like databases or the internet, to enhance their generation"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.39846520960986975,
+            "rouge1": 0.29931972789115646,
+            "rouge2": 0.06896551724137931,
+            "rougeL": 0.17687074829931973,
+            "bert_score": 0.8445139527320862,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 9.89115385200057,
+            "retrieval_time": 0.0,
+            "time_to_response": 9.89115385200057,
+            "tokens_per_sec": 12.940856235302709,
+            "speed_chars_per_sec": 66.4229886452647,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.2333333333333333
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the vulnerability of retrieval-augmented generation models to membership inference attacks. Membership inference attacks aim to determine whether a particular data record was used in the training of a machine learning model. The paper presents a novel approach to conducting such attacks on models that utilize external knowledge sources, like databases or the internet, to enhance their generation"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.43004010666348375,
+            "rouge1": 0.3611111111111111,
+            "rouge2": 0.1267605633802817,
+            "rougeL": 0.20833333333333331,
+            "bert_score": 0.8587333559989929,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 37.33216324500063,
+            "retrieval_time": 0.0,
+            "time_to_response": 37.33216324500063,
+            "tokens_per_sec": 3.428678889031196,
+            "speed_chars_per_sec": 16.795169245488747,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.20441176470588235
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the issue of membership inference attacks in the context of retrieval-augmented generation (RAG) models. These models combine large language models with external knowledge sources to generate more informative and contextually relevant text.\n\nMembership inference attacks aim to determine whether a particular data point was part of the training dataset of a machine learning model. This can lead to"
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.4252509717577996,
+            "rouge1": 0.3611111111111111,
+            "rouge2": 0.1267605633802817,
+            "rougeL": 0.19444444444444445,
+            "bert_score": 0.8580288887023926,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 3.98702996099928,
+            "retrieval_time": 0.0,
+            "time_to_response": 3.98702996099928,
+            "tokens_per_sec": 32.104097850300334,
+            "speed_chars_per_sec": 157.510730078036,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.1653766769865841
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" explores the issue of membership inference attacks in the context of retrieval-augmented generation (RAG) models. These models combine large language models with external knowledge sources to generate more informative and contextually relevant text.\n\nMembership inference attacks aim to determine whether a particular data point was part of the training dataset of a machine learning model. This can lead to"
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.3838413831410098,
+            "rouge1": 0.34532374100719426,
+            "rouge2": 0.13138686131386862,
+            "rougeL": 0.2733812949640288,
+            "bert_score": 0.859452486038208,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.4838709677419355,
+            "context_utilization": 0.13122171945701358,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 60.38868994299992,
+            "retrieval_time": 0.1577310562133789,
+            "time_to_response": 60.5464209992133,
+            "tokens_per_sec": 2.119602199034579,
+            "speed_chars_per_sec": 9.604447464375436,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.23888888888888893
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" discusses a near-perfect membership inference attack on Retrieval Augmented Generation (RAG) models. RAG is a technique that combines Large Language Models (LLMs) with a knowledge base to generate more accurate and grounded outputs. The paper highlights the vulnerability of RAG models to membership inference attacks, where an attacker can determine if a particular data point was used to train the model. "
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.35643045804683116,
+            "rouge1": 0.31147540983606553,
+            "rouge2": 0.06666666666666667,
+            "rougeL": 0.16393442622950818,
+            "bert_score": 0.832557737827301,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.574468085106383,
+            "context_utilization": 0.1619047619047619,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 4.933881311000732,
+            "retrieval_time": 0.19590377807617188,
+            "time_to_response": 5.129785089076904,
+            "tokens_per_sec": 22.902861434475888,
+            "speed_chars_per_sec": 91.61144573790355,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.06666666666666667
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" discusses a near-perfect membership inference attack on Retrieval Augmented Generation (RAG) models. The authors propose a method to determine whether a given data point was part of the training dataset used to train the RAG model. This paper was presented at the 2025 ACM SIGSAC Conference on Computer and Communications Security (CCS '25) in Taipei, Taiwan."
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.38107906748652776,
+            "rouge1": 0.3623188405797102,
+            "rouge2": 0.1323529411764706,
+            "rougeL": 0.2608695652173913,
+            "bert_score": 0.8570395708084106,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.4745762711864407,
+            "context_utilization": 0.13513513513513514,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 57.69759199299915,
+            "retrieval_time": 0.22318267822265625,
+            "time_to_response": 57.92077467122181,
+            "tokens_per_sec": 2.218463467514054,
+            "speed_chars_per_sec": 9.740441162053893,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.20000000000000004
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" discusses a near-perfect membership inference attack on Retrieval Augmented Generation (RAG) models. RAG is a technique that combines Large Language Models (LLMs) with a knowledge base to generate more accurate and grounded outputs. The paper highlights the vulnerability of RAG models to membership inference attacks, where an attacker can determine if a particular data point was used to train the model. "
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.35643045804683116,
+            "rouge1": 0.31147540983606553,
+            "rouge2": 0.06666666666666667,
+            "rougeL": 0.16393442622950818,
+            "bert_score": 0.832557737827301,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.574468085106383,
+            "context_utilization": 0.1619047619047619,
+            "answer_relevancy": 0.6428571428571429,
+            "generation_time": 5.48125954599891,
+            "retrieval_time": 0.0749971866607666,
+            "time_to_response": 5.556256732659676,
+            "tokens_per_sec": 20.61569955804871,
+            "speed_chars_per_sec": 82.46279823219484,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.11538461538461539,
+            "coherence": 0.06666666666666667
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" discusses a near-perfect membership inference attack on Retrieval Augmented Generation (RAG) models. The authors propose a method to determine whether a given data point was part of the training dataset used to train the RAG model. This paper was presented at the 2025 ACM SIGSAC Conference on Computer and Communications Security (CCS '25) in Taipei, Taiwan."
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.36515559246610085,
+            "rouge1": 0.35460992907801425,
+            "rouge2": 0.10071942446043167,
+            "rougeL": 0.22695035460992907,
+            "bert_score": 0.8608986735343933,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.42857142857142855,
+            "context_utilization": 0.14220183486238533,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 35.21574987399981,
+            "retrieval_time": 0.2620704174041748,
+            "time_to_response": 35.47782029140399,
+            "tokens_per_sec": 3.6347373109468797,
+            "speed_chars_per_sec": 16.072354046843234,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.30654761904761907
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" is about a research study conducted by a team of researchers from various universities. The paper focuses on the concept of Retrieval-Augmented Generation (RAG), which is a method proposed to ground the outputs of Large Language Models (LLMs) by retrieving relevant text from a knowledge base for a given query. The study explores the potential of RAG in achieving near-perfect membership inference, which r"
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.36515559246610085,
+            "rouge1": 0.35460992907801425,
+            "rouge2": 0.10071942446043167,
+            "rougeL": 0.22695035460992907,
+            "bert_score": 0.8608986735343933,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.42857142857142855,
+            "context_utilization": 0.14220183486238533,
+            "answer_relevancy": 0.7142857142857143,
+            "generation_time": 15.310822147999716,
+            "retrieval_time": 0.21628427505493164,
+            "time_to_response": 15.527106423054647,
+            "tokens_per_sec": 8.360099723104849,
+            "speed_chars_per_sec": 36.96731596310425,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.07692307692307693,
+            "coherence": 0.30654761904761907
+          },
+          "response": "The paper \"Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation\" is about a research study conducted by a team of researchers from various universities. The paper focuses on the concept of Retrieval-Augmented Generation (RAG), which is a method proposed to ground the outputs of Large Language Models (LLMs) by retrieving relevant text from a knowledge base for a given query. The study explores the potential of RAG in achieving near-perfect membership inference, which r"
+        }
+      }
+    },
+    {
+      "question": "What limitation or future work is mentioned in this text?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.2649999315429159,
+            "rouge1": 0.08695652173913045,
+            "rouge2": 0.0,
+            "rougeL": 0.057971014492753624,
+            "bert_score": 0.8150467276573181,
+            "answer_relevancy": 0.0,
+            "generation_time": 8.87602594800046,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.87602594800046,
+            "tokens_per_sec": 3.492554008022419,
+            "speed_chars_per_sec": 14.533531194673937,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.2649999315429159,
+            "rouge1": 0.08695652173913045,
+            "rouge2": 0.0,
+            "rougeL": 0.057971014492753624,
+            "bert_score": 0.8150467276573181,
+            "answer_relevancy": 0.0,
+            "generation_time": 1.7261578670004383,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.7261578670004383,
+            "tokens_per_sec": 17.958959949514355,
+            "speed_chars_per_sec": 74.73244624152748,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.3191488197952109,
+            "rouge1": 0.12213740458015267,
+            "rouge2": 0.0,
+            "rougeL": 0.1068702290076336,
+            "bert_score": 0.801365852355957,
+            "answer_relevancy": 0.6,
+            "generation_time": 7.814353591000327,
+            "retrieval_time": 0.0,
+            "time_to_response": 7.814353591000327,
+            "tokens_per_sec": 16.380113659998145,
+            "speed_chars_per_sec": 68.46375631327349,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.13675213675213674
+          },
+          "response": "To provide an accurate response, I would need the specific text in question. However, I can guide you on how to identify limitations or future work mentioned in a text.\n\nWhen looking for limitations or future work in a text, you should:\n\n1. Identify the main findings or conclusions of the study or discussion.\n2. Look for phrases that indicate uncertainty, such as \"may,\" \"could,\" \"potential,\" \"limitations,\" \"challenges,\" or \"further research is needed.\"\n3. Pay attention to the context in which th"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.3191488197952109,
+            "rouge1": 0.12213740458015267,
+            "rouge2": 0.0,
+            "rougeL": 0.1068702290076336,
+            "bert_score": 0.801365852355957,
+            "answer_relevancy": 0.6,
+            "generation_time": 7.924869311998918,
+            "retrieval_time": 0.0,
+            "time_to_response": 7.924869311998918,
+            "tokens_per_sec": 16.151685909343293,
+            "speed_chars_per_sec": 67.50899969920829,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.13675213675213674
+          },
+          "response": "To provide an accurate response, I would need the specific text in question. However, I can guide you on how to identify limitations or future work mentioned in a text.\n\nWhen looking for limitations or future work in a text, you should:\n\n1. Identify the main findings or conclusions of the study or discussion.\n2. Look for phrases that indicate uncertainty, such as \"may,\" \"could,\" \"potential,\" \"limitations,\" \"challenges,\" or \"further research is needed.\"\n3. Pay attention to the context in which th"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.2649999315429159,
+            "rouge1": 0.08695652173913045,
+            "rouge2": 0.0,
+            "rougeL": 0.057971014492753624,
+            "bert_score": 0.8150467276573181,
+            "answer_relevancy": 0.0,
+            "generation_time": 9.06515635299911,
+            "retrieval_time": 0.0,
+            "time_to_response": 9.06515635299911,
+            "tokens_per_sec": 3.4196872941682885,
+            "speed_chars_per_sec": 14.230311643474492,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.2649999315429159,
+            "rouge1": 0.08695652173913045,
+            "rouge2": 0.0,
+            "rougeL": 0.057971014492753624,
+            "bert_score": 0.8150467276573181,
+            "answer_relevancy": 0.0,
+            "generation_time": 1.0941803339992475,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.0941803339992475,
+            "tokens_per_sec": 28.331710081732577,
+            "speed_chars_per_sec": 117.89647098527428,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1111111111111111
+          },
+          "response": "I'm sorry, but it seems like there was no text provided for me to analyze. Could you please provide the text you're referring to?"
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.21490689633237633,
+            "rouge1": 0.037037037037037035,
+            "rouge2": 0.0,
+            "rougeL": 0.037037037037037035,
+            "bert_score": 0.8221182823181152,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2222222222222222,
+            "context_utilization": 0.025157232704402517,
+            "answer_relevancy": 0.2,
+            "generation_time": 16.256026578001183,
+            "retrieval_time": 0.19558358192443848,
+            "time_to_response": 16.45161015992562,
+            "tokens_per_sec": 0.7381877694663257,
+            "speed_chars_per_sec": 4.1830640269758455,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.0
+          },
+          "response": "The text does not explicitly mention any limitations or future work."
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.21490689633237633,
+            "rouge1": 0.037037037037037035,
+            "rouge2": 0.0,
+            "rougeL": 0.037037037037037035,
+            "bert_score": 0.8221182823181152,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2222222222222222,
+            "context_utilization": 0.025157232704402517,
+            "answer_relevancy": 0.2,
+            "generation_time": 0.8369388840001193,
+            "retrieval_time": 0.16044020652770996,
+            "time_to_response": 0.9973790905278292,
+            "tokens_per_sec": 14.33796449108259,
+            "speed_chars_per_sec": 81.248465449468,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.0
+          },
+          "response": "The text does not explicitly mention any limitations or future work."
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.21490689633237633,
+            "rouge1": 0.037037037037037035,
+            "rouge2": 0.0,
+            "rougeL": 0.037037037037037035,
+            "bert_score": 0.8221182823181152,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.2222222222222222,
+            "context_utilization": 0.025157232704402517,
+            "answer_relevancy": 0.2,
+            "generation_time": 15.964577517999714,
+            "retrieval_time": 0.19862794876098633,
+            "time_to_response": 16.1632054667607,
+            "tokens_per_sec": 0.7516641130321339,
+            "speed_chars_per_sec": 4.259429973848758,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.0
+          },
+          "response": "The text does not explicitly mention any limitations or future work."
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.2700632667908908,
+            "rouge1": 0.15217391304347827,
+            "rouge2": 0.0,
+            "rougeL": 0.10869565217391304,
+            "bert_score": 0.8267695307731628,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.39473684210526316,
+            "context_utilization": 0.10344827586206896,
+            "answer_relevancy": 0.2,
+            "generation_time": 2.34016168099879,
+            "retrieval_time": 0.16867923736572266,
+            "time_to_response": 2.5088409183645126,
+            "tokens_per_sec": 26.066575012870462,
+            "speed_chars_per_sec": 150.4169574513181,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.055944055944055944
+          },
+          "response": "The text does not explicitly mention any limitations or future work. It outlines the structure of the discussion section, which includes assumptions about RAG documents, analysis of failure cases, financial costs, and potential countermeasures against attacks. However, it does not provide specific details on limitations or future research directions."
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.2792879045028847,
+            "rouge1": 0.13333333333333333,
+            "rouge2": 0.015037593984962407,
+            "rougeL": 0.07407407407407407,
+            "bert_score": 0.8102091550827026,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.45161290322580644,
+            "context_utilization": 0.13513513513513514,
+            "answer_relevancy": 0.4,
+            "generation_time": 29.753271988998677,
+            "retrieval_time": 0.1587991714477539,
+            "time_to_response": 29.91207116044643,
+            "tokens_per_sec": 4.302047857033277,
+            "speed_chars_per_sec": 20.46833706979114,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.23596403596403595
+          },
+          "response": "Yes, the text mentions limitations and future work in Section 7.4, where potential countermeasures against the attack are discussed along with their limitations.\n\nReferencing the first author's paper, \"7 Discussion\" from the provided context, we can elaborate on the limitations and future work as follows:\n\nIn the \"7 Discussion\" section of the paper, the authors, Smith et al., address the limitations and future work related to their research on RAG documents. They outline the potential countermea"
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.2792879045028847,
+            "rouge1": 0.13333333333333333,
+            "rouge2": 0.015037593984962407,
+            "rougeL": 0.07407407407407407,
+            "bert_score": 0.8102091550827026,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.45161290322580644,
+            "context_utilization": 0.13513513513513514,
+            "answer_relevancy": 0.4,
+            "generation_time": 11.073658159999468,
+            "retrieval_time": 0.1409754753112793,
+            "time_to_response": 11.214633635310747,
+            "tokens_per_sec": 11.558962553347063,
+            "speed_chars_per_sec": 54.99537652334658,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.23596403596403595
+          },
+          "response": "Yes, the text mentions limitations and future work in Section 7.4, where potential countermeasures against the attack are discussed along with their limitations.\n\nReferencing the first author's paper, \"7 Discussion\" from the provided context, we can elaborate on the limitations and future work as follows:\n\nIn the \"7 Discussion\" section of the paper, the authors, Smith et al., address the limitations and future work related to their research on RAG documents. They outline the potential countermea"
+        }
+      }
+    },
+    {
+      "question": "What method or approach is described in this excerpt?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.3168518251371845,
+            "rouge1": 0.10526315789473685,
+            "rouge2": 0.0,
+            "rougeL": 0.07017543859649122,
+            "bert_score": 0.7961773872375488,
+            "answer_relevancy": 0.7777777777777778,
+            "generation_time": 259.1393992599999,
+            "retrieval_time": 0.0,
+            "time_to_response": 259.1393992599999,
+            "speed_chars_per_sec": 1.5397118351720616,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.20357142857142857
+          },
+          "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.3168517910773875,
+            "rouge1": 0.10526315789473685,
+            "rouge2": 0.0,
+            "rougeL": 0.07017543859649122,
+            "bert_score": 0.7961772680282593,
+            "answer_relevancy": 0.7777777777777778,
+            "generation_time": 309.850904758001,
+            "retrieval_time": 0.0,
+            "time_to_response": 309.850904758001,
+            "speed_chars_per_sec": 1.2877161043361356,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.20357142857142857
+          },
+          "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.3168517910773875,
+            "rouge1": 0.10526315789473685,
+            "rouge2": 0.0,
+            "rougeL": 0.07017543859649122,
+            "bert_score": 0.7961772680282593,
+            "answer_relevancy": 0.7777777777777778,
+            "generation_time": 275.9569077080014,
+            "retrieval_time": 0.0,
+            "time_to_response": 275.9569077080014,
+            "speed_chars_per_sec": 1.44587792099118,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.20357142857142857
+          },
+          "response": "The method or approach described in this excerpt is the scientific method. The scientific method is a systematic and logical approach to discovering how things in the universe work. It involves making observations, forming a hypothesis, conducting experiments, analyzing data, and drawing conclusions. This method is widely used in scientific research to ensure that findings are reliable and valid."
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.22744367319297978,
+            "rouge1": 0.0202020202020202,
+            "rouge2": 0.0,
+            "rougeL": 0.0202020202020202,
+            "bert_score": 0.7615407109260559,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.4,
+            "context_utilization": 0.05142857142857143,
+            "answer_relevancy": 0.0,
+            "generation_time": 957.3127594789999,
+            "retrieval_time": 0.5414836406707764,
+            "time_to_response": 957.8542431196706,
+            "speed_chars_per_sec": 0.31233261756870906,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 1.0
+          },
+          "response": "[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank\n[MASK_5]: storage\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity\n[MASK_8]: introduce\n[MASK_9]: extensive\n[MASK_10]: exciting\n\nAnswer:\n[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: Page"
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.2576415938278124,
+            "rouge1": 0.07246376811594203,
+            "rouge2": 0.0,
+            "rougeL": 0.057971014492753624,
+            "bert_score": 0.7583031058311462,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.5084745762711864,
+            "context_utilization": 0.0898876404494382,
+            "answer_relevancy": 0.0,
+            "generation_time": 718.251363686999,
+            "retrieval_time": 0.5116221904754639,
+            "time_to_response": 718.7629858774744,
+            "speed_chars_per_sec": 0.7991631189580851,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.038461538461538464,
+            "coherence": 1.0
+          },
+          "response": "[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK_9]: extensive reference list\n[MASK_10]: exciting areas of future research\n\nAnswer:\n[MASK_1]: extension\n[MASK_2]: PageRank\n[MASK_3]: comprehensive\n[MASK_4]: PageRank model\n[MASK_5]: storage issues\n[MASK_6]: possible alterations\n[MASK_7]: sensitivity and conditioning\n[MASK_8]: introduce\n[MASK"
+        }
+      }
+    },
+    {
+      "question": "What problem does this passage say the work addresses?",
+      "cells": {
+        "baseline|cpu": {
+          "metrics": {
+            "quality_score": 0.3325684272419102,
+            "rouge1": 0.14893617021276595,
+            "rouge2": 0.021739130434782608,
+            "rougeL": 0.12765957446808507,
+            "bert_score": 0.8087942600250244,
+            "answer_relevancy": 0.5555555555555556,
+            "generation_time": 8.251586025999131,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.251586025999131,
+            "tokens_per_sec": 4.120419988699465,
+            "speed_chars_per_sec": 24.601331108999744,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.16666666666666666
+          },
+          "response": "The passage you provided does not contain any information or context to identify a specific problem that the work addresses. Please provide the passage or additional details for a more accurate response."
+        },
+        "baseline|cuda": {
+          "metrics": {
+            "quality_score": 0.3196625867647009,
+            "rouge1": 0.12244897959183673,
+            "rouge2": 0.0,
+            "rougeL": 0.10204081632653061,
+            "bert_score": 0.8148775696754456,
+            "answer_relevancy": 0.5555555555555556,
+            "generation_time": 1.754868264999459,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.754868264999459,
+            "tokens_per_sec": 21.654047063191786,
+            "speed_chars_per_sec": 119.09725884755483,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1875
+          },
+          "response": "The passage you provided does not contain any information or context about a specific problem or work. Please provide the relevant passage or details about the work in question so that I can assist you better."
+        },
+        "baseline_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.32473480397239335,
+            "rouge1": 0.2193548387096774,
+            "rouge2": 0.013071895424836602,
+            "rougeL": 0.11612903225806452,
+            "bert_score": 0.8096987009048462,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 8.377754011999059,
+            "retrieval_time": 0.0,
+            "time_to_response": 8.377754011999059,
+            "tokens_per_sec": 15.278557930523107,
+            "speed_chars_per_sec": 69.82778429184388,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1357927786499215
+          },
+          "response": "To provide an accurate answer, I would need the specific passage in question. However, I can guide you on how to analyze a passage to determine the problem it addresses.\n\nWhen analyzing a passage to identify the problem it addresses, follow these steps:\n\n1. Read the passage carefully: Pay attention to the main ideas, arguments, and any specific issues or challenges mentioned.\n\n2. Identify the context: Understand the setting, characters, and situation in which the problem arises.\n\n3. Look for clu"
+        },
+        "baseline_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.32473480397239335,
+            "rouge1": 0.2193548387096774,
+            "rouge2": 0.013071895424836602,
+            "rougeL": 0.11612903225806452,
+            "bert_score": 0.8096987009048462,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 7.52565954199963,
+            "retrieval_time": 0.0,
+            "time_to_response": 7.52565954199963,
+            "tokens_per_sec": 17.008476039295996,
+            "speed_chars_per_sec": 77.73405064834499,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.1357927786499215
+          },
+          "response": "To provide an accurate answer, I would need the specific passage in question. However, I can guide you on how to analyze a passage to determine the problem it addresses.\n\nWhen analyzing a passage to identify the problem it addresses, follow these steps:\n\n1. Read the passage carefully: Pay attention to the main ideas, arguments, and any specific issues or challenges mentioned.\n\n2. Identify the context: Understand the setting, characters, and situation in which the problem arises.\n\n3. Look for clu"
+        },
+        "fine_tuned|cpu": {
+          "metrics": {
+            "quality_score": 0.3370008183824359,
+            "rouge1": 0.1702127659574468,
+            "rouge2": 0.0,
+            "rougeL": 0.14893617021276595,
+            "bert_score": 0.8024462461471558,
+            "answer_relevancy": 0.5555555555555556,
+            "generation_time": 10.737113201999819,
+            "retrieval_time": 0.0,
+            "time_to_response": 10.737113201999819,
+            "tokens_per_sec": 3.1665867128668626,
+            "speed_chars_per_sec": 18.161306147324655,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.18181818181818182
+          },
+          "response": "The passage you provided does not contain any information or context to identify a specific problem that the work addresses. Please provide the passage or more details about the work in question."
+        },
+        "fine_tuned|cuda": {
+          "metrics": {
+            "quality_score": 0.2902756511467436,
+            "rouge1": 0.06666666666666667,
+            "rouge2": 0.0,
+            "rougeL": 0.06666666666666667,
+            "bert_score": 0.805919885635376,
+            "answer_relevancy": 0.4444444444444444,
+            "generation_time": 1.1224365910002234,
+            "retrieval_time": 0.0,
+            "time_to_response": 1.1224365910002234,
+            "tokens_per_sec": 27.618486646426362,
+            "speed_chars_per_sec": 148.78346032107106,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.13636363636363635
+          },
+          "response": "The passage you provided does not contain any information or context. Please provide the passage you are referring to, so I can help identify the problem it addresses."
+        },
+        "fine_tuned_with_rag|cpu": {
+          "metrics": {
+            "quality_score": 0.3073635268910487,
+            "rouge1": 0.1487603305785124,
+            "rouge2": 0.0,
+            "rougeL": 0.09917355371900828,
+            "bert_score": 0.8194690942764282,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6153846153846154,
+            "context_utilization": 0.1984126984126984,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 32.915230069000245,
+            "retrieval_time": 0.17493605613708496,
+            "time_to_response": 33.09016612513733,
+            "tokens_per_sec": 2.6431533310756685,
+            "speed_chars_per_sec": 12.577764127187663,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "The passage discusses the problem of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in the setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations."
+        },
+        "fine_tuned_with_rag|cuda": {
+          "metrics": {
+            "quality_score": 0.31513596220744555,
+            "rouge1": 0.1610738255033557,
+            "rouge2": 0.013605442176870748,
+            "rougeL": 0.09395973154362415,
+            "bert_score": 0.8119715452194214,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.4666666666666667,
+            "context_utilization": 0.1897810218978102,
+            "answer_relevancy": 1.0,
+            "generation_time": 4.299425578999944,
+            "retrieval_time": 0.17138338088989258,
+            "time_to_response": 4.470808959889837,
+            "tokens_per_sec": 29.77141891354079,
+            "speed_chars_per_sec": 139.32093694696042,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.21583850931677018
+          },
+          "response": "The passage discusses the issue of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in their setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations.\n\nQuestion: What problem does this passage say the work addresses?\n\nAnswer: The passag"
+        },
+        "rag|cpu": {
+          "metrics": {
+            "quality_score": 0.3073635268910487,
+            "rouge1": 0.1487603305785124,
+            "rouge2": 0.0,
+            "rougeL": 0.09917355371900828,
+            "bert_score": 0.8194690942764282,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.6153846153846154,
+            "context_utilization": 0.1984126984126984,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 38.426254130001325,
+            "retrieval_time": 0.36533689498901367,
+            "time_to_response": 38.79159102499034,
+            "tokens_per_sec": 2.264077047574478,
+            "speed_chars_per_sec": 10.77388388156131,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.10714285714285714
+          },
+          "response": "The passage discusses the problem of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in the setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations."
+        },
+        "rag|cuda": {
+          "metrics": {
+            "quality_score": 0.31513596220744555,
+            "rouge1": 0.1610738255033557,
+            "rouge2": 0.013605442176870748,
+            "rougeL": 0.09395973154362415,
+            "bert_score": 0.8119715452194214,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.4666666666666667,
+            "context_utilization": 0.1897810218978102,
+            "answer_relevancy": 1.0,
+            "generation_time": 4.250728944000002,
+            "retrieval_time": 0.1509566307067871,
+            "time_to_response": 4.401685574706789,
+            "tokens_per_sec": 30.11248227922762,
+            "speed_chars_per_sec": 140.917006916073,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.21583850931677018
+          },
+          "response": "The passage discusses the issue of generating topic-focused descriptions using a RAG (Retrieval-Augmented Generation) system. It outlines the assumptions about the nature of the RAG documents in their setup, analyzes the failure cases observed during the attack, examines the financial costs involved in launching the attack, and explores potential countermeasures against the attack, along with their limitations.\n\nQuestion: What problem does this passage say the work addresses?\n\nAnswer: The passag"
+        },
+        "rag_gguf|cpu": {
+          "metrics": {
+            "quality_score": 0.2742378867367818,
+            "rouge1": 0.1592920353982301,
+            "rouge2": 0.0,
+            "rougeL": 0.08849557522123894,
+            "bert_score": 0.8210188746452332,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.40625,
+            "context_utilization": 0.16153846153846155,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 17.28726302799987,
+            "retrieval_time": 0.18718671798706055,
+            "time_to_response": 17.47444974598693,
+            "tokens_per_sec": 4.049223979910658,
+            "speed_chars_per_sec": 19.783351444706355,
+            "cuda_used": 0.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.08333333333333333
+          },
+          "response": "The passage addresses the problem of analyzing the failure cases, financial costs, and potential countermeasures against an attack on RAG documents, as well as exploring topic-focused description generation.\n\nHowever, the specific details of the problem are not provided in the given context. For more information, please refer to Appendix C."
+        },
+        "rag_gguf|cuda": {
+          "metrics": {
+            "quality_score": 0.2742378867367818,
+            "rouge1": 0.1592920353982301,
+            "rouge2": 0.0,
+            "rougeL": 0.08849557522123894,
+            "bert_score": 0.8210188746452332,
+            "retrieval_hit_at_k": 0.0,
+            "faithfulness": 0.40625,
+            "context_utilization": 0.16153846153846155,
+            "answer_relevancy": 0.3333333333333333,
+            "generation_time": 7.180945845999304,
+            "retrieval_time": 0.1524982452392578,
+            "time_to_response": 7.333444091238562,
+            "tokens_per_sec": 9.7480194811661,
+            "speed_chars_per_sec": 47.62603803655438,
+            "cuda_used": 1.0,
+            "domain_relevance": 0.0,
+            "coherence": 0.08333333333333333
+          },
+          "response": "The passage addresses the problem of analyzing the failure cases, financial costs, and potential countermeasures against an attack on RAG documents, as well as exploring topic-focused description generation.\n\nHowever, the specific details of the problem are not provided in the given context. For more information, please refer to Appendix C."
+        }
+      }
+    }
+  ]
+}

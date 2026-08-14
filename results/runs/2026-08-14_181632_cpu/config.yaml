@@ -1,0 +1,104 @@
+# Recommended small local LLM — see README for alternatives
+llm:
+  model: "microsoft/Phi-3-mini-4k-instruct"
+  fine_tuned_path: null
+  # Keeps the full CPU evaluation practical while leaving enough room for concise answers.
+  max_new_tokens: 128
+  # Deterministic decoding for reproducible evaluation (set do_sample: true for demos)
+  temperature: 0.0
+  do_sample: false
+  load_in_8bit: false  # fp16 on GPU; 8-bit hits accelerate `.to()` bugs with this stack
+  # set true only if bitsandbytes+accelerate are known-good on your host
+  # CPU weight dtype. bfloat16 is Phi-3's native dtype and keeps the CPU run inside
+  # ~8GB; float32 doubles memory but prefills faster on CPUs without AVX-512/AMX.
+  cpu_dtype: bfloat16
+
+embeddings:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+
+chunking:
+  chunk_size: 512
+  chunk_overlap: 50
+
+vector_store:
+  collection_name: "arxiv_ml_papers"
+  top_k: 4
+
+prompts:
+  rag_template: |
+    Use the following context to answer the question. If you cannot answer based on the context, say so.
+
+    Context:
+    {context}
+
+    Question: {question}
+
+    Answer:
+
+evaluation:
+  bertscore: true
+  # Where roberta-large scores answers. bert_score's own default is "cuda when
+  # available", which puts a second model on the card the LLM generates on —
+  # Phi-3 fp16 (~7.6GB) plus roberta-large (~1.4GB) plus KV cache is tight on a
+  # 12GB card and OOMs an 8GB one, at scoring time rather than at load. Scoring
+  # is off the generation critical path and runs once per answer, so CPU costs
+  # little and keeps the VRAM for KV cache. Set to cuda or auto to override.
+  bertscore_device: cpu
+  llm_judge: false  # set true to score groundedness with the local LLM (slower)
+  # Heuristic metrics (domain_relevance, coherence, etc.) are diagnostic only —
+  # prefer rougeL, faithfulness, retrieval_hit_at_k, and time_to_response for decisions.
+
+# ---------------------------------------------------------------------------
+# LoRA fine-tuning (step 05)
+# Why LoRA instead of full fine-tune: Phi-3-mini is ~3.8B params. Updating all
+# weights needs far more VRAM/RAM than a laptop GPU (or WSL) can spare, and would
+# erase general capability. LoRA freezes the base and trains tiny rank adapters
+# so we can specialize on our paper Q&A without a full retrain.
+# ---------------------------------------------------------------------------
+fine_tuning:
+  # Same checkpoint as llm.model so eval compares "base vs adapter on identical trunk"
+  base_model: "microsoft/Phi-3-mini-4k-instruct"
+  # One pass is enough for a demo signal on ~tens of instruction rows; more epochs
+  # overfit this tiny set and burn time without changing the story.
+  epochs: 1
+  # Micro-batch = 1 so 12GB GPUs (and CPU fallback) do not OOM on 512-token sequences.
+  # Effective batch is raised via gradient_accumulation_steps in 05_fine_tune.py.
+  batch_size: 1
+  # Higher than full-FT LRs is normal for LoRA: only adapter matrices move, so they
+  # need a stronger step to matter in a single epoch.
+  learning_rate: 2.0e-4
+  # Rank of the low-rank update (trainable params ≈ 2 * r * d per target).
+  # r=8 ≈ 0.04% of Phi-3 weights — enough for domain style on small data, small
+  # enough to keep adapters ~MB and training minutes, not hours.
+  lora_r: 8
+  # Scaling of the LoRA update (effective strength ≈ alpha/r). alpha=2*r is a common
+  # default so the adapter contribution starts in a stable range without retuning LR.
+  lora_alpha: 16
+
+# Registry lineage: v1 = HF base pointer, v2+ = each LoRA adapter from step 05.
+# Lets Model Training UI show "fine-tune = new version" next to GenAI traces.
+mlflow:
+  registered_model_name: "phi-3-mini-gguf-demo"
+
+paths:
+  papers_dir: data/papers
+  processed_dir: data/processed
+  models_dir: models
+
+papers:
+  query: "retrieval augmented generation OR transformer attention"
+  max_results: 5
+  category: cs.LG
+
+# ---------------------------------------------------------------------------
+# GGUF / llama.cpp (same Phi-3 weights, different file + engine)
+# Hub: https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
+# Engine is selected per process via LLM_RUNTIME=gguf (see src.llm.factory).
+# n_gpu_layers: -1 = offload all layers when llama.cpp was built with CUDA.
+# ---------------------------------------------------------------------------
+gguf:
+  repo_id: "microsoft/Phi-3-mini-4k-instruct-gguf"
+  filename: "Phi-3-mini-4k-instruct-q4.gguf"
+  n_ctx: 4096
+  n_gpu_layers: -1
+
