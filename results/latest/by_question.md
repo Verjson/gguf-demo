@@ -7,7 +7,7 @@ Each question shows quality **and** latency across approach × device.
 - **GPU speedup:** CPU time ÷ GPU time (values **> 1×** mean GPU was faster)
 - **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row (HTML Markdown preview; emoji also visible on GitHub)
 
-_Generated: 2026-08-14T04:15:47.045865+00:00_
+_Generated: 2026-08-14T11:40:26.410938+00:00_
 
 ## Overview — quality (`quality_score`)
 

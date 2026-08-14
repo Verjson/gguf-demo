@@ -1,10 +1,10 @@
 # Run summary — 2026-08-14_032911_cuda
 
-- **Exported:** 2026-08-14T04:15:45.271470+00:00
-- **Device:** cuda (cuda_available=True)
+- **Exported:** 2026-08-14T11:40:24.134470+00:00
+- **Device:** cuda
 - **GPU:** NVIDIA GeForce RTX 4080 Laptop GPU
 - **Model:** microsoft/Phi-3-mini-4k-instruct
-- **Postgres metric rows:** 271
+- **Metric rows (this run):** 75
 
 ## How to read improvements
 
@@ -16,7 +16,7 @@ Per-metric cells are colored **green (best) / yellow (mid) / red (worst)** acros
 
 ## Comparison by approach
 
-_Cell colors (per row): 🟢 best · 🟡 mid · 🔴 worst (latency metrics lower-is-better; skipped for cuda_available, cuda_device_count, cuda_used). Colors show in HTML-capable Markdown previews._
+_Cell colors (per row): 🟢 best · 🟡 mid · 🔴 worst (latency metrics lower-is-better; skipped for cpu_logical, cpu_threads, cuda_available, cuda_device_count, cuda_used, model_load_seconds, peak_gpu_mem_mb, peak_rss_mb). Colors show in HTML-capable Markdown previews._
 
 <table>
 <thead><tr>
@@ -68,6 +68,20 @@ _Cell colors (per row): 🟢 best · 🟡 mid · 🔴 worst (latency metrics low
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.6129</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.1969</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.2961</td>
+</tr>
+<tr>
+<td style="text-align:left">time_to_response</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.7355</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.6129</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.3374</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.4364</td>
+</tr>
+<tr>
+<td style="text-align:left">tokens_per_sec</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.8010</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;29.2189</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.0534</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.9928</td>
 </tr>
 <tr>
 <td style="text-align:left">cuda_used</td>
@@ -194,20 +208,6 @@ _Cell colors (per row): 🟢 best · 🟡 mid · 🔴 worst (latency metrics low
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.0067</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.0000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.0000</td>
-</tr>
-<tr>
-<td style="text-align:left">time_to_response</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.7355</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.6129</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.3374</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.4364</td>
-</tr>
-<tr>
-<td style="text-align:left">tokens_per_sec</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.8010</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;29.2189</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.0534</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.9928</td>
 </tr>
 </tbody>
 </table>

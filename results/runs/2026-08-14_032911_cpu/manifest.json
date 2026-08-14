@@ -1,15 +1,19 @@
 {
   "run_id": "2026-08-14_032911_cpu",
-  "exported_at": "2026-08-14T04:13:22.087914+00:00",
+  "exported_at": "2026-08-14T11:40:22.492812+00:00",
   "hardware": {
-    "cuda_available": true,
-    "device": "cuda",
-    "cuda_device_count": 1,
-    "cuda_device_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
-    "cuda_capability": "8.9",
+    "cuda_available": false,
+    "device": "cpu",
+    "cuda_device_count": 0,
+    "cuda_device_name": "none",
+    "cuda_capability": "none",
     "torch_version": "2.13.0+cu130",
-    "cuda_version": "13.0"
+    "cuda_version": "13.0",
+    "cpu_model": "Intel(R) Core(TM) i9-14900HX",
+    "cpu_logical": 32,
+    "cpu_threads": 28
   },
+  "resources": {},
   "llm_model": "microsoft/Phi-3-mini-4k-instruct",
   "artifacts_copied": [
     "comparison_report.json",
@@ -21,5 +25,5 @@
     "evaluation_prompts.txt",
     "evaluation_metrics.csv"
   ],
-  "postgres_rows": 226
+  "postgres_rows": 75
 }

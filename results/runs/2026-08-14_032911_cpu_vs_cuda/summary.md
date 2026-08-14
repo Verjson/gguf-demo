@@ -1,7 +1,9 @@
 # Aggregate CPU vs CUDA — 2026-08-14_032911_cpu vs 2026-08-14_032911_cuda
 
-- **Generated:** 2026-08-14T04:15:47.049248+00:00
+- **Generated:** 2026-08-14T11:40:26.415019+00:00
 - **Per-question view:** [by_question.md](./by_question.md) ← start here
+- **CPU:** Intel(R) Core(TM) i9-14900HX (28 of 32 threads)
+- **GPU:** NVIDIA GeForce RTX 4080 Laptop GPU
 
 Higher quality metrics are better. **Lower `time_to_response` is better.**
 `time_to_response` = `retrieval_time` + `generation_time` (end-to-end wait for an answer).
@@ -17,6 +19,7 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | retrieval_time | 0.0000 | 0.0000 | +0.0000 |
 | generation_time | 9.9804 | 1.7355 | -8.2449 |
 | time_to_response | 9.9804 | 1.7355 | -8.2449 |
+| tokens_per_sec | 4.9042 | 30.8010 | +25.8968 |
 | speed_chars_per_sec | 25.4852 | 155.9477 | +130.4625 |
 | cuda_used | 0.0000 | 1.0000 | +1.0000 |
 | answer_relevancy | 0.4223 | 0.4223 | +0.0000 |
@@ -31,7 +34,6 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | rouge1 | 0.1034 | 0.1008 | -0.0026 |
 | rouge2 | 0.0121 | 0.0102 | -0.0019 |
 | technical_accuracy | 0.0067 | 0.0067 | +0.0000 |
-| tokens_per_sec | 4.9042 | 30.8010 | +25.8968 |
 
 ## Approach: `fine_tuned`
 
@@ -43,6 +45,7 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | retrieval_time | 0.0000 | 0.0000 | +0.0000 |
 | generation_time | 14.3553 | 1.6129 | -12.7425 |
 | time_to_response | 14.3553 | 1.6129 | -12.7425 |
+| tokens_per_sec | 3.3396 | 29.2189 | +25.8793 |
 | speed_chars_per_sec | 17.1536 | 147.1812 | +130.0275 |
 | cuda_used | 0.0000 | 1.0000 | +1.0000 |
 | answer_relevancy | 0.4223 | 0.3853 | -0.0370 |
@@ -57,7 +60,6 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | rouge1 | 0.1029 | 0.0927 | -0.0102 |
 | rouge2 | 0.0118 | 0.0102 | -0.0016 |
 | technical_accuracy | 0.0067 | 0.0067 | +0.0000 |
-| tokens_per_sec | 3.3396 | 29.2189 | +25.8793 |
 
 ## Approach: `fine_tuned_with_rag`
 
@@ -71,6 +73,7 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | retrieval_time | 0.1805 | 0.1406 | -0.0400 |
 | generation_time | 51.9744 | 3.1969 | -48.7775 |
 | time_to_response | 52.1549 | 3.3374 | -48.8175 |
+| tokens_per_sec | 2.1279 | 32.0534 | +29.9255 |
 | speed_chars_per_sec | 9.1941 | 143.7188 | +134.5246 |
 | cuda_used | 0.0000 | 1.0000 | +1.0000 |
 | answer_relevancy | 0.5555 | 0.5507 | -0.0048 |
@@ -88,7 +91,6 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | rouge1 | 0.1335 | 0.1298 | -0.0037 |
 | rouge2 | 0.0174 | 0.0131 | -0.0043 |
 | technical_accuracy | 0.0000 | 0.0000 | +0.0000 |
-| tokens_per_sec | 2.1279 | 32.0534 | +29.9255 |
 
 ## Approach: `rag`
 
@@ -102,6 +104,7 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | retrieval_time | 0.1714 | 0.1403 | -0.0311 |
 | generation_time | 44.8746 | 3.2961 | -41.5785 |
 | time_to_response | 45.0460 | 3.4364 | -41.6096 |
+| tokens_per_sec | 2.2037 | 34.9928 | +32.7890 |
 | speed_chars_per_sec | 9.7215 | 158.9133 | +149.1918 |
 | cuda_used | 0.0000 | 1.0000 | +1.0000 |
 | answer_relevancy | 0.3332 | 0.5507 | +0.2175 |
@@ -119,7 +122,6 @@ GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
 | rouge1 | 0.1345 | 0.1457 | +0.0112 |
 | rouge2 | 0.0170 | 0.0151 | -0.0019 |
 | technical_accuracy | 0.0000 | 0.0000 | +0.0000 |
-| tokens_per_sec | 2.2037 | 34.9928 | +32.7890 |
 
 ## Latency callout (`time_to_response`)
 

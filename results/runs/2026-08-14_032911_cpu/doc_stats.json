@@ -3,13 +3,16 @@
   "num_documents": 5,
   "creation_time_seconds": 5.59815526008606,
   "hardware": {
-    "cuda_available": true,
-    "device": "cuda",
-    "cuda_device_count": 1,
-    "cuda_device_name": "NVIDIA GeForce RTX 4080 Laptop GPU",
-    "cuda_capability": "8.9",
+    "cuda_available": false,
+    "device": "cpu",
+    "cuda_device_count": 0,
+    "cuda_device_name": "none",
+    "cuda_capability": "none",
     "torch_version": "2.13.0+cu130",
-    "cuda_version": "13.0"
+    "cuda_version": "13.0",
+    "cpu_model": "Intel(R) Core(TM) i9-14900HX",
+    "cpu_logical": 32,
+    "cpu_threads": 28
   },
   "document_stats": [
     {
