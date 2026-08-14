@@ -37,6 +37,13 @@ prompts:
 
 evaluation:
   bertscore: true
+  # Where roberta-large scores answers. bert_score's own default is "cuda when
+  # available", which puts a second model on the card the LLM generates on —
+  # Phi-3 fp16 (~7.6GB) plus roberta-large (~1.4GB) plus KV cache is tight on a
+  # 12GB card and OOMs an 8GB one, at scoring time rather than at load. Scoring
+  # is off the generation critical path and runs once per answer, so CPU costs
+  # little and keeps the VRAM for KV cache. Set to cuda or auto to override.
+  bertscore_device: cpu
   llm_judge: false  # set true to score groundedness with the local LLM (slower)
   # Heuristic metrics (domain_relevance, coherence, etc.) are diagnostic only —
   # prefer rougeL, faithfulness, retrieval_hit_at_k, and time_to_response for decisions.
@@ -82,3 +89,16 @@ papers:
   query: "retrieval augmented generation OR transformer attention"
   max_results: 5
   category: cs.LG
+
+# ---------------------------------------------------------------------------
+# GGUF / llama.cpp (same Phi-3 weights, different file + engine)
+# Hub: https://huggingface.co/microsoft/Phi-3-mini-4k-instruct-gguf
+# Engine is selected per process via LLM_RUNTIME=gguf (see src.llm.factory).
+# n_gpu_layers: -1 = offload all layers when llama.cpp was built with CUDA.
+# ---------------------------------------------------------------------------
+gguf:
+  repo_id: "microsoft/Phi-3-mini-4k-instruct-gguf"
+  filename: "Phi-3-mini-4k-instruct-q4.gguf"
+  n_ctx: 4096
+  n_gpu_layers: -1
+
