@@ -299,6 +299,11 @@ class MLflowTracker:
             mlflow.set_tag("stage", self.stage)
             mlflow.set_tag("approach", approach)
             mlflow.set_tag("device", self.hardware.device)
+            if params:
+                if params.get("runtime"):
+                    mlflow.set_tag("runtime", str(params["runtime"]))
+                if params.get("weight_format"):
+                    mlflow.set_tag("weight_format", str(params["weight_format"]))
             mlflow.set_tag("cuda_available", str(self.hardware.cuda_available))
             mlflow.set_tag("mlflow.ui.mode", "evaluation_parent")
             if self.hardware.cuda_device_name:
@@ -407,6 +412,8 @@ class MLflowTracker:
             device=device,
             cuda_available=self.hardware.cuda_available,
             model_name=model_name,
+            runtime=str((params or {}).get("runtime") or "") or None,
+            weight_format=str((params or {}).get("weight_format") or "") or None,
         )
 
     def record_row_metrics(self, metrics: Dict[str, float]) -> None:

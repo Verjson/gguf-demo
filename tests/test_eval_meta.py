@@ -51,6 +51,7 @@ def test_llm_run_params_defaults():
     assert params["max_new_tokens"] == 128
     assert params["cpu_dtype"] == "bfloat16"
     assert params["load_in_8bit"] is False
+    assert params["runtime"] == "transformers"
 
 
 def test_hardware_as_metrics_includes_cpu_budget():

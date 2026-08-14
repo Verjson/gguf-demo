@@ -31,7 +31,9 @@ logger = logging.getLogger(__name__)
 # Preferred column order for the pivot
 APPROACH_ORDER = (
     "baseline",
+    "baseline_gguf",
     "rag",
+    "rag_gguf",
     "fine_tuned",
     "fine_tuned_with_rag",
     "baseline_comparison",
@@ -151,9 +153,13 @@ def cells_from_stage_json(
 
     mapping = [
         ("baseline_results.json", "baseline"),
+        ("baseline_gguf_results.json", "baseline_gguf"),
         ("rag_results.json", "rag"),
+        ("rag_gguf_results.json", "rag_gguf"),
         (f"baseline_results_{device}.json", "baseline"),
+        (f"baseline_gguf_results_{device}.json", "baseline_gguf"),
         (f"rag_results_{device}.json", "rag"),
+        (f"rag_gguf_results_{device}.json", "rag_gguf"),
     ]
     seen_files: set[str] = set()
 
@@ -235,7 +241,11 @@ def pivot_by_question(cells: list[dict[str, Any]]) -> dict[str, Any]:
             device = "cuda"
         key = f"{approach}|{device}"
         # Keep demo approaches only (drop ad-hoc smoke / verify rows from Postgres).
-        if approach not in APPROACH_ORDER and not approach.startswith("fine_tuned"):
+        if (
+            approach not in APPROACH_ORDER
+            and not approach.startswith("fine_tuned")
+            and not approach.endswith("_gguf")
+        ):
             continue
         column_keys.add(key)
 
