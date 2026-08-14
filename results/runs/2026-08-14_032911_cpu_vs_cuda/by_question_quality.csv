@@ -1,7 +1,7 @@
 question,baseline|cpu,baseline|cuda,rag|cpu,rag|cuda,fine_tuned|cpu,fine_tuned|cuda,fine_tuned_with_rag|cpu,fine_tuned_with_rag|cuda
-"According to this passage, what is the main claim or contribution?",0.269863,0.269863,0.294690,0.283604,0.269863,0.269863,0.294690,0.288015
-Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.,0.385547,0.389474,0.386616,0.384425,0.380696,0.379997,0.368631,0.388755
-What experimental result or finding is reported here?,0.273017,0.273017,0.227990,0.245652,0.269400,0.273017,0.226401,0.226002
-What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?,0.420274,0.429794,0.381079,0.356430,0.427942,0.425317,0.385776,0.356430
-What limitation or future work is mentioned in this text?,0.265000,0.265000,0.214907,0.270063,0.265000,0.265000,0.214907,0.214907
-What problem does this passage say the work addresses?,0.332568,0.319663,0.307364,0.315136,0.332568,0.290276,0.314998,0.315136
+"According to this passage, what is the main claim or contribution?",0.065574,0.065574,0.097561,0.091954,0.065574,0.065574,0.097561,0.091954
+Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.,0.146667,0.146667,0.211268,0.198582,0.133333,0.132450,0.195804,0.200000
+What experimental result or finding is reported here?,0.041667,0.041667,0.062016,0.076336,0.021505,0.041667,0.064516,0.063492
+What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?,0.173913,0.206897,0.260870,0.163934,0.209790,0.193103,0.260870,0.163934
+What limitation or future work is mentioned in this text?,0.057971,0.057971,0.037037,0.108696,0.057971,0.057971,0.037037,0.037037
+What problem does this passage say the work addresses?,0.127660,0.102041,0.099174,0.093960,0.127660,0.066667,0.094595,0.093960

@@ -8,136 +8,198 @@ this export. Anything in `results/latest/` is replaced by the next run.
 
 - [`by_question.md`](./by_question.md) — every question, side by side across approaches
 - [`cpu_vs_cuda.json`](./cpu_vs_cuda.json) — aggregate CPU vs GPU deltas, machine readable
+- [`by_question_throughput.csv`](./by_question_throughput.csv) — tokens/sec per question × approach × device
+- [`by_question_latency.csv`](./by_question_latency.csv) — time_to_response per question × approach × device
 
 
 ---
 
-- **Generated:** 2026-08-14T11:40:26.415019+00:00
-- **Per-question view:** [by_question.md](./by_question.md) ← start here
+- **Generated:** 2026-08-14T12:41:29.559765+00:00
 - **CPU:** Intel(R) Core(TM) i9-14900HX (28 of 32 threads)
 - **GPU:** NVIDIA GeForce RTX 4080 Laptop GPU
+- **Per-question breakdown:** [by_question.md](./by_question.md)
 
-Higher quality metrics are better. **Lower `time_to_response` is better.**
-`time_to_response` = `retrieval_time` + `generation_time` (end-to-end wait for an answer).
-GPU speedup = CPU seconds ÷ GPU seconds (e.g. 4.0× means GPU was 4× faster).
+Quality (`rougeL`, `bert_score`, `faithfulness`) should stay within noise across
+devices. **Speed is the device story:** lower `time_to_response`, higher `tokens_per_sec`.
+
+## What changed
+
+### Speed (CPU → GPU, `time_to_response`)
+
+- **baseline:** 9.98s → 1.74s (**5.8×** faster on GPU)
+- **fine_tuned:** 14.36s → 1.61s (**8.9×** faster on GPU)
+- **fine_tuned_with_rag:** 52.15s → 3.34s (**15.6×** faster on GPU)
+- **rag:** 45.05s → 3.44s (**13.1×** faster on GPU)
+
+### Quality (RAG vs baseline, `rougeL`)
+
+- **CPU:** RAG rougeL 0.0727 → 0.0952 (+31.0%)
+- **GPU:** RAG rougeL 0.0711 → 0.0983 (+38.2%)
 
 ## Approach: `baseline`
 
-| Metric | CPU | CUDA | Delta (CUDA − CPU) |
-|--------|-----|------|---------------------|
-| rougeL | 0.0727 | 0.0711 | -0.0015 |
-| bert_score | 0.8051 | 0.8084 | +0.0033 |
-| quality_score | 0.2987 | 0.2985 | -0.0002 |
-| retrieval_time | 0.0000 | 0.0000 | +0.0000 |
-| generation_time | 9.9804 | 1.7355 | -8.2449 |
-| time_to_response | 9.9804 | 1.7355 | -8.2449 |
-| tokens_per_sec | 4.9042 | 30.8010 | +25.8968 |
-| speed_chars_per_sec | 25.4852 | 155.9477 | +130.4625 |
-| cuda_used | 0.0000 | 1.0000 | +1.0000 |
-| answer_relevancy | 0.4223 | 0.4223 | +0.0000 |
-| coherence | 0.1357 | 0.1370 | +0.0013 |
-| completion_tokens | 49.6000 | 50.9333 | +1.3333 |
-| cuda_device_count | 0.0000 | 1.0000 | +1.0000 |
-| domain_relevance | 0.0179 | 0.0179 | +0.0000 |
-| factual_density | 0.0215 | 0.0205 | -0.0010 |
-| prompt_chars | 94.0667 | 94.0667 | +0.0000 |
-| prompt_tokens | 15.3333 | 15.3333 | +0.0000 |
-| response_chars | 254.9333 | 259.9333 | +5.0000 |
-| rouge1 | 0.1034 | 0.1008 | -0.0026 |
-| rouge2 | 0.0121 | 0.0102 | -0.0019 |
-| technical_accuracy | 0.0067 | 0.0067 | +0.0000 |
+<table>
+<thead><tr>
+<th>Metric</th>
+<th>CPU</th>
+<th>CUDA</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left">rougeL</td>
+<td style="text-align:right">0.0727</td>
+<td style="text-align:right">0.0711</td>
+</tr>
+<tr>
+<td style="text-align:left">bert_score</td>
+<td style="text-align:right">0.8051</td>
+<td style="text-align:right">0.8084</td>
+</tr>
+<tr>
+<td style="text-align:left">quality_score</td>
+<td style="text-align:right">0.2987</td>
+<td style="text-align:right">0.2985</td>
+</tr>
+<tr>
+<td style="text-align:left">time_to_response</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;9.9804</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.7355</td>
+</tr>
+<tr>
+<td style="text-align:left">tokens_per_sec</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;4.9042</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;30.8010</td>
+</tr>
+</tbody>
+</table>
 
 ## Approach: `fine_tuned`
 
-| Metric | CPU | CUDA | Delta (CUDA − CPU) |
-|--------|-----|------|---------------------|
-| rougeL | 0.0714 | 0.0659 | -0.0054 |
-| bert_score | 0.8080 | 0.8060 | -0.0020 |
-| quality_score | 0.2987 | 0.2923 | -0.0063 |
-| retrieval_time | 0.0000 | 0.0000 | +0.0000 |
-| generation_time | 14.3553 | 1.6129 | -12.7425 |
-| time_to_response | 14.3553 | 1.6129 | -12.7425 |
-| tokens_per_sec | 3.3396 | 29.2189 | +25.8793 |
-| speed_chars_per_sec | 17.1536 | 147.1812 | +130.0275 |
-| cuda_used | 0.0000 | 1.0000 | +1.0000 |
-| answer_relevancy | 0.4223 | 0.3853 | -0.0370 |
-| coherence | 0.1148 | 0.1154 | +0.0007 |
-| completion_tokens | 48.6000 | 48.6000 | +0.0000 |
-| cuda_device_count | 0.0000 | 1.0000 | +1.0000 |
-| domain_relevance | 0.0179 | 0.0179 | +0.0000 |
-| factual_density | 0.0125 | 0.0205 | +0.0080 |
-| prompt_chars | 94.0667 | 94.0667 | +0.0000 |
-| prompt_tokens | 15.3333 | 15.3333 | +0.0000 |
-| response_chars | 249.8000 | 247.0667 | -2.7333 |
-| rouge1 | 0.1029 | 0.0927 | -0.0102 |
-| rouge2 | 0.0118 | 0.0102 | -0.0016 |
-| technical_accuracy | 0.0067 | 0.0067 | +0.0000 |
+<table>
+<thead><tr>
+<th>Metric</th>
+<th>CPU</th>
+<th>CUDA</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left">rougeL</td>
+<td style="text-align:right">0.0714</td>
+<td style="text-align:right">0.0659</td>
+</tr>
+<tr>
+<td style="text-align:left">bert_score</td>
+<td style="text-align:right">0.8080</td>
+<td style="text-align:right">0.8060</td>
+</tr>
+<tr>
+<td style="text-align:left">quality_score</td>
+<td style="text-align:right">0.2987</td>
+<td style="text-align:right">0.2923</td>
+</tr>
+<tr>
+<td style="text-align:left">time_to_response</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;14.3553</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.6129</td>
+</tr>
+<tr>
+<td style="text-align:left">tokens_per_sec</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.3396</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;29.2189</td>
+</tr>
+</tbody>
+</table>
 
 ## Approach: `fine_tuned_with_rag`
 
-| Metric | CPU | CUDA | Delta (CUDA − CPU) |
-|--------|-----|------|---------------------|
-| rougeL | 0.0957 | 0.0896 | -0.0061 |
-| bert_score | 0.8078 | 0.8078 | +0.0001 |
-| retrieval_hit_at_k | 0.0000 | 0.0000 | +0.0000 |
-| faithfulness | 0.3625 | 0.3696 | +0.0071 |
-| quality_score | 0.2773 | 0.2765 | -0.0009 |
-| retrieval_time | 0.1805 | 0.1406 | -0.0400 |
-| generation_time | 51.9744 | 3.1969 | -48.7775 |
-| time_to_response | 52.1549 | 3.3374 | -48.8175 |
-| tokens_per_sec | 2.1279 | 32.0534 | +29.9255 |
-| speed_chars_per_sec | 9.1941 | 143.7188 | +134.5246 |
-| cuda_used | 0.0000 | 1.0000 | +1.0000 |
-| answer_relevancy | 0.5555 | 0.5507 | -0.0048 |
-| coherence | 0.1992 | 0.2232 | +0.0240 |
-| completion_tokens | 112.5333 | 104.8000 | -7.7333 |
-| context_chars | 1390.6000 | 1390.6000 | +0.0000 |
-| context_utilization | 0.1224 | 0.1229 | +0.0005 |
-| cuda_device_count | 0.0000 | 1.0000 | +1.0000 |
-| domain_relevance | 0.0615 | 0.0641 | +0.0026 |
-| factual_density | 0.0526 | 0.0506 | -0.0020 |
-| n_chunks_retrieved | 4.0000 | 4.0000 | +0.0000 |
-| prompt_chars | 1617.6667 | 1617.6667 | +0.0000 |
-| prompt_tokens | 645.9333 | 645.9333 | +0.0000 |
-| response_chars | 470.4000 | 456.0667 | -14.3333 |
-| rouge1 | 0.1335 | 0.1298 | -0.0037 |
-| rouge2 | 0.0174 | 0.0131 | -0.0043 |
-| technical_accuracy | 0.0000 | 0.0000 | +0.0000 |
+<table>
+<thead><tr>
+<th>Metric</th>
+<th>CPU</th>
+<th>CUDA</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left">rougeL</td>
+<td style="text-align:right">0.0957</td>
+<td style="text-align:right">0.0896</td>
+</tr>
+<tr>
+<td style="text-align:left">bert_score</td>
+<td style="text-align:right">0.8078</td>
+<td style="text-align:right">0.8078</td>
+</tr>
+<tr>
+<td style="text-align:left">faithfulness</td>
+<td style="text-align:right">0.3625</td>
+<td style="text-align:right">0.3696</td>
+</tr>
+<tr>
+<td style="text-align:left">quality_score</td>
+<td style="text-align:right">0.2773</td>
+<td style="text-align:right">0.2765</td>
+</tr>
+<tr>
+<td style="text-align:left">time_to_response</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;52.1549</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.3374</td>
+</tr>
+<tr>
+<td style="text-align:left">tokens_per_sec</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.1279</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;32.0534</td>
+</tr>
+<tr>
+<td style="text-align:left">context_utilization</td>
+<td style="text-align:right">0.1224</td>
+<td style="text-align:right">0.1229</td>
+</tr>
+</tbody>
+</table>
 
 ## Approach: `rag`
 
-| Metric | CPU | CUDA | Delta (CUDA − CPU) |
-|--------|-----|------|---------------------|
-| rougeL | 0.0952 | 0.0983 | +0.0031 |
-| bert_score | 0.8107 | 0.8085 | -0.0022 |
-| retrieval_hit_at_k | 0.0000 | 0.0000 | +0.0000 |
-| faithfulness | 0.4189 | 0.4109 | -0.0081 |
-| quality_score | 0.2765 | 0.2869 | +0.0104 |
-| retrieval_time | 0.1714 | 0.1403 | -0.0311 |
-| generation_time | 44.8746 | 3.2961 | -41.5785 |
-| time_to_response | 45.0460 | 3.4364 | -41.6096 |
-| tokens_per_sec | 2.2037 | 34.9928 | +32.7890 |
-| speed_chars_per_sec | 9.7215 | 158.9133 | +149.1918 |
-| cuda_used | 0.0000 | 1.0000 | +1.0000 |
-| answer_relevancy | 0.3332 | 0.5507 | +0.2175 |
-| coherence | 0.1713 | 0.2462 | +0.0749 |
-| completion_tokens | 98.8667 | 114.3333 | +15.4667 |
-| context_chars | 1390.6000 | 1390.6000 | +0.0000 |
-| context_utilization | 0.1281 | 0.1367 | +0.0086 |
-| cuda_device_count | 0.0000 | 1.0000 | +1.0000 |
-| domain_relevance | 0.0615 | 0.0641 | +0.0026 |
-| factual_density | 0.0510 | 0.0464 | -0.0046 |
-| n_chunks_retrieved | 4.0000 | 4.0000 | +0.0000 |
-| prompt_chars | 1617.6667 | 1617.6667 | +0.0000 |
-| prompt_tokens | 645.9333 | 645.9333 | +0.0000 |
-| response_chars | 417.9333 | 505.6667 | +87.7333 |
-| rouge1 | 0.1345 | 0.1457 | +0.0112 |
-| rouge2 | 0.0170 | 0.0151 | -0.0019 |
-| technical_accuracy | 0.0000 | 0.0000 | +0.0000 |
-
-## Latency callout (`time_to_response`)
-
-- **baseline:** CPU 9.98s → CUDA 1.74s (**5.8×** faster time-to-response)
-- **fine_tuned:** CPU 14.36s → CUDA 1.61s (**8.9×** faster time-to-response)
-- **fine_tuned_with_rag:** CPU 52.15s → CUDA 3.34s (**15.6×** faster time-to-response)
-- **rag:** CPU 45.05s → CUDA 3.44s (**13.1×** faster time-to-response)
+<table>
+<thead><tr>
+<th>Metric</th>
+<th>CPU</th>
+<th>CUDA</th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left">rougeL</td>
+<td style="text-align:right">0.0952</td>
+<td style="text-align:right">0.0983</td>
+</tr>
+<tr>
+<td style="text-align:left">bert_score</td>
+<td style="text-align:right">0.8107</td>
+<td style="text-align:right">0.8085</td>
+</tr>
+<tr>
+<td style="text-align:left">faithfulness</td>
+<td style="text-align:right">0.4189</td>
+<td style="text-align:right">0.4109</td>
+</tr>
+<tr>
+<td style="text-align:left">quality_score</td>
+<td style="text-align:right">0.2765</td>
+<td style="text-align:right">0.2869</td>
+</tr>
+<tr>
+<td style="text-align:left">time_to_response</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;45.0460</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.4364</td>
+</tr>
+<tr>
+<td style="text-align:left">tokens_per_sec</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.2037</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.9928</td>
+</tr>
+<tr>
+<td style="text-align:left">context_utilization</td>
+<td style="text-align:right">0.1281</td>
+<td style="text-align:right">0.1367</td>
+</tr>
+</tbody>
+</table>

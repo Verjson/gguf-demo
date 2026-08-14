@@ -2,14 +2,14 @@
 
 Each question shows quality **and** latency across approach × device.
 
-- **Quality:** higher `quality_score` / `rougeL` is better
-- **Time to response:** `retrieval_time` + `generation_time` (seconds) — **lower is better**
-- **GPU speedup:** CPU time ÷ GPU time (values **> 1×** mean GPU was faster)
-- **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row (HTML Markdown preview; emoji also visible on GitHub)
+- **rougeL:** overlap with the ground-truth answer — **higher is better** (the RAG quality story)
+- **Time to response:** retrieval + generation (seconds) — **lower is better** (the device story)
+- **tokens_per_sec:** decode throughput — **higher is better**
+- **Colors:** 🟢 best · 🟡 mid · 🔴 worst within each row; ties within noise are left uncolored
 
-_Generated: 2026-08-14T11:40:22.503578+00:00_
+_Generated: 2026-08-14T12:41:26.607517+00:00_
 
-## Overview — quality (`quality_score`)
+## Overview — overlap with ground truth (`rougeL`)
 
 <table>
 <thead><tr>
@@ -26,102 +26,102 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <tbody>
 <tr>
 <td style="text-align:left">According to this passage, what is the main claim or cont...</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.284</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.288</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.098</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.092</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.098</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.092</td>
 </tr>
 <tr>
 <td style="text-align:left">Summarize the contribution of 'Automated Literature Revie...</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.492</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.438</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.583</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.566</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.204</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.264</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.197</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.394</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.144</td>
 <td style="text-align:right">—</td>
 <td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">Summarize the contribution of 'Lightweight and Direct Doc...</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.389</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.387</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.384</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.381</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.380</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.369</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.389</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.147</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.147</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.211</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.199</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.133</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.132</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.196</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.200</td>
 </tr>
 <tr>
 <td style="text-align:left">What experimental result or finding is reported here?</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.273</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.228</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.246</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.269</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.226</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.226</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.062</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.076</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.022</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.065</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.063</td>
 </tr>
 <tr>
 <td style="text-align:left">What is the paper 'MUST-RAG: MUSical Text Question Answer...</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.352</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.348</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.518</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.537</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.088</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.090</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.126</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.157</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.348</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.090</td>
 <td style="text-align:right">—</td>
 <td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">What is the paper 'Riddle Me This! Stealthy Membership In...</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.420</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.430</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.381</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.428</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.425</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.174</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.207</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.261</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.164</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.210</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.193</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.261</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.164</td>
 </tr>
 <tr>
 <td style="text-align:left">What limitation or future work is mentioned in this text?</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.215</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.270</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.215</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.109</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
 </tr>
 <tr>
 <td style="text-align:left">What method or approach is described in this excerpt?</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.227</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.258</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.020</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.058</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
 <td style="text-align:right">—</td>
 <td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">What problem does this passage say the work addresses?</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.320</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.307</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.290</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.128</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.102</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.099</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.094</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.128</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.067</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.095</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.094</td>
 </tr>
 </tbody>
 </table>
@@ -149,7 +149,7 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;41.408</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.219</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.547</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.076</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.076</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;45.056</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.359</td>
 </tr>
@@ -167,13 +167,13 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <tr>
 <td style="text-align:left">Summarize the contribution of 'Lightweight and Direct Doc...</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;24.264</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.414</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;4.414</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;52.644</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.621</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.305</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.842</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.842</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;56.402</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.171</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;4.171</td>
 </tr>
 <tr>
 <td style="text-align:left">What experimental result or finding is reported here?</td>
@@ -182,7 +182,7 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;68.645</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.849</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;12.402</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.513</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.513</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;73.174</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.742</td>
 </tr>
@@ -204,7 +204,7 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;54.712</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.014</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.517</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.908</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.908</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;59.182</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.593</td>
 </tr>
@@ -226,20 +226,138 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.854</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.763</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;275.957</td>
 <td style="text-align:right">—</td>
 <td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left">What problem does this passage say the work addresses?</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;7.046</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.232</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.232</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.905</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.523</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;10.344</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.111</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;45.106</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.985</td>
+</tr>
+</tbody>
+</table>
+
+
+## Overview — throughput (`tokens_per_sec`, higher is better)
+
+<table>
+<thead><tr>
+<th>Question</th>
+<th><code>baseline|cpu</code></th>
+<th><code>baseline|cuda</code></th>
+<th><code>rag|cpu</code></th>
+<th><code>rag|cuda</code></th>
+<th><code>fine_tuned|cpu</code></th>
+<th><code>fine_tuned|cuda</code></th>
+<th><code>fine_tuned_with_rag|cpu</code></th>
+<th><code>fine_tuned_with_rag|cuda</code></th>
+</tr></thead>
+<tbody>
+<tr>
+<td style="text-align:left">According to this passage, what is the main claim or cont...</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.739</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.650</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.105</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.477</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.247</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;28.808</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.852</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.332</td>
+</tr>
+<tr>
+<td style="text-align:left">Summarize the contribution of 'Automated Literature Revie...</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td style="text-align:left">Summarize the contribution of 'Lightweight and Direct Doc...</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.275</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;29.001</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.440</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;37.056</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.526</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;33.314</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.276</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;31.696</td>
+</tr>
+<tr>
+<td style="text-align:left">What experimental result or finding is reported here?</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.999</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.754</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.869</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.620</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.386</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;29.751</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.754</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.910</td>
+</tr>
+<tr>
+<td style="text-align:left">What is the paper 'MUST-RAG: MUSical Text Question Answer...</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td style="text-align:left">What is the paper 'Riddle Me This! Stealthy Membership In...</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.025</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;23.039</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.350</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;23.113</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.505</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;32.756</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.168</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;32.701</td>
+</tr>
+<tr>
+<td style="text-align:left">What limitation or future work is mentioned in this text?</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.702</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.696</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.834</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.228</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.224</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;27.543</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.802</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;26.654</td>
+</tr>
+<tr>
+<td style="text-align:left">What method or approach is described in this excerpt?</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+<td style="text-align:right">—</td>
+</tr>
+<tr>
+<td style="text-align:left">What problem does this passage say the work addresses?</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.825</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.833</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.830</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;37.738</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.287</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;27.913</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.850</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;33.242</td>
 </tr>
 </tbody>
 </table>
@@ -252,112 +370,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;6.541</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;6.541</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;20.638</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.739</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.011</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.011</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;133.477</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.650</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.098</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.786</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.617</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.187</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;41.221</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;41.408</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;12.688</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.105</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.284</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.092</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.788</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.092</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.514</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.131</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.088</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.284</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.219</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;168.552</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.477</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.547</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.547</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;14.141</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.247</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.066</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.076</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.076</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;125.455</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.270</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.076</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;28.808</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.098</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.786</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.617</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.177</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;44.879</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.295</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;45.056</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;11.654</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.852</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.288</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.092</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.788</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.092</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.543</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.132</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.227</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.288</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.359</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;158.067</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.332</td>
 </tr>
 </tbody>
 </table>
@@ -386,76 +468,52 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.492</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.877</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.492</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.478</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.017</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.438</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.204</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.871</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.438</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;525.176</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.473</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.583</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.264</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.854</td>
-<td style="text-align:right">1.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.264</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.750</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.699</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;960.459</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.583</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;962.158</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.580</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.566</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.197</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.878</td>
-<td style="text-align:right">1.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.699</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.138</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;761.432</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.566</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;761.570</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.685</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.394</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.144</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.854</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.394</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;528.042</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.568</td>
 </tr>
 </tbody>
 </table>
@@ -479,112 +537,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.147</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.846</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.147</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.386</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;24.264</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;24.264</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;28.891</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.275</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.147</td>
+<td style="text-align:right">—</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.389</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.147</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.844</td>
-<td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.414</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.414</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;156.106</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;4.414</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;29.001</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.387</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.211</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.846</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.607</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.174</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;52.469</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.387</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;52.644</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;10.921</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.440</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.384</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.199</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.845</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.199</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.625</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.167</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.454</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.384</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.621</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;168.491</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;37.056</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.381</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.133</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.844</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.133</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.381</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.305</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.305</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;19.061</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.526</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.380</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.132</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.843</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.842</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.842</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;183.226</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.380</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.842</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;33.314</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.369</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.196</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.850</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.525</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.172</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;56.230</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.369</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;56.402</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;10.742</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.276</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.389</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.200</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.847</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.200</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.649</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.132</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.038</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.171</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;142.634</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.389</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;4.171</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;31.696</td>
 </tr>
 </tbody>
 </table>
@@ -613,112 +635,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.273</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.801</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.003</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.003</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;25.437</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.999</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.801</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.374</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.374</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;166.679</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.754</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.228</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.062</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.803</td>
-<td style="text-align:right">0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.213</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.153</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;68.492</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.062</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.213</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.228</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;68.645</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;7.023</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.869</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.246</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.076</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.806</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.265</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.152</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.697</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.246</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.849</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;135.234</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.620</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.269</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.022</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.810</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.269</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;12.402</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;12.402</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;16.368</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.386</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.042</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.801</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.513</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.513</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;151.399</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.273</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.513</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;29.751</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.226</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.065</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.800</td>
-<td style="text-align:right">0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.205</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.178</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;72.997</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.065</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.205</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.226</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;73.174</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;6.247</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;1.754</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.226</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.063</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.805</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.063</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.200</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.126</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.616</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.226</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.742</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;128.876</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;32.910</td>
 </tr>
 </tbody>
 </table>
@@ -747,76 +733,52 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.352</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.088</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.829</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.352</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;302.652</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.814</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.090</td>
+<td style="text-align:right">—</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.348</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.090</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.827</td>
-<td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;596.087</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;596.087</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;2.833</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.518</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.126</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.835</td>
-<td style="text-align:right">1.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.660</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.520</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;961.026</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.518</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;961.546</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.501</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.537</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.157</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.848</td>
-<td style="text-align:right">1.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.716</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.673</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;772.377</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.537</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;773.050</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.788</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.348</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.090</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.827</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.090</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.348</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;494.006</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.393</td>
 </tr>
 </tbody>
 </table>
@@ -840,112 +802,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.420</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.174</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.848</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.174</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.420</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;25.471</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;25.471</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;22.379</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.025</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.430</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.207</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.860</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.430</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.556</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.556</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;112.857</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;23.039</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.381</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.261</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.857</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.475</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.239</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;54.473</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.381</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;54.712</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;10.317</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.350</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.164</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.833</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.574</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.125</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.889</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;5.014</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;92.453</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;23.113</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.428</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.210</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.857</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.428</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.517</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;36.517</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;17.307</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.505</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.425</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.193</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.860</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.908</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.908</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;160.966</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.425</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.908</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;32.756</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.261</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.860</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.500</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.146</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;59.036</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.386</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;59.182</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;9.621</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.168</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.164</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.833</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.574</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.137</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.456</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.356</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;3.593</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;130.806</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;32.701</td>
 </tr>
 </tbody>
 </table>
@@ -974,112 +900,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.815</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;6.593</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;6.593</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;19.565</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.702</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.815</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.010</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.010</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;127.734</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.696</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.215</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.822</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.222</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.199</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;14.390</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;14.589</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.725</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.834</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.270</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.109</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.827</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.395</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.133</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.782</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.270</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.915</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;197.514</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;34.228</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.815</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.614</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;9.614</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;13.418</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.224</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.815</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.265</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.126</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.126</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;114.613</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;27.543</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.215</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.822</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.222</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.188</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;14.954</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;15.143</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;4.547</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.802</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.037</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.822</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.222</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.203</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.450</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.215</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.653</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;151.041</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;26.654</td>
 </tr>
 </tbody>
 </table>
@@ -1108,76 +998,52 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.796</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;259.139</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.540</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.796</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;309.851</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.288</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.227</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.020</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.762</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.400</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.541</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.313</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.227</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;957.854</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.312</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.258</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.058</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.758</td>
-<td style="text-align:right">0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.058</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.508</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.512</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.251</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.258</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;718.763</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.799</td>
+<td style="text-align:right">—</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.317</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.070</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.796</td>
 <td style="text-align:right">—</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.317</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;275.957</td>
 <td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;275.957</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.446</td>
 </tr>
 </tbody>
 </table>
@@ -1201,112 +1067,76 @@ _Generated: 2026-08-14T11:40:22.503578+00:00_
 <table>
 <thead><tr>
 <th>Approach × Device</th>
-<th>quality_score</th>
 <th>rougeL</th>
-<th>bert_score</th>
-<th>retrieval_hit_at_k</th>
 <th>faithfulness</th>
-<th>retrieval_time</th>
-<th>generation_time</th>
+<th>quality_score</th>
 <th>time_to_response</th>
-<th>speed_chars_per_sec</th>
+<th>tokens_per_sec</th>
 </tr></thead>
 <tbody>
 <tr>
 <td style="text-align:left"><code>baseline|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.128</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.809</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;7.046</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;7.046</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;28.811</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;4.825</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>baseline|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.320</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.102</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.815</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.232</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;1.232</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;169.582</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.320</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.232</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.833</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.307</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.099</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.819</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.615</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.162</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.743</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.307</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;30.905</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;13.467</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.830</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.094</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.812</td>
-<td style="text-align:right">0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.467</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.131</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.392</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.467</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.523</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;176.601</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;37.738</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cpu</code></td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.128</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.809</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.333</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;10.344</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;10.344</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;19.624</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;3.287</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned|cuda</code></td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.290</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.067</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.806</td>
 <td style="text-align:right">—</td>
-<td style="text-align:right">—</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;0.000</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.290</td>
 <td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.111</td>
-<td style="background-color:#c6efce;text-align:right;white-space:nowrap">🟢&nbsp;1.111</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;150.370</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;27.913</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cpu</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.095</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.811</td>
-<td style="text-align:right">0.000</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.466</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.190</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;44.916</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;45.106</td>
-<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;13.113</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;2.850</td>
 </tr>
 <tr>
 <td style="text-align:left"><code>fine_tuned_with_rag|cuda</code></td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.094</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.812</td>
-<td style="text-align:right">0.000</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.467</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.134</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.851</td>
+<td style="background-color:#ffc7ce;text-align:right;white-space:nowrap">🔴&nbsp;0.467</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;0.315</td>
 <td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;3.985</td>
-<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;155.563</td>
+<td style="background-color:#ffeb9c;text-align:right;white-space:nowrap">🟡&nbsp;33.242</td>
 </tr>
 </tbody>
 </table>

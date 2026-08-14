@@ -1,0 +1,10 @@
+question,baseline|cpu,baseline|cuda,rag|cpu,rag|cuda,fine_tuned|cpu,fine_tuned|cuda,fine_tuned_with_rag|cpu,fine_tuned_with_rag|cuda
+"According to this passage, what is the main claim or contribution?",4.739114,30.650379,3.105233,34.476611,3.247215,28.808102,2.852129,32.331827
+Summarize the contribution of 'Automated Literature Review Using NLP Techniques and LLM-Based Retrieval-Augmented Generation'.,,,,,,,,
+Summarize the contribution of 'Lightweight and Direct Document Relevance Optimization for Generative Information Retrieval'.,5.275306,29.000734,2.439532,37.056429,3.525719,33.313853,2.276359,31.696451
+What experimental result or finding is reported here?,4.998550,32.753596,1.868821,34.619877,3.386451,29.750870,1.753504,32.910458
+What is the paper 'MUST-RAG: MUSical Text Question Answering with Retrieval Augmented Generation' about?,,,,,,,,
+What is the paper 'Riddle Me This! Stealthy Membership Inference for Retrieval-Augmented Generation' about?,5.025412,23.039354,2.349789,23.113283,3.505250,32.756185,2.168154,32.701384
+What limitation or future work is mentioned in this text?,4.701782,30.695880,0.833906,34.228340,3.224406,27.542624,0.802450,26.654229
+What method or approach is described in this excerpt?,,,,,,,,
+What problem does this passage say the work addresses?,4.825440,30.833077,2.829921,37.737787,3.286802,27.913013,2.849774,33.242084

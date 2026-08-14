@@ -1,6 +1,6 @@
 {
   "run_id": "2026-08-14_032911_cuda",
-  "exported_at": "2026-08-14T11:40:24.134470+00:00",
+  "exported_at": "2026-08-14T12:41:27.816811+00:00",
   "hardware": {
     "cuda_available": true,
     "device": "cuda",
