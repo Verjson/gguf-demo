@@ -20,6 +20,8 @@ MULTIPROC_DIR = Path(os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus
 MULTIPROC_DIR.mkdir(parents=True, exist_ok=True)
 os.environ["PROMETHEUS_MULTIPROC_DIR"] = str(MULTIPROC_DIR)
 
+from wsgiref.simple_server import make_server  # noqa: E402
+
 from prometheus_client import (  # noqa: E402
     CONTENT_TYPE_LATEST,
     CollectorRegistry,
@@ -27,7 +29,6 @@ from prometheus_client import (  # noqa: E402
     generate_latest,
     multiprocess,
 )
-from wsgiref.simple_server import make_server  # noqa: E402
 
 PORT = int(os.environ.get("METRICS_PORT", "8000"))
 

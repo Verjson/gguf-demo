@@ -1,6 +1,7 @@
 """Unit tests for runtime names, engine registry, and tracking params."""
 
-from src.llm.factory import registered_runtimes, register_engine, build_engine
+from src.latency import llm_run_params
+from src.llm.factory import build_engine, register_engine, registered_runtimes
 from src.llm.port import DecodeSettings, GenerationResult
 from src.llm.runtime import (
     RUNTIME_GGUF,
@@ -9,7 +10,6 @@ from src.llm.runtime import (
     llm_tracking_params,
     resolve_runtime,
 )
-from src.latency import llm_run_params
 
 
 def test_resolve_runtime_default():

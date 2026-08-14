@@ -15,9 +15,9 @@ import logging
 import os
 import sys
 
+import mlflow
 import torch
 import yaml
-import mlflow
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
 from transformers import (

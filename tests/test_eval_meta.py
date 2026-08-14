@@ -1,4 +1,9 @@
-from src.latency import attach_generation_meta, attach_latency_metrics, attach_retrieval_meta, llm_run_params
+from src.latency import (
+    attach_generation_meta,
+    attach_latency_metrics,
+    attach_retrieval_meta,
+    llm_run_params,
+)
 from src.resource_metrics import percentile
 
 

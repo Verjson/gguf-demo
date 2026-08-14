@@ -81,7 +81,7 @@ def write_aggregate_summary(
         f"- **Generated:** {datetime.now(timezone.utc).isoformat()}",
         f"- **CPU:** {_device_line(out_dir.parent / cpu_run_id, 'cpu')}",
         f"- **GPU:** {_device_line(out_dir.parent / cuda_run_id, 'cuda')}",
-        f"- **Per-question breakdown:** [by_question.md](./by_question.md)",
+        "- **Per-question breakdown:** [by_question.md](./by_question.md)",
         "",
         "Quality (`rougeL`, `bert_score`, `faithfulness`) should stay within noise across",
         "devices. **Speed is the device story:** lower `time_to_response`, higher `tokens_per_sec`.",
@@ -228,7 +228,7 @@ def main() -> None:
     print(f"  Open: {out_dir / 'by_question.md'}")
     print(f"  Columns: {', '.join(pivot.get('columns', []))}")
     print(f"  Questions: {len(pivot.get('questions', []))}")
-    print(f"  Also: results/latest/README.md")
+    print("  Also: results/latest/README.md")
     print("=" * 72)
 
 
