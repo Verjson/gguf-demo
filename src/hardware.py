@@ -8,6 +8,7 @@ latency and quality when the same pipeline runs on GPU vs CPU.
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -63,9 +64,35 @@ class HardwareInfo:
         return "CUDA OFF | running on CPU"
 
 
+def _env_forces_cpu() -> bool:
+    """True when the caller asked for CPU inference, even if a GPU is present.
+
+    ``CUDA_VISIBLE_DEVICES`` empty or ``-1`` is how the pipeline pins a CPU pass
+    inside a GPU image. PyTorch's ``torch.cuda.is_available()`` can still return
+    True in that case, which would mis-label Grafana/Postgres rows as ``cuda``.
+    ``COMPUTE_DEVICE=cpu`` is the explicit compose/pipeline override.
+    """
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if visible is not None and visible.strip().lower() in {"", "-1", "none"}:
+        return True
+    return os.environ.get("COMPUTE_DEVICE", "").strip().lower() == "cpu"
+
+
+def _cuda_is_usable() -> bool:
+    """Whether this process should load the model on GPU and log device=cuda."""
+    if _env_forces_cpu():
+        return False
+    if not torch.cuda.is_available():
+        return False
+    try:
+        return torch.cuda.device_count() > 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def detect_hardware() -> HardwareInfo:
     """Inspect torch for CUDA availability and return a HardwareInfo snapshot."""
-    cuda_available = torch.cuda.is_available()
+    cuda_available = _cuda_is_usable()
     device_name = None
     capability = None
 

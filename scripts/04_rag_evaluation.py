@@ -39,7 +39,7 @@ def main() -> None:
     pipeline = RAGPipeline(config, hardware=hardware)
 
     use_judge = config.get("evaluation", {}).get("llm_judge", False)
-    judge_fn = (lambda p: pipeline.generate_response(p)) if use_judge else None
+    judge_fn = (lambda p: pipeline.judge_response(p)) if use_judge else None
 
     papers_dir = config.get("paths", {}).get("papers_dir", "/app/data/papers")
     pipeline.ensure_vector_store(papers_dir)

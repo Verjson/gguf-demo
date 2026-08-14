@@ -61,7 +61,7 @@ def run_approach(
 
     pipeline = RAGPipeline(run_config, hardware=hardware)
     use_judge = config.get("evaluation", {}).get("llm_judge", False)
-    judge_fn = (lambda p: pipeline.generate_response(p)) if use_judge and use_rag else None
+    judge_fn = (lambda p: pipeline.judge_response(p)) if use_judge and use_rag else None
     k = config.get("vector_store", {}).get("top_k", 4)
 
     if use_rag:

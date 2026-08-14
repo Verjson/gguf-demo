@@ -17,6 +17,7 @@ import yaml
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.hardware import detect_hardware
+from src.mlflow_tracker import init_mlflow_experiment
 from src.rag_pipeline import RAGPipeline
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -50,6 +51,7 @@ def main() -> None:
 
     logger.info("Found %d PDF files | %s", len(pdf_files), hardware.summary())
 
+    init_mlflow_experiment()
     with mlflow.start_run(run_name="rag_db_creation"):
         mlflow.set_tag("device", hardware.device)
         mlflow.set_tag("cuda_available", str(hardware.cuda_available))
@@ -68,20 +70,28 @@ def main() -> None:
         pipeline.create_vector_store(papers_dir)
         creation_time = time.time() - start_time
 
-        total_chunks = 0
-        doc_stats = []
-        for pdf_file in pdf_files:
-            pdf_path = os.path.join(papers_dir, pdf_file)
-            chunks = pipeline.process_pdf(pdf_path)
-            total_chunks += len(chunks)
-            doc_stats.append({"filename": pdf_file, "num_chunks": len(chunks)})
+        index_meta = pipeline.last_index_meta or {}
+        total_chunks = int(index_meta.get("total_chunks") or 0)
+        doc_stats = list(index_meta.get("document_stats") or [])
+        if not doc_stats:
+            for pdf_file in pdf_files:
+                pdf_path = os.path.join(papers_dir, pdf_file)
+                chunks = pipeline.process_pdf(pdf_path)
+                total_chunks += len(chunks)
+                doc_stats.append({"filename": pdf_file, "num_chunks": len(chunks)})
 
+        load_meta = {
+            k: float(v)
+            for k, v in (pipeline.last_load_meta or {}).items()
+            if isinstance(v, (int, float)) and not isinstance(v, bool)
+        }
         mlflow.log_metrics(
             {
-                "total_chunks": total_chunks,
-                "num_documents": len(pdf_files),
+                "total_chunks": float(total_chunks),
+                "num_documents": float(len(pdf_files)),
                 "creation_time_seconds": creation_time,
                 **hardware.as_metrics(),
+                **load_meta,
             }
         )
 

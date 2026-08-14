@@ -9,6 +9,7 @@ for ops dashboards.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any, Callable
 
@@ -19,12 +20,26 @@ from src.eval_prompts import load_evaluation_prompts
 from src.evaluator import Evaluator
 from src.genai_scorers import build_metric_scorers
 from src.hardware import HardwareInfo
-from src.latency import attach_latency_metrics
+from src.latency import (
+    attach_generation_meta,
+    attach_latency_metrics,
+    attach_retrieval_meta,
+    llm_run_params,
+)
 from src.mlflow_tracker import MLflowTracker, calculate_quality_score
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
 
 logger = logging.getLogger(__name__)
+
+# MLflow evaluates 10 samples at once by default. A single local model is one
+# shared resource, so extra workers add a KV cache per in-flight request and turn
+# `generation_time` into a measure of contention rather than of the model. Export
+# MLFLOW_GENAI_EVAL_MAX_WORKERS to opt back into concurrency.
+os.environ.setdefault("MLFLOW_GENAI_EVAL_MAX_WORKERS", "1")
+# MLflow otherwise spends a whole extra generation per stage re-running the first
+# sample to check that tracing works — minutes of CPU across the pipeline.
+os.environ.setdefault("MLFLOW_GENAI_EVAL_SKIP_TRACE_VALIDATION", "true")
 
 
 def _load_config(config: dict | str | None) -> dict:
@@ -75,27 +90,62 @@ def run_stage_evaluation(
     tracker = MLflowTracker(stage or f"{approach}_evaluation", hardware=hardware)
     side_channel: list[dict] = []
 
-    def predict_fn(question: str) -> dict[str, Any]:
-        context = ""
-        retrieval_time = 0.0
-        if use_rag:
-            t0 = time.time()
-            context = pipeline.retrieve_context(question, k=top_k)
-            retrieval_time = time.time() - t0
-        response = pipeline.generate_response(
-            question, context=context if use_rag else None
-        )
-        gen = float(pipeline.last_generation_meta.get("generation_time", 0.0))
-        row = {
+    def _row_from_pipeline(question: str, response: str, context: str, retrieval_time: float) -> dict[str, Any]:
+        gen_meta = dict(pipeline.last_generation_meta)
+        ret_meta = dict(pipeline.last_retrieval_meta) if use_rag else {}
+        gen = float(gen_meta.get("generation_time", 0.0))
+        row: dict[str, Any] = {
             "question": question,
             "answer": response,
             "response": response,
             "context": context if use_rag else "",
             "generation_time": gen,
             "retrieval_time": retrieval_time,
+            "time_to_response": gen + retrieval_time,
         }
-        side_channel.append(row)
+        for key in (
+            "prompt_chars",
+            "response_chars",
+            "prompt_tokens",
+            "completion_tokens",
+            "tokens_per_sec",
+            "cuda_used",
+            "context_chars",
+            "n_chunks_retrieved",
+        ):
+            if key in gen_meta:
+                row[key] = gen_meta[key]
+            elif key in ret_meta:
+                row[key] = ret_meta[key]
+        if use_rag:
+            row.setdefault("context_chars", float(len(context)))
         return row
+
+    def predict_fn(question: str) -> dict[str, Any]:
+        from mlflow.entities import SpanType
+
+        with mlflow.start_span(name=f"eval.{approach}", span_type=SpanType.CHAIN) as root:
+            root.set_inputs({"question": question})
+            context = ""
+            retrieval_time = 0.0
+            if use_rag:
+                t0 = time.time()
+                context = pipeline.retrieve_context(question, k=top_k)
+                retrieval_time = time.time() - t0
+            response = pipeline.generate_response(
+                question, context=context if use_rag else None
+            )
+            row = _row_from_pipeline(question, response, context, retrieval_time)
+            root.set_outputs(
+                {
+                    "answer": response,
+                    "generation_time": row["generation_time"],
+                    "retrieval_time": retrieval_time,
+                    "completion_tokens": row.get("completion_tokens"),
+                }
+            )
+            side_channel.append(row)
+            return row
 
     data = [
         {
@@ -107,6 +157,7 @@ def run_stage_evaluation(
     ]
 
     run_params = {
+        **llm_run_params(cfg),
         **(params or {}),
         "use_rag": use_rag,
         "top_k": top_k if use_rag else 0,
@@ -120,6 +171,7 @@ def run_stage_evaluation(
         lineage=lineage,
         model_name=str(resolved_model),
     ):
+        tracker.log_run_metrics(pipeline.last_load_meta)
         logger.info(
             "mlflow.genai.evaluate approach=%s n=%d rag=%s lineage=%s",
             approach,
@@ -175,8 +227,11 @@ def run_stage_evaluation(
                 metrics,
                 generation_time=float(row.get("generation_time") or 0.0),
                 retrieval_time=float(row.get("retrieval_time") or 0.0) if use_rag else 0.0,
-                response_chars=float(len(response)),
+                response_chars=row.get("response_chars"),
             )
+            attach_generation_meta(metrics, row)
+            if use_rag:
+                attach_retrieval_meta(metrics, row)
             metrics.update(hardware.as_metrics())
             metrics["quality_score"] = calculate_quality_score(metrics)
 
@@ -250,8 +305,11 @@ def _manual_fallback(
                 metrics,
                 generation_time=gen,
                 retrieval_time=retrieval_time if use_rag else 0.0,
-                response_chars=float(len(response)),
+                response_chars=pipeline.last_generation_meta.get("response_chars"),
             )
+            attach_generation_meta(metrics, pipeline.last_generation_meta)
+            if use_rag:
+                attach_retrieval_meta(metrics, pipeline.last_retrieval_meta)
             metrics.update(hardware.as_metrics())
             tracker.log_evaluation(
                 approach=approach,

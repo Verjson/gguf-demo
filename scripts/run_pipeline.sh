@@ -75,6 +75,40 @@ gpu_is_available() {
     docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -q '"nvidia"'
 }
 
+# Memory this script may account for, in bytes. Reads the cgroup limit first so
+# the number is right when the pipeline is itself driven from a container.
+available_memory_bytes() {
+  local physical="" limit="" kb
+  if [[ -r /proc/meminfo ]]; then
+    kb="$(awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo)"
+    [[ "$kb" =~ ^[0-9]+$ ]] && physical=$(( kb * 1024 ))
+  fi
+  for f in /sys/fs/cgroup/memory.max /sys/fs/cgroup/memory/memory.limit_in_bytes; do
+    [[ -r "$f" ]] || continue
+    local value
+    value="$(cat "$f")"
+    # cgroup v2 reports "max"; v1 reports a sentinel larger than real RAM.
+    if [[ "$value" =~ ^[0-9]+$ ]] && { [[ -z "$physical" ]] || (( value < physical )); }; then
+      limit="$value"
+      break
+    fi
+  done
+  echo "${limit:-${physical:-0}}"
+}
+
+# Leave roughly a third of memory to the rest of the machine: the app container
+# is the only large consumer, but Docker, Postgres, MLflow and the host still
+# need room. Phi-3 in bfloat16 plus BERTScore needs about 9GB.
+default_mem_limit_gb() {
+  local total gb
+  total="$(available_memory_bytes)"
+  (( total == 0 )) && { echo 10; return; }
+  gb=$(( total * 2 / 3 / 1024 / 1024 / 1024 ))
+  (( gb < 4 )) && gb=4
+  (( gb > 14 )) && gb=14
+  echo "$gb"
+}
+
 # Run a script inside the app container on a given device.
 # Usage: run_app cpu|cuda scripts/foo.py [args...]
 run_app() {
@@ -82,7 +116,8 @@ run_app() {
   shift
   if [[ "$device" == "cpu" ]]; then
     "${COMPOSE[@]}" exec -T \
-      -e CUDA_VISIBLE_DEVICES= \
+      -e CUDA_VISIBLE_DEVICES=-1 \
+      -e COMPUTE_DEVICE=cpu \
       -e SKIP_AUTO_EXPORT=1 \
       app python "$@"
   else
@@ -103,7 +138,7 @@ run_app_env() {
     env_flags+=(-e "$extra_env")
   fi
   if [[ "$device" == "cpu" ]]; then
-    env_flags+=(-e CUDA_VISIBLE_DEVICES=)
+    env_flags+=(-e CUDA_VISIBLE_DEVICES=-1 -e COMPUTE_DEVICE=cpu)
   fi
   "${COMPOSE[@]}" exec -T "${env_flags[@]}" app python "$@"
 }
@@ -133,10 +168,18 @@ export_results() {
   "${COMPOSE[@]}" exec -T app python scripts/07_export_results.py --run-id "$run_id"
 }
 
+APP_MEM_LIMIT="${APP_MEM_LIMIT:-$(default_mem_limit_gb)g}"
+export APP_MEM_LIMIT
+if [[ "$APP_MEM_LIMIT" =~ ^([0-9]+)g$ ]] && (( BASH_REMATCH[1] < 9 )); then
+  echo "WARNING: app container capped at ${APP_MEM_LIMIT}; Phi-3 needs ~9GB." >&2
+  echo "         Expect the container to be killed, or set a smaller LLM_MODEL." >&2
+fi
+
 start_stack
 
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
+echo "  App budget: ${APP_MEM_LIMIT} RAM, ${APP_CPUS:-auto-detected} CPUs"
 if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
   echo "  Mode: GPU-only evals (SKIP_CPU_EVAL=1)"
 else
@@ -265,7 +308,7 @@ if [[ "$SKIP_CPU_EVAL" != "1" ]]; then
   if "${COMPOSE[@]}" exec -T app test -d "$CPU_ADAPTER"; then
     run_app_env cpu "FINE_TUNED_PATH=${CPU_ADAPTER}" scripts/06_fine_tuned_evaluation.py
   elif "${COMPOSE[@]}" exec -T app test -d /app/models/fine_tuned/adapter; then
-    echo "    No adapter_cpu — evaluating default adapter under CUDA_VISIBLE_DEVICES= (CPU inference)."
+    echo "    No adapter_cpu — evaluating default adapter under CUDA_VISIBLE_DEVICES=-1 (CPU inference)."
     run_app cpu scripts/06_fine_tuned_evaluation.py
   else
     echo "    ERROR: No fine-tuned adapter found. Skipping Step 6 CPU."

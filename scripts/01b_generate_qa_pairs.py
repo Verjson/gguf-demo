@@ -23,8 +23,13 @@ import sys
 import yaml
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from mlflow.entities import SpanType
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import mlflow
+
+from src.mlflow_tracker import optional_mlflow_run
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -55,6 +60,7 @@ def first_sentences(text: str, n: int = 2) -> str:
     return " ".join(parts[:n])
 
 
+@mlflow.trace(name="chunk_to_pairs", span_type=SpanType.PARSER)
 def chunk_to_pairs(chunk_text: str, paper_id: str, max_pairs: int = 2) -> list[dict]:
     """Build Q&A rows whose answers are extractive spans from the chunk."""
     answer = first_sentences(chunk_text, n=2)
@@ -131,69 +137,106 @@ def main() -> None:
     )
 
     all_pairs: list[dict] = []
+    n_pdfs = len(pdfs)
 
-    # Prefer abstracts from metadata when available (cleaner answers)
-    meta_path = os.path.join(papers_dir, "papers_metadata.json")
-    if os.path.isfile(meta_path):
-        for paper in json.loads(open(meta_path, encoding="utf-8").read()):
-            summary = (paper.get("summary") or "").strip()
-            title = paper.get("title") or paper.get("id")
-            if len(summary) < 80:
-                continue
-            all_pairs.append(
+    with optional_mlflow_run("generate_qa_pairs") as run:
+        if run:
+            mlflow.log_params(
                 {
-                    "question": f"What is the paper '{title}' about?",
-                    "answer": first_sentences(summary, n=3),
-                    "context": summary,
-                    "paper_id": paper.get("id", title),
-                }
-            )
-            all_pairs.append(
-                {
-                    "question": f"Summarize the contribution of '{title}'.",
-                    "answer": first_sentences(summary, n=2),
-                    "context": summary,
-                    "paper_id": paper.get("id", title),
+                    "max_chunks_per_pdf": args.max_chunks_per_pdf,
+                    "pairs_per_chunk": args.pairs_per_chunk,
+                    "test_ratio": args.test_ratio,
+                    "seed": args.seed,
+                    "chunk_size": config["chunking"]["chunk_size"],
+                    "chunk_overlap": config["chunking"]["chunk_overlap"],
                 }
             )
 
-    for pdf_name in pdfs:
-        pdf_path = os.path.join(papers_dir, pdf_name)
-        paper_id = pdf_name.replace(".pdf", "")
-        docs = PyPDFLoader(pdf_path).load()
-        chunks = splitter.split_documents(docs)
-        # Prefer middle pages (often method/results) over cover/refs
-        usable = [c for c in chunks if len(c.page_content.strip()) > 200]
-        usable = usable[: args.max_chunks_per_pdf]
-        for chunk in usable:
-            all_pairs.extend(
-                chunk_to_pairs(chunk.page_content, paper_id, max_pairs=args.pairs_per_chunk)
+        # Prefer abstracts from metadata when available (cleaner answers)
+        meta_path = os.path.join(papers_dir, "papers_metadata.json")
+        if os.path.isfile(meta_path):
+            for paper in json.loads(open(meta_path, encoding="utf-8").read()):
+                summary = (paper.get("summary") or "").strip()
+                title = paper.get("title") or paper.get("id")
+                if len(summary) < 80:
+                    continue
+                all_pairs.append(
+                    {
+                        "question": f"What is the paper '{title}' about?",
+                        "answer": first_sentences(summary, n=3),
+                        "context": summary,
+                        "paper_id": paper.get("id", title),
+                    }
+                )
+                all_pairs.append(
+                    {
+                        "question": f"Summarize the contribution of '{title}'.",
+                        "answer": first_sentences(summary, n=2),
+                        "context": summary,
+                        "paper_id": paper.get("id", title),
+                    }
+                )
+
+        with mlflow.start_span(name="split_pdfs", span_type=SpanType.PARSER) as span:
+            for pdf_name in pdfs:
+                pdf_path = os.path.join(papers_dir, pdf_name)
+                paper_id = pdf_name.replace(".pdf", "")
+                docs = PyPDFLoader(pdf_path).load()
+                chunks = splitter.split_documents(docs)
+                usable = [c for c in chunks if len(c.page_content.strip()) > 200]
+                usable = usable[: args.max_chunks_per_pdf]
+                for chunk in usable:
+                    all_pairs.extend(
+                        chunk_to_pairs(
+                            chunk.page_content, paper_id, max_pairs=args.pairs_per_chunk
+                        )
+                    )
+            span.set_outputs({"n_pairs_so_far": len(all_pairs), "n_pdfs": n_pdfs})
+
+        random.shuffle(all_pairs)
+        n_test = max(1, int(len(all_pairs) * args.test_ratio))
+        test_pairs = all_pairs[:n_test]
+        train_pairs = all_pairs[n_test:]
+
+        for row in train_pairs:
+            row["split"] = "train"
+        for row in test_pairs:
+            row["split"] = "test"
+
+        out_path = os.path.join(processed_dir, "qa_pairs.jsonl")
+        with open(out_path, "w", encoding="utf-8") as f:
+            for row in train_pairs + test_pairs:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+        avg_answer = (
+            sum(len(r.get("answer") or "") for r in all_pairs) / len(all_pairs)
+            if all_pairs
+            else 0.0
+        )
+        if run:
+            mlflow.log_metrics(
+                {
+                    "n_qa_pairs": float(len(all_pairs)),
+                    "n_train": float(len(train_pairs)),
+                    "n_test": float(len(test_pairs)),
+                    "n_pdfs": float(n_pdfs),
+                    "avg_answer_chars": avg_answer,
+                }
             )
+            mlflow.set_tag("stage", "generate_qa_pairs")
+            mlflow.log_artifact(out_path)
 
-    random.shuffle(all_pairs)
-    n_test = max(1, int(len(all_pairs) * args.test_ratio))
-    test_pairs = all_pairs[:n_test]
-    train_pairs = all_pairs[n_test:]
+        logger.info(
+            "Wrote %d train + %d test QA pairs to %s",
+            len(train_pairs),
+            len(test_pairs),
+            out_path,
+        )
 
-    for row in train_pairs:
-        row["split"] = "train"
-    for row in test_pairs:
-        row["split"] = "test"
-
-    out_path = os.path.join(processed_dir, "qa_pairs.jsonl")
-    with open(out_path, "w", encoding="utf-8") as f:
-        for row in train_pairs + test_pairs:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
-
-    logger.info(
-        "Wrote %d train + %d test QA pairs to %s",
-        len(train_pairs),
-        len(test_pairs),
-        out_path,
-    )
-
-    if args.update_prompts and test_pairs:
-        write_prompts_file(test_pairs[:20], prompts_path)
+        if args.update_prompts and test_pairs:
+            write_prompts_file(test_pairs[:20], prompts_path)
+            if run and os.path.isfile(prompts_path):
+                mlflow.log_artifact(prompts_path)
 
 
 if __name__ == "__main__":

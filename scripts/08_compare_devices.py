@@ -26,6 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from src.latency import speedup_factor
+from src.mlflow_tracker import optional_mlflow_run
 from src.question_view import build_question_view
 
 
@@ -171,6 +173,37 @@ def main() -> None:
         "columns": pivot.get("columns", []),
     }
     (out_dir / "cpu_vs_cuda.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    import mlflow
+
+    with optional_mlflow_run("cpu_vs_cuda_compare") as run:
+        if run:
+            mlflow.set_tag("stage", "compare_devices")
+            mlflow.log_params(
+                {
+                    "cpu_run_id": args.cpu_run_id,
+                    "cuda_run_id": args.cuda_run_id,
+                    "n_questions": len(pivot.get("questions", [])),
+                }
+            )
+            for approach in sorted(set(cpu_sum) | set(cuda_sum)):
+                cpu_ttr = cpu_sum.get(approach, {}).get("time_to_response") or cpu_sum.get(
+                    approach, {}
+                ).get("generation_time")
+                cuda_ttr = cuda_sum.get(approach, {}).get("time_to_response") or cuda_sum.get(
+                    approach, {}
+                ).get("generation_time")
+                factor = speedup_factor(cpu_ttr, cuda_ttr)
+                if cpu_ttr is not None:
+                    mlflow.log_metric(f"{approach}_cpu_time_to_response", float(cpu_ttr))
+                if cuda_ttr is not None:
+                    mlflow.log_metric(f"{approach}_cuda_time_to_response", float(cuda_ttr))
+                if factor is not None:
+                    mlflow.log_metric(f"{approach}_gpu_speedup_x", factor)
+            summary_path = out_dir / "summary.md"
+            if summary_path.is_file():
+                mlflow.log_artifact(str(summary_path))
+            mlflow.log_artifact(str(out_dir / "cpu_vs_cuda.json"))
 
     # Point latest at this combined folder (best single place to look)
     latest = root / "results" / "latest"

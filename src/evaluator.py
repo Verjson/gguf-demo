@@ -14,12 +14,29 @@ import logging
 import re
 from typing import Callable, Dict, Optional
 
-from bert_score import score as bert_score_fn
+import mlflow
+from bert_score import BERTScorer
+from mlflow.entities import SpanType
 from rouge_score import rouge_scorer
 
 logger = logging.getLogger(__name__)
 
 JudgeFn = Callable[[str], str]
+
+_BERT_SCORER: BERTScorer | None = None
+
+
+def _get_bert_scorer() -> BERTScorer:
+    """
+    Reuse one BERTScorer for the process.
+
+    ``bert_score.score()`` reloads roberta-large on every call, which costs seconds
+    per scored answer on CPU and repeatedly allocates ~1.4GB.
+    """
+    global _BERT_SCORER
+    if _BERT_SCORER is None:
+        _BERT_SCORER = BERTScorer(lang="en")
+    return _BERT_SCORER
 
 
 class Evaluator:
@@ -66,6 +83,7 @@ class Evaluator:
             ],
         }
 
+    @mlflow.trace(name="evaluate_response", span_type=SpanType.PARSER)
     def evaluate_response(
         self,
         question: str,
@@ -85,9 +103,7 @@ class Evaluator:
 
             if self.enable_bertscore:
                 try:
-                    _, _, bert_f1 = bert_score_fn(
-                        [response], [ground_truth], lang="en", verbose=False
-                    )
+                    _, _, bert_f1 = _get_bert_scorer().score([response], [ground_truth])
                     metrics["bert_score"] = bert_f1.mean().item()
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("BERTScore failed: %s", exc)
@@ -155,6 +171,7 @@ class Evaluator:
         supported = sum(1 for t in resp_tokens if t in ctx_tokens)
         return supported / len(resp_tokens)
 
+    @mlflow.trace(name="judge_groundedness", span_type=SpanType.LLM)
     def _llm_judge_groundedness(self, question: str, response: str, context: str) -> float:
         """Ask the local LLM to score groundedness 1–5; normalize to 0–1."""
         prompt = (

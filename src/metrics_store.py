@@ -36,6 +36,13 @@ METRIC_COLUMNS = (
     "time_to_response",
     "speed_chars_per_sec",
     "cuda_used",
+    "prompt_chars",
+    "response_chars",
+    "prompt_tokens",
+    "completion_tokens",
+    "tokens_per_sec",
+    "context_chars",
+    "n_chunks_retrieved",
 )
 
 # Safe to re-run; matches scripts/migrate_metrics_table.sql
@@ -77,6 +84,13 @@ _ENSURE_SCHEMA_STATEMENTS = (
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS time_to_response FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS speed_chars_per_sec FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cuda_used FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS prompt_chars FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS response_chars FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS prompt_tokens FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS completion_tokens FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS tokens_per_sec FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS context_chars FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS n_chunks_retrieved FLOAT",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC)",

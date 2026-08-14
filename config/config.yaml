@@ -9,6 +9,9 @@ llm:
   do_sample: false
   load_in_8bit: false  # fp16 on GPU; 8-bit hits accelerate `.to()` bugs with this stack
   # set true only if bitsandbytes+accelerate are known-good on your host
+  # CPU weight dtype. bfloat16 is Phi-3's native dtype and keeps the CPU run inside
+  # ~8GB; float32 doubles memory but prefills faster on CPUs without AVX-512/AMX.
+  cpu_dtype: bfloat16
 
 embeddings:
   model: "sentence-transformers/all-MiniLM-L6-v2"

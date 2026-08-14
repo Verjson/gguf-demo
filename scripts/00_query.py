@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.evaluator import Evaluator
 from src.hardware import detect_hardware
-from src.latency import attach_latency_metrics
+from src.latency import attach_generation_meta, attach_latency_metrics, attach_retrieval_meta
 from src.mlflow_tracker import MLflowTracker
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
@@ -59,7 +59,7 @@ def main() -> None:
     config = load_config(args.config)
     pipeline = RAGPipeline(config, hardware=hardware)
 
-    judge_fn = (lambda p: pipeline.generate_response(p)) if args.judge else None
+    judge_fn = (lambda p: pipeline.judge_response(p)) if args.judge else None
     evaluator = Evaluator(judge_fn=judge_fn, enable_bertscore=not args.no_bertscore)
     tracker = MLflowTracker("single_query", hardware=hardware)
 
@@ -75,6 +75,7 @@ def main() -> None:
         model_name=config["llm"]["model"],
         run_name=f"query-{approach}@{hardware.device}",
     ):
+        tracker.log_run_metrics(pipeline.last_load_meta)
         start = time.time()
         context = ""
         retrieval_time = 0.0
@@ -106,8 +107,11 @@ def main() -> None:
                 metrics,
                 generation_time=gen,
                 retrieval_time=retrieval_time if use_rag else 0.0,
-                response_chars=float(len(response)),
+                response_chars=pipeline.last_generation_meta.get("response_chars"),
             )
+            attach_generation_meta(metrics, pipeline.last_generation_meta)
+            if use_rag:
+                attach_retrieval_meta(metrics, pipeline.last_retrieval_meta)
             metrics.update(hardware.as_metrics())
 
             # Attach assessments while the chain span is still active

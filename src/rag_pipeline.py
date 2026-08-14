@@ -7,6 +7,7 @@ Exposes `hardware` (CUDA vs CPU) so callers can log and display device metrics.
 
 from __future__ import annotations
 
+import gc
 import logging
 import os
 import time
@@ -22,9 +23,31 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from mlflow.entities import SpanType
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, pipeline
 
+from src.cpu_runtime import configure_threads
 from src.hardware import HardwareInfo, detect_hardware
+from src.resource_metrics import memory_snapshot
 
 logger = logging.getLogger(__name__)
+
+
+def _sdpa_available() -> bool:
+    """
+    True once scaled-dot-product attention can be requested for Phi-3.
+
+    transformers 4.44 ships ``Phi3SdpaAttention`` but leaves ``_supports_sdpa``
+    False, so the loader refuses an implementation it already has. Eager attention
+    dominates CPU prefill: a 440-token prompt generating 64 tokens took 75s eager
+    against 36s with SDPA, for byte-identical output. Flip the flag when the class
+    is really present, and let callers fall back if a model rejects it anyway.
+    """
+    try:
+        from transformers.models.phi3 import modeling_phi3
+    except ImportError:
+        return False
+    if "sdpa" not in getattr(modeling_phi3, "PHI3_ATTENTION_CLASSES", {}):
+        return False
+    modeling_phi3.Phi3PreTrainedModel._supports_sdpa = True
+    return True
 
 
 class RAGPipeline:
@@ -44,26 +67,47 @@ class RAGPipeline:
         self.llm = None
         self.tokenizer = None
         self.last_generation_meta: dict = {}
+        self.last_retrieval_meta: dict = {}
+        self.last_load_meta: dict = {}
+        self.last_index_meta: dict = {}
         self.setup_components()
 
     def setup_components(self) -> None:
         """Initialize embeddings and the text-generation LLM (no eager Postgres connect)."""
         use_cuda = self.hardware.cuda_available
+        # Also worth doing on GPU hosts: tokenization, embeddings and BERTScore
+        # still run through torch's CPU pools.
+        configure_threads()
         logger.info(
             "Initializing pipeline on %s (cuda_available=%s)",
             self.hardware.device,
             use_cuda,
         )
 
-        self.embeddings = HuggingFaceEmbeddings(
-            model_name=self.config["embeddings"]["model"],
-            model_kwargs={"device": "cuda" if use_cuda else "cpu"},
-        )
+        t0 = time.perf_counter()
+        with mlflow.start_span(name="load_pipeline", span_type=SpanType.CHAIN) as span:
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=self.config["embeddings"]["model"],
+                model_kwargs={"device": "cuda" if use_cuda else "cpu"},
+            )
 
-        if self.config.get("llm", {}).get("fine_tuned_path"):
-            self.llm = self._load_fine_tuned_model()
-        else:
-            self.llm = self._load_base_model()
+            if self.config.get("llm", {}).get("fine_tuned_path"):
+                self.llm = self._load_fine_tuned_model()
+            else:
+                self.llm = self._load_base_model()
+
+            elapsed = time.perf_counter() - t0
+            self.last_load_meta = {
+                "model_load_seconds": elapsed,
+                **memory_snapshot(),
+            }
+            span.set_outputs(dict(self.last_load_meta))
+        logger.info(
+            "Pipeline loaded in %.1fs rss=%.0fMiB gpu=%.0fMiB",
+            self.last_load_meta["model_load_seconds"],
+            self.last_load_meta.get("peak_rss_mb", 0.0),
+            self.last_load_meta.get("peak_gpu_mem_mb", 0.0),
+        )
 
     def _postgres_connection_string(self) -> str:
         user = os.getenv("POSTGRES_USER", "raguser")
@@ -87,12 +131,31 @@ class RAGPipeline:
             kwargs["temperature"] = max(temperature, 1e-5)
         return kwargs
 
+    def _cpu_dtype(self) -> torch.dtype:
+        """
+        Weight dtype for CPU inference.
+
+        bfloat16 is the default because it is the dtype Phi-3 ships in, and because
+        single-token decode is memory-bandwidth bound: halving the bytes read per
+        token roughly halves latency and keeps resident memory near 8GB instead of
+        the ~15GB an upcast float32 load needs. Set `llm.cpu_dtype: float32` for
+        hosts that prefer float32 (faster prompt prefill on AVX2-only CPUs).
+        """
+        name = str(self.config.get("llm", {}).get("cpu_dtype", "bfloat16"))
+        dtype = getattr(torch, name, None)
+        if not isinstance(dtype, torch.dtype):
+            logger.warning("Unknown llm.cpu_dtype %r; using bfloat16", name)
+            return torch.bfloat16
+        return dtype
+
     def _model_load_kwargs(self) -> dict:
         """Shared dtype / device / 8-bit policy for base and PEFT loads."""
         use_cuda = self.hardware.cuda_available
         kwargs: dict = {
             "low_cpu_mem_usage": True,
         }
+        if _sdpa_available():
+            kwargs["attn_implementation"] = "sdpa"
         if use_cuda:
             # fp16 on a single GPU. 8-bit (bitsandbytes) is disabled by default because
             # current accelerate+transformers stacks often fail with:
@@ -105,7 +168,7 @@ class RAGPipeline:
                 kwargs["torch_dtype"] = torch.float16
             kwargs["device_map"] = {"": 0}
         else:
-            kwargs["torch_dtype"] = torch.float32
+            kwargs["torch_dtype"] = self._cpu_dtype()
         return kwargs
 
     def _from_pretrained(self, model_id: str):
@@ -115,6 +178,10 @@ class RAGPipeline:
             return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
         except ValueError as exc:
             msg = str(exc)
+            if "scaled_dot_product_attention" in msg and "attn_implementation" in model_kwargs:
+                logger.warning("%s does not support SDPA; using the default attention", model_id)
+                model_kwargs.pop("attn_implementation")
+                return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
             if "8-bit" not in msg and "4-bit" not in msg:
                 raise
             logger.warning("Quantized load failed (%s); falling back to float16", exc)
@@ -125,12 +192,13 @@ class RAGPipeline:
                 low_cpu_mem_usage=True,
             )
 
+    @mlflow.trace(name="load_base_model", span_type=SpanType.CHAIN)
     def _load_base_model(self):
         """
         Load the base causal LM from Hugging Face.
 
         When CUDA is available: float16 + optional 8-bit to fit smaller GPUs.
-        When CUDA is not available: float32 on CPU (slower; metrics will show cuda_used=0).
+        When CUDA is not available: bfloat16 on CPU (slower; metrics will show cuda_used=0).
         """
         model_id = self.config["llm"]["model"]
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
@@ -150,6 +218,7 @@ class RAGPipeline:
             **self._generation_kwargs(),
         )
 
+    @mlflow.trace(name="load_fine_tuned_model", span_type=SpanType.CHAIN)
     def _load_fine_tuned_model(self):
         """Load LoRA/full fine-tuned weights saved by scripts/05_fine_tune.py."""
         model_path = self.config["llm"]["fine_tuned_path"]
@@ -185,6 +254,7 @@ class RAGPipeline:
             **self._generation_kwargs(),
         )
 
+    @mlflow.trace(name="process_pdf", span_type=SpanType.PARSER)
     def process_pdf(self, pdf_path: str) -> List[Document]:
         """Read one PDF, split into overlapping chunks, return LangChain Documents."""
         loader = PyPDFLoader(pdf_path)
@@ -221,6 +291,7 @@ class RAGPipeline:
         except Exception as exc:  # noqa: BLE001
             logger.debug("No existing collection to delete (%s): %s", name, exc)
 
+    @mlflow.trace(name="create_vector_store", span_type=SpanType.RETRIEVER)
     def create_vector_store(self, documents_dir: str, *, replace: bool = True) -> None:
         """
         Embed every PDF in `documents_dir` and persist vectors in Postgres/pgvector.
@@ -228,13 +299,16 @@ class RAGPipeline:
         When replace=True (default), clears the collection first to avoid duplicates.
         """
         all_documents: List[Document] = []
+        doc_stats: List[dict] = []
+        t0 = time.perf_counter()
 
-        for filename in os.listdir(documents_dir):
+        for filename in sorted(os.listdir(documents_dir)):
             if not filename.endswith(".pdf"):
                 continue
             pdf_path = os.path.join(documents_dir, filename)
             chunks = self.process_pdf(pdf_path)
             all_documents.extend(chunks)
+            doc_stats.append({"filename": filename, "num_chunks": len(chunks)})
             logger.info("Processed %s: %d chunks", filename, len(chunks))
 
         if not all_documents:
@@ -243,14 +317,24 @@ class RAGPipeline:
         if replace:
             self._delete_collection_if_exists()
 
-        self.vector_store = PGVector.from_documents(
-            documents=all_documents,
-            embedding=self.embeddings,
-            connection_string=self._postgres_connection_string(),
-            collection_name=self.config["vector_store"]["collection_name"],
-            pre_delete_collection=replace,
-        )
-        logger.info("Created vector store with %d chunks", len(all_documents))
+        with mlflow.start_span(name="embed_documents", span_type=SpanType.EMBEDDING) as span:
+            self.vector_store = PGVector.from_documents(
+                documents=all_documents,
+                embedding=self.embeddings,
+                connection_string=self._postgres_connection_string(),
+                collection_name=self.config["vector_store"]["collection_name"],
+                pre_delete_collection=replace,
+            )
+            span.set_outputs({"n_chunks": len(all_documents)})
+
+        elapsed = time.perf_counter() - t0
+        self.last_index_meta = {
+            "total_chunks": float(len(all_documents)),
+            "num_documents": float(len(doc_stats)),
+            "index_seconds": elapsed,
+            "document_stats": doc_stats,
+        }
+        logger.info("Created vector store with %d chunks in %.1fs", len(all_documents), elapsed)
 
     def load_vector_store(self) -> None:
         """Attach to an existing pgvector collection without re-embedding."""
@@ -277,6 +361,20 @@ class RAGPipeline:
 
         self.create_vector_store(documents_dir, replace=True)
 
+    @mlflow.trace(name="embed_query", span_type=SpanType.EMBEDDING)
+    def embed_query(self, query: str) -> List[float]:
+        """Embed a query string with the same encoder used at index time."""
+        return self.embeddings.embed_query(query)
+
+    @mlflow.trace(name="vector_search", span_type=SpanType.RETRIEVER)
+    def _vector_search(self, query: str, embedding: List[float], k: int) -> List[Document]:
+        store = self.vector_store
+        if store is None:
+            raise ValueError("Vector store not initialized")
+        if hasattr(store, "similarity_search_by_vector"):
+            return store.similarity_search_by_vector(embedding, k=k)
+        return store.similarity_search(query, k=k)
+
     @mlflow.trace(name="retrieve", span_type=SpanType.RETRIEVER)
     def retrieve_context(self, query: str, k: int = 4) -> str:
         """Semantic search: embed query, find k nearest chunks, concatenate text."""
@@ -284,8 +382,14 @@ class RAGPipeline:
             raise ValueError(
                 "Vector store not initialized. Run create_vector_store() or load_vector_store() first."
             )
-        docs = self.vector_store.similarity_search(query, k=k)
-        return "\n\n".join(doc.page_content for doc in docs)
+        embedding = self.embed_query(query)
+        docs = self._vector_search(query, embedding, k)
+        context = "\n\n".join(doc.page_content for doc in docs)
+        self.last_retrieval_meta = {
+            "n_chunks_retrieved": float(len(docs)),
+            "context_chars": float(len(context)),
+        }
+        return context
 
     def _format_user_prompt(self, user_text: str) -> str:
         """Apply the tokenizer chat template when available (e.g. Phi-3 Instruct)."""
@@ -301,13 +405,68 @@ class RAGPipeline:
                 logger.warning("chat_template failed (%s); using raw prompt", exc)
         return user_text
 
+    def _count_tokens(self, text: str) -> int:
+        tok = self.tokenizer
+        if tok is None or not text:
+            return 0
+        try:
+            return len(tok.encode(text, add_special_tokens=False))
+        except Exception:  # noqa: BLE001
+            return 0
+
+    def _complete(self, full_prompt: str) -> tuple[str, float]:
+        """Run the HF text-generation pipeline; return (answer, wall seconds)."""
+        start = time.perf_counter()
+        cuda_live = bool(self.hardware.cuda_available and torch.cuda.is_available())
+        if cuda_live:
+            torch.cuda.synchronize()
+
+        raw = self.llm(full_prompt)[0]["generated_text"]
+
+        if cuda_live:
+            torch.cuda.synchronize()
+        elapsed = time.perf_counter() - start
+
+        if raw.startswith(full_prompt):
+            answer = raw[len(full_prompt) :].strip()
+        else:
+            answer = raw.strip()
+        return answer, elapsed
+
+    def _record_generation_meta(self, full_prompt: str, answer: str, elapsed: float) -> None:
+        prompt_tokens = float(self._count_tokens(full_prompt))
+        completion_tokens = float(self._count_tokens(answer))
+        cuda_live = bool(self.hardware.cuda_available and torch.cuda.is_available())
+        self.last_generation_meta = {
+            "generation_time": elapsed,
+            "cuda_used": 1.0 if cuda_live else 0.0,
+            "device": "cuda" if cuda_live else "cpu",
+            "prompt_chars": float(len(full_prompt)),
+            "response_chars": float(len(answer)),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "tokens_per_sec": (completion_tokens / elapsed) if elapsed > 0 else 0.0,
+        }
+
+    @mlflow.trace(name="judge", span_type=SpanType.LLM)
+    def judge_response(self, prompt: str) -> str:
+        """
+        Extra LLM call for groundedness judging.
+
+        Does **not** update last_generation_meta so it cannot clobber the
+        answer-generation timings used for latency metrics.
+        """
+        full_prompt = self._format_user_prompt(prompt)
+        answer, _elapsed = self._complete(full_prompt)
+        return answer
+
     @mlflow.trace(name="generate", span_type=SpanType.LLM)
     def generate_response(self, prompt: str, context: Optional[str] = None) -> str:
         """
         Generate text with the local LLM.
 
-        Records last_generation_meta including cuda_used and wall-clock time so
-        callers can show CUDA vs CPU performance side by side.
+        Records last_generation_meta including cuda_used, token counts, and
+        wall-clock time so callers can show CUDA vs CPU performance side by side.
 
         `cuda_used` here means CUDA was available for this process (same as hardware
         detection). Timing uses CUDA synchronize when available so wall time reflects
@@ -324,37 +483,14 @@ class RAGPipeline:
             user_text = prompt
 
         full_prompt = self._format_user_prompt(user_text)
-
-        start = time.perf_counter()
-        cuda_live = bool(self.hardware.cuda_available and torch.cuda.is_available())
-        if cuda_live:
-            torch.cuda.synchronize()
-
-        raw = self.llm(full_prompt)[0]["generated_text"]
-
-        if cuda_live:
-            torch.cuda.synchronize()
-        elapsed = time.perf_counter() - start
-
-        # return_full_text=False → generated_text is completion only; still strip echo if present
-        if raw.startswith(full_prompt):
-            answer = raw[len(full_prompt) :].strip()
-        else:
-            answer = raw.strip()
-
-        self.last_generation_meta = {
-            "generation_time": elapsed,
-            # 1.0 when this process could use CUDA (availability). Not a kernel-level probe.
-            "cuda_used": 1.0 if cuda_live else 0.0,
-            "device": "cuda" if cuda_live else "cpu",
-            "prompt_chars": float(len(full_prompt)),
-            "response_chars": float(len(answer)),
-        }
+        answer, elapsed = self._complete(full_prompt)
+        self._record_generation_meta(full_prompt, answer, elapsed)
         logger.info(
-            "Generated %d chars in %.2fs on %s",
+            "Generated %d chars (%d tok) in %.2fs on %s",
             len(answer),
+            int(self.last_generation_meta.get("completion_tokens", 0)),
             elapsed,
-            "CUDA" if cuda_live else "CPU",
+            "CUDA" if self.last_generation_meta.get("cuda_used") else "CPU",
         )
         return answer
 
@@ -377,5 +513,15 @@ class RAGPipeline:
         return {"question": question, "context": context, "response": response}
 
     def cleanup(self) -> None:
-        """No long-lived DB handle; kept for API compatibility with older scripts."""
+        """
+        Drop the model so the next pipeline in the same process starts from a clean
+        budget. Step 06 builds three pipelines back to back; reference cycles inside
+        a transformers pipeline can otherwise keep the previous ~8GB copy alive until
+        the next collection and double peak memory.
+        """
         self.vector_store = None
+        self.llm = None
+        self.tokenizer = None
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()

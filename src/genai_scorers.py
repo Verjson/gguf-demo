@@ -139,6 +139,99 @@ def build_metric_scorers(
 
         scorers.extend([faithfulness, retrieval_hit_at_k, context_utilization])
 
+    if evaluator.judge_fn is not None:
+
+        @scorer(name="judge_groundedness", aggregations=["mean"])
+        def judge_groundedness(inputs, outputs, expectations):
+            question = ""
+            if isinstance(inputs, dict):
+                question = str(inputs.get("question") or "")
+            ctx = _context(outputs)
+            if not ctx:
+                return None
+            return float(
+                evaluator._llm_judge_groundedness(question, _answer(outputs), ctx)
+            )
+
+        scorers.append(judge_groundedness)
+
+    def _float_out(outputs: Any, key: str):
+        if isinstance(outputs, dict) and outputs.get(key) is not None:
+            try:
+                return float(outputs[key])
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    @scorer(name="generation_time", aggregations=["mean"])
+    def generation_time(outputs):
+        return _float_out(outputs, "generation_time")
+
+    @scorer(name="retrieval_time", aggregations=["mean"])
+    def retrieval_time(outputs):
+        return _float_out(outputs, "retrieval_time")
+
+    @scorer(name="time_to_response", aggregations=["mean"])
+    def time_to_response(outputs):
+        gen = _float_out(outputs, "generation_time")
+        ret = _float_out(outputs, "retrieval_time") or 0.0
+        if gen is None:
+            return _float_out(outputs, "time_to_response")
+        return gen + ret
+
+    @scorer(name="prompt_tokens", aggregations=["mean"])
+    def prompt_tokens(outputs):
+        return _float_out(outputs, "prompt_tokens")
+
+    @scorer(name="completion_tokens", aggregations=["mean"])
+    def completion_tokens(outputs):
+        return _float_out(outputs, "completion_tokens")
+
+    @scorer(name="tokens_per_sec", aggregations=["mean"])
+    def tokens_per_sec(outputs):
+        return _float_out(outputs, "tokens_per_sec")
+
+    @scorer(name="prompt_chars", aggregations=["mean"])
+    def prompt_chars(outputs):
+        return _float_out(outputs, "prompt_chars")
+
+    @scorer(name="response_chars", aggregations=["mean"])
+    def response_chars(outputs):
+        return _float_out(outputs, "response_chars")
+
+    @scorer(name="context_chars", aggregations=["mean"])
+    def context_chars(outputs):
+        return _float_out(outputs, "context_chars")
+
+    @scorer(name="n_chunks_retrieved", aggregations=["mean"])
+    def n_chunks_retrieved(outputs):
+        return _float_out(outputs, "n_chunks_retrieved")
+
+    @scorer(name="factual_density", aggregations=["mean"])
+    def factual_density(outputs):
+        return float(evaluator._evaluate_factual_density(_answer(outputs)))
+
+    @scorer(name="technical_accuracy", aggregations=["mean"])
+    def technical_accuracy(outputs):
+        return float(evaluator._evaluate_technical_accuracy(_answer(outputs)))
+
+    scorers.extend(
+        [
+            generation_time,
+            retrieval_time,
+            time_to_response,
+            prompt_tokens,
+            completion_tokens,
+            tokens_per_sec,
+            prompt_chars,
+            response_chars,
+            context_chars,
+            n_chunks_retrieved,
+            factual_density,
+            technical_accuracy,
+        ]
+    )
+
     @scorer(name="quality_score", aggregations=["mean"])
     def quality_score(inputs, outputs, expectations):
         """Same weighted blend used by Grafana / historical tracker."""

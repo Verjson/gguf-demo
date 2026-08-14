@@ -61,6 +61,13 @@ METRICS_COLUMNS = (
     "cuda_used",
     "domain_relevance",
     "coherence",
+    "prompt_chars",
+    "response_chars",
+    "prompt_tokens",
+    "completion_tokens",
+    "tokens_per_sec",
+    "context_chars",
+    "n_chunks_retrieved",
 )
 
 
@@ -118,7 +125,9 @@ def export_metrics_csv(dest: Path) -> int:
                rouge1, rouge2, "rougeL", bert_score, retrieval_hit_at_k, faithfulness,
                context_utilization, answer_relevancy, judge_groundedness, quality_score,
                generation_time, retrieval_time, time_to_response, speed_chars_per_sec,
-               cuda_used, domain_relevance, coherence
+               cuda_used, domain_relevance, coherence,
+               prompt_chars, response_chars, prompt_tokens, completion_tokens,
+               tokens_per_sec, context_chars, n_chunks_retrieved
         FROM evaluation_metrics
         ORDER BY timestamp DESC
     """

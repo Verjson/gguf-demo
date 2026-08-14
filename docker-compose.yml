@@ -99,6 +99,25 @@ services:
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
       METRICS_PORT: "8000"
+      # Thread pools are sized at runtime from the CPU budget this container is
+      # actually granted (src/cpu_runtime.py) rather than from the host's core
+      # count, so the demo behaves the same on a laptop and on a slice of a
+      # shared machine. APP_CPUS overrides both the quota and the pool.
+      APP_CPUS: ${APP_CPUS:-}
+      # Deliberately no OMP_WAIT_POLICY=passive here: decode issues hundreds of
+      # tiny parallel regions per token, and paying a thread wake-up on each one
+      # measured about 2x slower than letting idle threads spin. Limit CPU with
+      # APP_CPUS rather than by making threads sleep.
+      TOKENIZERS_PARALLELISM: "false"
+    # Guardrails so a CPU run can never exhaust the host. Without these, a Phi-3
+    # load inside a 24GB WSL2 VM drives the whole VM into swap death rather than
+    # failing one container. memswap_limit == mem_limit disables container swap,
+    # so an over-budget run is killed immediately instead of thrashing.
+    # run_pipeline.sh replaces these defaults with values sized to the host.
+    mem_limit: ${APP_MEM_LIMIT:-10g}
+    memswap_limit: ${APP_MEM_LIMIT:-10g}
+    # 0 means no quota. Set APP_CPUS to cap CPU use on a shared machine.
+    cpus: ${APP_CPUS:-0}
     depends_on:
       postgres:
         condition: service_healthy

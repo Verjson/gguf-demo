@@ -9,6 +9,55 @@ from __future__ import annotations
 
 from typing import Any
 
+GENERATION_META_KEYS = (
+    "generation_time",
+    "prompt_chars",
+    "response_chars",
+    "prompt_tokens",
+    "completion_tokens",
+    "tokens_per_sec",
+    "cuda_used",
+)
+
+RETRIEVAL_META_KEYS = (
+    "retrieval_time",
+    "context_chars",
+    "n_chunks_retrieved",
+)
+
+
+def _copy_numeric(metrics: dict[str, float], source: dict[str, Any], keys: tuple[str, ...]) -> None:
+    for key in keys:
+        value = source.get(key)
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            metrics[key] = float(value)
+
+
+def attach_generation_meta(metrics: dict[str, float], meta: dict[str, Any] | None) -> dict[str, float]:
+    """Copy tokenizer / size fields from ``RAGPipeline.last_generation_meta``."""
+    if meta:
+        _copy_numeric(metrics, meta, GENERATION_META_KEYS)
+    return metrics
+
+
+def attach_retrieval_meta(metrics: dict[str, float], meta: dict[str, Any] | None) -> dict[str, float]:
+    """Copy chunk / context size fields from ``RAGPipeline.last_retrieval_meta``."""
+    if meta:
+        _copy_numeric(metrics, meta, RETRIEVAL_META_KEYS)
+    return metrics
+
+
+def llm_run_params(config: dict[str, Any] | None) -> dict[str, Any]:
+    """Decode / dtype knobs to store on the parent evaluation run."""
+    llm = (config or {}).get("llm") or {}
+    return {
+        "max_new_tokens": llm.get("max_new_tokens", 512),
+        "temperature": llm.get("temperature", 0.0),
+        "do_sample": bool(llm.get("do_sample", False)),
+        "cpu_dtype": llm.get("cpu_dtype", "bfloat16"),
+        "load_in_8bit": bool(llm.get("load_in_8bit", False)),
+    }
+
 
 def attach_latency_metrics(
     metrics: dict[str, float],
@@ -31,8 +80,11 @@ def attach_latency_metrics(
     metrics["retrieval_time"] = ret
     metrics["time_to_response"] = gen + ret
 
-    if response_chars is not None and gen > 0:
-        metrics["speed_chars_per_sec"] = float(response_chars) / gen
+    chars = response_chars
+    if chars is None and "response_chars" in metrics:
+        chars = metrics["response_chars"]
+    if chars is not None and gen > 0:
+        metrics["speed_chars_per_sec"] = float(chars) / gen
 
     return metrics
 

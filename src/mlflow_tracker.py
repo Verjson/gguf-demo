@@ -26,6 +26,7 @@ from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
 from src.hardware import HardwareInfo, detect_hardware
 from src.metrics_store import MetricsStore
+from src.resource_metrics import percentile
 
 logger = logging.getLogger(__name__)
 
@@ -102,9 +103,26 @@ _ASSESSMENT_KEYS = (
     "domain_relevance",
     "context_utilization",
     "coherence",
+    "factual_density",
+    "technical_accuracy",
     "generation_time",
     "retrieval_time",
     "time_to_response",
+    "speed_chars_per_sec",
+    "prompt_chars",
+    "response_chars",
+    "prompt_tokens",
+    "completion_tokens",
+    "tokens_per_sec",
+    "context_chars",
+    "n_chunks_retrieved",
+    "cuda_used",
+)
+
+_PERCENTILE_METRIC_KEYS = (
+    "time_to_response",
+    "generation_time",
+    "retrieval_time",
 )
 
 
@@ -226,6 +244,16 @@ class MLflowTracker:
             logger.error("MLflow unavailable (%s) — continuing with Prometheus/Postgres only", exc)
             self.experiment_id = None
             self._mlflow_ok = False
+
+    def log_run_metrics(self, metrics: dict[str, Any] | None) -> None:
+        """Log numeric metrics on the active parent run (not per-question averages)."""
+        numeric = _numeric_metrics(metrics or {})
+        if not numeric or not self._mlflow_ok or not mlflow.active_run():
+            return
+        try:
+            mlflow.log_metrics(numeric)
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("log_run_metrics failed: %s", exc)
 
     @contextmanager
     def stage_run(
@@ -495,6 +523,11 @@ class MLflowTracker:
         try:
             mlflow.log_metrics(aggregates)
             mlflow.log_metric("n_questions", float(len(self._question_metrics)))
+            for key in _PERCENTILE_METRIC_KEYS:
+                values = [row[key] for row in self._question_metrics if key in row]
+                if values:
+                    mlflow.log_metric(f"{key}_p50", percentile(values, 50))
+                    mlflow.log_metric(f"{key}_p95", percentile(values, 95))
             logger.info(
                 "Parent run aggregates (%d questions): quality_score=%.4f rougeL=%s",
                 len(self._question_metrics),
@@ -507,3 +540,30 @@ class MLflowTracker:
     def _calculate_quality_score(self, metrics: Dict[str, float]) -> float:
         """Back-compat alias for older callers."""
         return calculate_quality_score(metrics)
+
+
+def init_mlflow_experiment() -> bool:
+    """Point the process at the shared gguf-demo experiment. Returns False if unreachable."""
+    try:
+        mlflow.set_tracking_uri(os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000"))
+        name = os.getenv("MLFLOW_EXPERIMENT_NAME", "gguf-demo")
+        mlflow.set_experiment(name)
+        if hasattr(mlflow, "tracing") and hasattr(mlflow.tracing, "enable"):
+            mlflow.tracing.enable()
+        return True
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MLflow init failed: %s", exc)
+        return False
+
+
+def optional_mlflow_run(run_name: str):
+    """Return ``mlflow.start_run`` or a no-op context if tracking is down."""
+    from contextlib import nullcontext
+
+    if not init_mlflow_experiment():
+        return nullcontext()
+    try:
+        return mlflow.start_run(run_name=run_name)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not open MLflow run %s: %s", run_name, exc)
+        return nullcontext()

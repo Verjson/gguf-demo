@@ -38,6 +38,56 @@ COMPUTE_DEVICE=cpu ./scripts/run_pipeline.sh
 COMPUTE_DEVICE=cuda SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh
 ```
 
+The app container is capped so a long CPU run cannot starve the host — important on
+WSL2, where an unbounded container drives the whole VM into swap instead of failing on
+its own. `run_pipeline.sh` sizes the memory cap from the RAM actually available (two
+thirds of it, up to 14 GB) and disables container swap, so an over-budget run is killed
+rather than left thrashing. CPU is unrestricted by default; cap it on a shared machine:
+
+```bash
+APP_MEM_LIMIT=10g APP_CPUS=8 ./scripts/run_pipeline.sh
+```
+
+Both limits are discovered rather than assumed, so the demo behaves the same on a
+laptop and on a slice of a shared host:
+
+- **Threads** are capped by the CPU budget the container is actually granted — a cgroup
+  quota or a cpuset, whichever is smaller. A container given 2 CPUs still *sees* every
+  core on the host, so sizing from `os.cpu_count()` would start 32 threads on a 2-CPU
+  grant and spend the difference on cgroup throttling.
+- **The thread count under that cap is measured, not guessed**, because both obvious
+  guesses are wrong. Filling every logical CPU falls off a cliff: nothing is left for
+  the process's own threads, and hyperthread siblings evict each other's cache lines.
+  Folding siblings into physical cores instead trusts `/proc/cpuinfo`, which a
+  hypervisor is free to invent — under WSL2 an i9-14900HX (8 P-cores + 16 E-cores, 32
+  threads) is reported as a uniform "16 cores x 2 threads", so folding hands back 16
+  threads and idles 8 real cores. Generating from a RAG-sized prompt on that laptop:
+  1.26 tok/s at 16 threads, 1.65 at 24, **1.76 at 28**, and 1.60 at 32. Guessing from
+  the reported topology cost 37%. So the first CPU run times a small stand-in for the
+  real workload — a memory-bound GEMV chain shaped like decode, a compute-bound GEMM
+  shaped like prefill — at five candidate thread counts, and caches the winner per
+  machine in `data/processed/cpu_budget.json`. It costs about 10 seconds once, picks 28
+  here, and ranks candidates the same way full generations do. Set `CPU_CALIBRATE=0` to
+  skip it and take the conservative folded-core heuristic, or `APP_CPUS=8` to both cap
+  the container and fix the thread count on a shared machine.
+- **Evaluation runs one sample at a time.** MLflow evaluates 10 concurrently by
+  default, but a single local model is one shared resource: extra workers only add a
+  KV cache per in-flight request and turn `generation_time` into a measure of
+  contention instead of the model. Set `MLFLOW_GENAI_EVAL_MAX_WORKERS` to opt back in.
+- **Memory** is read from the cgroup limit before falling back to host RAM, so the
+  numbers stay right when the pipeline is itself driven from inside a container.
+- **Attention uses SDPA.** transformers 4.44 ships `Phi3SdpaAttention` but leaves the
+  `_supports_sdpa` flag off, so the loader silently falls back to eager attention —
+  which dominates CPU prefill on RAG prompts. Enabling it cut a 440-token prompt
+  generating 64 tokens from 75 s to 36 s, with identical output.
+
+Expect CPU utilization to swing during a run rather than sit near 100%. Prefill and
+scoring are compute-bound and use 24–26 of the 28 threads; decode is not, because each
+token reads every weight to produce one token and runs ~224 small parallel regions with
+a barrier between them, so threads spend much of a token waiting (~1000% CPU, 14–18 GB/s
+of weight reads against ~48 GB/s for a pure stream). More threads make that worse, not
+better — see `NEXT.md` for the levers that would actually move it.
+
 ---
 
 ## Minimum hardware, memory, and disk
@@ -66,12 +116,16 @@ COMPUTE_DEVICE=cuda SKIP_CPU_EVAL=1 ./scripts/run_pipeline.sh
 | Mode | Full `./scripts/run_pipeline.sh` |
 |------|----------------------------------|
 | **GPU** (e.g. RTX 4080, 12 GB) | typically **45–90 minutes** (CPU eval passes still run for comparison) |
-| **CPU-only** | often **several hours**; skip or shorten evals if needed |
+| **CPU-only** | roughly **1–2 hours** at ~4–5 tokens/sec on 16 cores |
 
 **Notes**
 
 - Default pipeline **skips CPU LoRA** (`SKIP_CPU_FINETUNE=1`) — Phi-3 LoRA on CPU is RAM-heavy and slow.
-- On WSL / ≤24GB hosts prefer **`SKIP_CPU_EVAL=1`** so Phi-3 is not also loaded in fp32 on CPU.
+- CPU inference loads Phi-3 in **bfloat16** (its native dtype), which keeps the run near
+  **8 GB** and decodes several times faster than an upcast float32 load, because
+  single-token decode is bound by memory bandwidth rather than arithmetic. Set
+  `llm.cpu_dtype: float32` in `config/config.yaml` to trade ~15 GB of RAM for faster
+  prompt prefill on CPUs without AVX-512/AMX.
 - Eval uses **greedy decoding** (`do_sample: false`) for stable quality numbers.
 - `cuda_used=1.0` means CUDA was **available** to the process (not a per-kernel probe).
 - Step 05 registers **base = Model Registry v1** and each LoRA as **v2+** (`phi-3-mini-gguf-demo`).
