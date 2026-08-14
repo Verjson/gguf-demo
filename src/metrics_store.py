@@ -9,11 +9,33 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Any
 
 import psycopg2
 
 logger = logging.getLogger(__name__)
+
+# A run id is the pipeline's UTC start stamp plus the device it ran on, e.g.
+# ``2026-08-14_181632_cpu`` — the same identity results/runs/<run_id>/ uses.
+_RUN_ID_STAMP = "%Y-%m-%d_%H%M%S"
+
+
+def run_started_from_id(run_id: str) -> str | None:
+    """
+    The UTC start time encoded in a run id, as an ISO string, or None.
+
+    Lets a row carry when its run began even when only RUN_ID reaches the container,
+    so the dashboards' run header has a real clock time rather than the timestamp of
+    whichever row happened to be written first.
+    """
+    stamp = "_".join(run_id.split("_")[:2])
+    try:
+        started = datetime.strptime(stamp, _RUN_ID_STAMP).replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return started.isoformat()
+
 
 # Columns we know how to write; unknown metric keys are ignored
 METRIC_COLUMNS = (
@@ -99,9 +121,17 @@ _ENSURE_SCHEMA_STATEMENTS = (
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cpu_logical FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_rss_mb FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_gpu_mem_mb FLOAT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS runtime VARCHAR(32)",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS weight_format VARCHAR(32)",
+    # Which pipeline run wrote the row. Nullable with no default on purpose: rows
+    # written before this column existed genuinely have no run, and inventing one
+    # would make them look like they belong to whichever run is being viewed.
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_id TEXT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_started_at TIMESTAMPTZ",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, timestamp DESC)",
 )
 
 
@@ -143,6 +173,10 @@ class MetricsStore:
         device: str = "cpu",
         cuda_available: bool = False,
         model_name: str | None = None,
+        runtime: str | None = None,
+        weight_format: str | None = None,
+        run_id: str | None = None,
+        run_started_at: str | None = None,
     ) -> None:
         cols = ["approach", "question", "response", "device", "cuda_available", "model_name"]
         vals: list[Any] = [
@@ -153,6 +187,25 @@ class MetricsStore:
             cuda_available,
             model_name,
         ]
+        if runtime:
+            cols.append("runtime")
+            vals.append(runtime)
+        if weight_format:
+            cols.append("weight_format")
+            vals.append(weight_format)
+
+        # From the environment by default so every eval script stamps its rows without
+        # a signature change at each call site — run_pipeline.sh exports RUN_ID per
+        # device. A step run by hand has no RUN_ID and writes NULL, which is honest:
+        # it belongs to no pipeline run.
+        run_id = run_id or os.getenv("RUN_ID") or None
+        if run_id:
+            cols.append("run_id")
+            vals.append(run_id)
+            started = run_started_at or os.getenv("RUN_STARTED_AT") or run_started_from_id(run_id)
+            if started:
+                cols.append("run_started_at")
+                vals.append(started)
 
         for col in METRIC_COLUMNS:
             if col in metrics:
