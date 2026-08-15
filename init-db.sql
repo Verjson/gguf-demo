@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS evaluation_metrics (
     time_to_response FLOAT,
     speed_chars_per_sec FLOAT,
     cuda_used FLOAT,
-    -- Lowercase alias of "rougeL" for queries that do not quote the camelCase name.
-    rougel FLOAT,
     prompt_chars FLOAT,
     response_chars FLOAT,
     prompt_tokens FLOAT,
@@ -55,13 +53,75 @@ CREATE TABLE IF NOT EXISTS evaluation_metrics (
     n_chunks_retrieved FLOAT,
     cpu_threads FLOAT,
     cpu_logical FLOAT,
+    -- Live RSS at the time the answer finished; unlike peak_rss_mb this can
+    -- fall, so a per-question series and its average both mean something.
+    rss_mb FLOAT,
     peak_rss_mb FLOAT,
     peak_gpu_mem_mb FLOAT,
     runtime VARCHAR(32),
-    weight_format VARCHAR(32)
+    weight_format VARCHAR(32),
+    -- How many transformer layers the engine actually offloaded to the GPU.
+    -- 0 means it ran on the CPU whatever the device column says, which is not
+    -- hypothetical: Dockerfile.app installs the CPU llama.cpp wheel on CUDA 13
+    -- hosts, so a GGUF leg of a "cuda" run offloads nothing. Without this column
+    -- the runtime dashboard compared GPU-Transformers against CPU-llama.cpp and
+    -- called the difference an engine difference. -1 means "all layers".
+    n_gpu_layers FLOAT,
+
+    -- Closed vocabularies, so a typo fails the insert instead of quietly creating
+    -- a new series that then shows up as an extra bar on every dashboard.
+    CONSTRAINT eval_metrics_device_known
+        CHECK (device IS NULL OR device IN ('cpu', 'cuda')),
+    CONSTRAINT eval_metrics_runtime_known
+        CHECK (runtime IS NULL OR runtime IN ('transformers', 'gguf')),
+    CONSTRAINT eval_metrics_weight_format_known
+        CHECK (weight_format IS NULL OR weight_format IN ('safetensors', 'gguf')),
+    -- Scores are 0-1 by construction in src/evaluator.py; a value outside that
+    -- range means a scorer changed its contract without the blend being updated.
+    CONSTRAINT eval_metrics_quality_score_ranged
+        CHECK (quality_score IS NULL OR quality_score BETWEEN 0 AND 1),
+    -- Durations cannot be negative. A negative one means a clock went backwards
+    -- mid-measurement, which should be loud rather than averaged in.
+    CONSTRAINT eval_metrics_durations_nonnegative
+        CHECK (
+            (generation_time IS NULL OR generation_time >= 0)
+            AND (retrieval_time IS NULL OR retrieval_time >= 0)
+            AND (time_to_response IS NULL OR time_to_response >= 0)
+        )
 );
 
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, timestamp DESC);
+
+-- One row per (run, approach, question).
+--
+-- Re-running a stage used to append a second row for the same cell. Dashboard 03
+-- defended against that with DISTINCT ON; dashboards 02 and 04 used plain AVG() and
+-- COUNT(*), so after one re-run the same run reported n=15 on one dashboard and n=30
+-- on another, with the averages pulled toward whichever attempt was repeated. The
+-- insert now upserts against this index, so a re-run replaces.
+--
+-- Partial, because rows written before run_id existed all have NULL there and would
+-- otherwise collide with each other.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_cell
+    ON evaluation_metrics (run_id, approach, question)
+    WHERE run_id IS NOT NULL;
+
+-- Least privilege for Grafana.
+--
+-- The datasource executes raw SQL from every panel. Connecting it as raguser — the
+-- owner of this database — meant the query editor could DROP TABLE. This role can
+-- read the one table the dashboards use and nothing else.
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'grafana_ro') THEN
+        CREATE ROLE grafana_ro LOGIN PASSWORD 'grafanaro';
+    END IF;
+END
+$$;
+
+GRANT CONNECT ON DATABASE rag_eval TO grafana_ro;
+GRANT USAGE ON SCHEMA public TO grafana_ro;
+GRANT SELECT ON evaluation_metrics TO grafana_ro;

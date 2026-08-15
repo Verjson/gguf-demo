@@ -36,15 +36,30 @@ def _normalize(name: str) -> str:
     return name.strip().strip('"')
 
 
+# Table-level clauses are not columns. A CHECK constraint spans several lines and its
+# continuations start with things like `AND (...)`, so a naive "first word of each
+# line" reading turned CONSTRAINT, CHECK and AND into column names.
+_NOT_A_COLUMN = re.compile(
+    r"^\s*(CONSTRAINT|CHECK|PRIMARY|FOREIGN|UNIQUE|EXCLUDE|AND|OR|\)|\()",
+    re.IGNORECASE,
+)
+
+
 def _sql_file_columns() -> set[str]:
     body = _CREATE_TABLE.search(INIT_DB.read_text(encoding="utf-8"))
     assert body, "init-db.sql no longer contains a CREATE TABLE for evaluation_metrics"
     columns = set()
+    depth = 0
     for line in body.group(1).splitlines():
-        line = line.strip()
-        if not line or line.startswith("--"):
+        stripped = line.strip()
+        # Inside a multi-line constraint body, nothing is a column declaration.
+        was_nested = depth > 0
+        depth += line.count("(") - line.count(")")
+        if not stripped or stripped.startswith("--") or was_nested:
             continue
-        columns.add(_normalize(line.split()[0]))
+        if _NOT_A_COLUMN.match(stripped):
+            continue
+        columns.add(_normalize(stripped.split()[0]))
     return columns
 
 

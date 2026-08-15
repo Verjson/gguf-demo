@@ -39,6 +39,13 @@ class _FakeConn:
     def commit(self) -> None:
         return None
 
+    def close(self) -> None:
+        # MetricsStore._execute closes the connection explicitly. `with connect(...)`
+        # in psycopg2 is a *transaction* manager and leaves the socket open for
+        # refcounting to collect, which made every row's connection lifetime depend
+        # on GC timing. The fake has to model the real contract.
+        self.closed = True
+
     def __enter__(self):
         return self
 
