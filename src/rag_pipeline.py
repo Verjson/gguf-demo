@@ -11,7 +11,9 @@ import gc
 import logging
 import os
 import time
+from pathlib import Path
 from typing import Dict, List, Optional
+from urllib.parse import quote_plus
 
 import mlflow
 import torch
@@ -26,6 +28,7 @@ from src.cpu_runtime import configure_threads
 from src.hardware import HardwareInfo, detect_hardware
 from src.llm.factory import build_engine
 from src.llm.port import LlmEngine
+from src.llm.prompting import strip_control_tokens
 from src.llm.runtime import decode_settings, resolve_runtime
 from src.resource_metrics import memory_snapshot
 
@@ -106,10 +109,19 @@ class RAGPipeline:
         )
 
     def _postgres_connection_string(self) -> str:
-        user = os.getenv("POSTGRES_USER", "raguser")
-        password = os.getenv("POSTGRES_PASSWORD", "ragpass")
+        """
+        SQLAlchemy URL for pgvector, with every component percent-encoded.
+
+        Interpolating the password straight into an f-string breaks on any of
+        ``@ : / ? #`` — and not by failing cleanly: an ``@`` splits the authority
+        early and the driver goes looking for a different host. ``quote_plus`` also
+        keeps the credential out of the URL-shaped strings SQLAlchemy prints in
+        connection errors, which otherwise land in logs and MLflow traces.
+        """
+        user = quote_plus(os.getenv("POSTGRES_USER", "raguser"))
+        password = quote_plus(os.getenv("POSTGRES_PASSWORD", "ragpass"))
         host = os.getenv("POSTGRES_HOST", "postgres")
-        db = os.getenv("POSTGRES_DB", "rag_eval")
+        db = quote_plus(os.getenv("POSTGRES_DB", "rag_eval"))
         return f"postgresql+psycopg://{user}:{password}@{host}/{db}"
 
     @mlflow.trace(name="process_pdf", span_type=SpanType.PARSER)
@@ -181,6 +193,9 @@ class RAGPipeline:
             span.set_outputs({"n_chunks": len(all_documents)})
 
         elapsed = time.perf_counter() - t0
+        # Record what built this index, so a later config change is detected instead
+        # of silently retrieving against vectors from the previous embedding model.
+        self._write_fingerprint()
         self.last_index_meta = {
             "total_chunks": float(len(all_documents)),
             "num_documents": float(len(doc_stats)),
@@ -201,12 +216,74 @@ class RAGPipeline:
             self.config["vector_store"]["collection_name"],
         )
 
+    def index_fingerprint(self) -> str:
+        """
+        The settings an existing collection's vectors depend on.
+
+        Embeddings are only comparable to a query embedded by the same model, and
+        chunk boundaries change what a retrieved chunk contains. Changing either in
+        config.yaml therefore invalidates the stored index — but nothing recorded
+        which settings had produced it, so ``ensure_vector_store`` happily reused
+        vectors built by the old model while the run folder snapshotted the new
+        config, and retrieval silently degraded with no error anywhere.
+        """
+        chunking = self.config.get("chunking", {})
+        return "|".join(
+            (
+                f"embed={self.config['embeddings']['model']}",
+                f"chunk_size={chunking.get('chunk_size')}",
+                f"chunk_overlap={chunking.get('chunk_overlap')}",
+            )
+        )
+
+    def _fingerprint_path(self) -> Path:
+        name = self.config["vector_store"]["collection_name"]
+        processed = Path(self.config.get("paths", {}).get("processed_dir", "data/processed"))
+        return processed / f".index_fingerprint_{name}"
+
+    def _stored_fingerprint(self) -> str | None:
+        try:
+            return self._fingerprint_path().read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+
+    def _write_fingerprint(self) -> None:
+        path = self._fingerprint_path()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(self.index_fingerprint(), encoding="utf-8")
+        except OSError as exc:  # A read-only mount must not fail the run.
+            logger.debug("Could not record the index fingerprint: %s", exc)
+
     def ensure_vector_store(self, documents_dir: str) -> None:
-        """Load existing store if it has documents; otherwise rebuild (without duplicates)."""
+        """Load existing store if it matches the current config; otherwise rebuild."""
+        wanted = self.index_fingerprint()
+        stored = self._stored_fingerprint()
+        if stored is not None and stored != wanted:
+            logger.warning(
+                "Vector store was built with different settings — rebuilding.\n"
+                "  stored:  %s\n  current: %s",
+                stored,
+                wanted,
+            )
+            self.create_vector_store(documents_dir, replace=True)
+            return
+
         try:
             self.load_vector_store()
             probe = self.vector_store.similarity_search("test", k=1)
             if probe:
+                if stored is None:
+                    # Pre-existing index from before fingerprints. Record the current
+                    # settings so the *next* config change is detected; this one
+                    # cannot be, because nothing knows what built it.
+                    logger.info(
+                        "Adopting the existing collection and recording its "
+                        "fingerprint as %s. If config.yaml changed since it was "
+                        "built, rebuild with scripts/03_create_rag_db.py.",
+                        wanted,
+                    )
+                    self._write_fingerprint()
                 return
             logger.warning("Vector store is empty — rebuilding from %s", documents_dir)
         except Exception as exc:  # noqa: BLE001
@@ -237,7 +314,10 @@ class RAGPipeline:
             )
         embedding = self.embed_query(query)
         docs = self._vector_search(query, embedding, k)
-        context = "\n\n".join(doc.page_content for doc in docs)
+        # Sanitised at the boundary, once, so every consumer of the context — the
+        # generation prompt, the LLM judge, the faithfulness scorer, the trace
+        # preview — gets the same neutralised text and none of them has to remember.
+        context = "\n\n".join(strip_control_tokens(doc.page_content) for doc in docs)
         self.last_retrieval_meta = {
             "n_chunks_retrieved": float(len(docs)),
             "context_chars": float(len(context)),

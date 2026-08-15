@@ -24,9 +24,10 @@ from typing import Any, Dict, Iterator, List
 import mlflow
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
 
-from src.hardware import HardwareInfo, detect_hardware
+from src.hardware import HardwareInfo, detect_hardware, device_for_row
 from src.metrics_store import MetricsStore
 from src.resource_metrics import memory_snapshot, percentile
+from src.run_id import run_group_for
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +42,28 @@ EVALUATION_REQUESTS = Counter(
     "Total evaluation requests",
     ["device", "approach"],
 )
+# Buckets sized to this workload, and they have to be stated.
+#
+# prometheus_client's defaults are built for HTTP handlers and stop at 10 seconds.
+# A local Phi-3 answer takes 8 to 962 seconds here (measured across run
+# 2026-08-14_181632: 8.2, 10.1, 28.7, 31.6, 45.8, 55.7, 302.5, 525.2, 761.6, 962.2),
+# so every single observation landed in the +Inf overflow bucket. histogram_quantile
+# has no interpolable range in that state and returns +Inf, which made the p50/p95
+# panel on the Live Ops dashboard — the only latency panel there — permanently
+# unable to show a number, and the same two queries are published in the README.
+#
+# The ladder runs from a fast GPU answer to well past the slowest CPU one, roughly
+# 2.5x per step. Changing it changes the metric's series set, so old TSDB data for
+# evaluation_duration_seconds is not comparable across this edit.
+EVALUATION_DURATION_BUCKETS = (
+    1.0, 2.5, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0, 2500.0, float("inf"),
+)
+
 EVALUATION_DURATION = Histogram(
     "evaluation_duration_seconds",
     "Evaluation / generation duration",
     ["device", "approach"],
+    buckets=EVALUATION_DURATION_BUCKETS,
 )
 RESPONSE_QUALITY = Gauge(
     "response_quality_score",
@@ -159,38 +178,75 @@ def _numeric_metrics(metrics: Dict[str, Any]) -> Dict[str, float]:
     }
 
 
+#: The single definition of the blend. `genai_scorers` imports this rather than
+#: keeping its own copy — the copy it used to keep had already drifted by two keys,
+#: and a scoring function that exists twice is a scoring function that will disagree
+#: with itself eventually.
+QUALITY_WEIGHTS: Dict[str, float] = {
+    "rouge1": 0.10,
+    "rouge2": 0.10,
+    "rougeL": 0.18,
+    "bert_score": 0.18,
+    "retrieval_hit_at_k": 0.14,
+    "faithfulness": 0.14,
+    "judge_groundedness": 0.08,
+    "answer_relevancy": 0.04,
+    "domain_relevance": 0.02,
+    "context_utilization": 0.01,
+    "coherence": 0.01,
+}
+
+#: Metrics only a RAG approach can produce. Their absence from a baseline row is a
+#: property of the approach, not a gap in the measurement, which is why the
+#: denominator has to be fixed — see calculate_quality_score.
+_RAG_ONLY_METRICS = frozenset({"retrieval_hit_at_k", "faithfulness", "context_utilization"})
+
+
 def calculate_quality_score(metrics: Dict[str, float]) -> float:
     """
-    Weighted blend of available metrics into a single 0–1 score for Grafana.
+    Weighted blend of the available metrics into a single 0–1 score.
 
-    Reference / RAG metrics dominate. Heuristics are lightly weighted.
+    The denominator is the **full** weight table, not the subset that happened to be
+    present. That is the fix for a comparison the dashboards make on every panel:
+
+      * a RAG row carries retrieval_hit_at_k (0.14) and faithfulness (0.14);
+      * a baseline row carries neither, because there is no retrieval to score.
+
+    Dividing by "weights I found" gave the baseline row a denominator 0.28 smaller and
+    scaled its remaining metrics up to compensate, so baseline and RAG scores were on
+    different scales — and dashboard 02 subtracts one from the other. Dividing by the
+    full table instead means an absent metric contributes 0, which is the honest
+    reading: an approach that does no retrieval earns no retrieval quality.
+
+    The visible consequence is that baseline quality_score drops relative to before.
+    That is the bug being removed, not a regression: the old number was inflated.
+    Both are still 0–1, and `rougeL` remains the metric to use for "did RAG help?".
     """
-    weights = {
-        "rouge1": 0.10,
-        "rouge2": 0.10,
-        "rougeL": 0.18,
-        "bert_score": 0.18,
-        "retrieval_hit_at_k": 0.14,
-        "faithfulness": 0.14,
-        "judge_groundedness": 0.08,
-        "answer_relevancy": 0.04,
-        "domain_relevance": 0.02,
-        "context_utilization": 0.01,
-        "coherence": 0.01,
-        "factual_density": 0.0,
-        "technical_accuracy": 0.0,
-    }
+    if not metrics:
+        return 0.0
 
     score = 0.0
-    total_weight = 0.0
-    for metric, weight in weights.items():
-        if weight <= 0:
-            continue
-        if metric in metrics:
-            score += metrics[metric] * weight
-            total_weight += weight
+    for metric, weight in QUALITY_WEIGHTS.items():
+        if weight > 0 and metric in metrics:
+            score += float(metrics[metric]) * weight
 
+    total_weight = sum(w for w in QUALITY_WEIGHTS.values() if w > 0)
     return score / total_weight if total_weight > 0 else 0.0
+
+
+def quality_score_denominator(include_rag: bool) -> float:
+    """
+    The weight total a fully-scored row of this kind can reach.
+
+    Reporting can use this to show quality_score as a fraction of what the approach
+    was eligible for, when comparing a baseline against a RAG run head-to-head is the
+    actual question rather than "which produced the better answer overall".
+    """
+    return sum(
+        weight
+        for metric, weight in QUALITY_WEIGHTS.items()
+        if weight > 0 and (include_rag or metric not in _RAG_ONLY_METRICS)
+    )
 
 
 class MLflowTracker:
@@ -306,6 +362,16 @@ class MLflowTracker:
                     mlflow.set_tag("weight_format", str(params["weight_format"]))
             mlflow.set_tag("cuda_available", str(self.hardware.cuda_available))
             mlflow.set_tag("mlflow.ui.mode", "evaluation_parent")
+            # The third leg of the same story. Postgres rows carry RUN_ID, the results
+            # folder is named after it and the dashboards filter on it — but the MLflow
+            # run recorded stage/approach/device only, so with several runs a day on one
+            # device there was no way back from a run in the UI to the rows or the
+            # artifacts it produced.
+            pipeline_run_id = os.getenv("RUN_ID")
+            if pipeline_run_id:
+                mlflow.set_tag("run_id", pipeline_run_id)
+                mlflow.set_tag("run_group", run_group_for(pipeline_run_id) or "")
+                mlflow.log_param("results_dir", f"results/runs/{pipeline_run_id}")
             if self.hardware.cuda_device_name:
                 mlflow.set_tag("cuda_device_name", self.hardware.cuda_device_name)
             if model_name:
@@ -355,12 +421,18 @@ class MLflowTracker:
         Does **not** create a new classic run per question. Live retrieve/generate spans
         come from ``RAGPipeline``; this method attaches scores as feedback on the last trace.
         """
-        device = self.hardware.device
-        EVALUATION_REQUESTS.labels(device=device, approach=approach).inc()
-
         merged = dict(metrics)
         merged.update(self.hardware.as_metrics())
         merged.update(memory_snapshot())
+
+        # The device a row is labelled with is the device that generated the answer,
+        # which is not always the device the process can see. On a CUDA 13 host the
+        # GGUF engine runs on the CPU wheel with n_gpu_layers=0 while torch reports a
+        # usable GPU, so trusting self.hardware.device here labelled a CPU run `cuda`
+        # and made the Transformers-vs-GGUF dashboard a GPU-vs-CPU comparison in
+        # disguise. The engine measured it; believe the engine.
+        device = self._device_for_row(merged)
+        EVALUATION_REQUESTS.labels(device=device, approach=approach).inc()
         quality_score = calculate_quality_score(merged)
         merged["quality_score"] = quality_score
         numeric = _numeric_metrics(merged)
@@ -415,6 +487,10 @@ class MLflowTracker:
             runtime=str((params or {}).get("runtime") or "") or None,
             weight_format=str((params or {}).get("weight_format") or "") or None,
         )
+
+    def _device_for_row(self, merged: Dict[str, float]) -> str:
+        """The device this row belongs to; see ``src.hardware.device_for_row``."""
+        return device_for_row(merged.get("cuda_used"), self.hardware.device)
 
     def record_row_metrics(self, metrics: Dict[str, float]) -> None:
         """Append numeric metrics for parent-run aggregation (used by eval_runner)."""

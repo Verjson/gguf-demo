@@ -9,8 +9,20 @@ pyproject ended up unsatisfiable (langchain 0.3 needs langchain-core>=0.3.85, pi
 at <0.2) without any build failing.
 
 Collapsing the two lists means making the image resolve pyproject, which would change how
-torch is selected. Until that is worth doing, this test is the cheaper guarantee: the two
-lists must agree on every package they both name.
+torch is selected. Until that is worth doing, this test is the cheaper guarantee.
+
+What "cheaper guarantee" is worth, precisely: comparing the two lists *statically* cannot
+tell you whether either one installs. This test passed throughout the period when the image
+could not build at all — python:3.14 (base image bump) plus langchain-community 0.4 (which
+requires numpy>=2.1 on 3.13+) against a `numpy<2` pin present, identically, in both files.
+Agreeing on a contradiction is still agreement.
+
+So the static checks below are now scoped to what they can actually prove — that the two
+lists name the same packages at the same versions — and the question they cannot answer,
+"does this resolve", belongs to `docker compose build` in CI. Both matter; neither
+substitutes for the other. In particular `test_the_two_lists_have_the_same_membership`
+exists because the old intersection-only comparison silently ignored `packaging>=23.2,<24`,
+which was installed in the image, absent from pyproject, and unexplained.
 """
 
 from __future__ import annotations
@@ -82,6 +94,57 @@ def test_the_langchain_family_is_declared_as_a_coherent_set():
             f"{member} must be on the v1 line that langchain-community 0.4 requires, "
             f"got {pyproject[member]}"
         )
+
+
+def test_the_two_lists_have_the_same_membership():
+    """
+    Neither file may name a runtime dependency the other omits.
+
+    The intersection-only comparison above cannot see a package that exists in one
+    list and not the other — which is how `packaging>=23.2,<24` lived in the image,
+    unmentioned by pyproject and unexplained by anything, for the life of the repo.
+
+    torch and llama-cpp-python are the deliberate exceptions: both are installed from
+    a build-arg-selected index rather than from the flat list, so the Dockerfile spells
+    them differently on purpose.
+    """
+    index_selected = {"torch", "llama-cpp-python", "bitsandbytes"}
+    pyproject = set(_pyproject_requirements()) - index_selected
+    dockerfile = set(_dockerfile_requirements()) - index_selected
+
+    assert not pyproject - dockerfile, (
+        "declared in pyproject.toml but never installed in the image: "
+        f"{sorted(pyproject - dockerfile)}"
+    )
+    assert not dockerfile - pyproject, (
+        "installed in the image but undeclared in pyproject.toml, so `pip install -e .` "
+        f"on a host does not reproduce the container: {sorted(dockerfile - pyproject)}"
+    )
+
+
+def test_numpy_is_not_pinned_below_what_the_python_version_requires():
+    """
+    The specific contradiction that made the image unbuildable, frozen as a test.
+
+    langchain-community 0.4 requires numpy>=2.1 on Python 3.13+, and Dockerfile.app
+    builds on python:3.14-slim. A `<2` ceiling on numpy is therefore not a conservative
+    choice, it is an unsatisfiable one — and pip only says so at build time, which is
+    why this assertion is cheap enough to keep in the unit suite.
+    """
+    base_image = re.search(r"^FROM\s+python:(\d+)\.(\d+)", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE)
+    assert base_image, "could not read the Python version from Dockerfile.app's FROM line"
+    major, minor = int(base_image.group(1)), int(base_image.group(2))
+
+    for label, requirements in (
+        ("pyproject.toml", _pyproject_requirements()),
+        ("Dockerfile.app", _dockerfile_requirements()),
+    ):
+        spec = requirements.get("numpy", "")
+        if (major, minor) >= (3, 13):
+            assert "<2" not in spec, (
+                f"{label} pins numpy {spec} while the image runs Python {major}.{minor}; "
+                "langchain-community 0.4 requires numpy>=2.1 there, so this cannot resolve"
+            )
 
 
 def test_the_postgres_vector_store_has_its_psycopg3_driver():

@@ -15,12 +15,17 @@ import logging
 import os
 import sys
 import time
-import xml.etree.ElementTree as ET
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import mlflow
 import requests
 import yaml
+
+# defusedxml over xml.etree: this parses a document fetched from the network, and
+# the stdlib parser is documented as vulnerable to entity-expansion ("billion
+# laughs") and quadratic blowup. defusedxml is already in the dependency tree via
+# nltk, so this costs nothing.
+from defusedxml import ElementTree as ET
 from mlflow.entities import SpanType
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -30,8 +35,23 @@ from src.mlflow_tracker import optional_mlflow_run
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-ARXIV_API = "http://export.arxiv.org/api/query"
+# HTTPS, not HTTP.
+#
+# The feed this returns decides two things: what goes into the RAG knowledge base,
+# and what step 05 fine-tunes on. `pdf_url` is taken straight out of the response and
+# fetched. Over plain HTTP anyone on the path chose both, and the only evidence would
+# be a model that answered oddly. arXiv serves the same API over TLS.
+ARXIV_API = "https://export.arxiv.org/api/query"
 ATOM_NS = {"atom": "http://www.w3.org/2005/Atom"}
+
+# A PDF may only be fetched from arXiv itself. The feed is trusted to say *which*
+# papers, never to redirect the download somewhere else.
+ALLOWED_PDF_HOSTS = ("arxiv.org", "export.arxiv.org")
+
+# No paper in this corpus is anywhere near this large. The cap exists because
+# data/papers is a bind mount onto the host disk, so an unbounded streaming write is
+# a way to fill it — the same failure the results/ budget guard was added for.
+MAX_PDF_BYTES = 50 * 1024 * 1024
 
 
 def load_config() -> dict:
@@ -88,17 +108,69 @@ def search_arxiv_papers(
     return papers
 
 
+def pdf_url_is_allowed(url: str) -> bool:
+    """Whether `url` is an HTTPS arXiv URL we are willing to fetch."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return False
+    host = (parsed.hostname or "").lower()
+    return any(host == allowed or host.endswith(f".{allowed}") for allowed in ALLOWED_PDF_HOSTS)
+
+
 @mlflow.trace(name="download_pdf", span_type=SpanType.TOOL)
 def download_pdf(url: str, save_path: str) -> bool:
+    """
+    Fetch one paper, refusing anything that is not an arXiv PDF.
+
+    Three checks the previous version did not make, each of which was reachable
+    purely by controlling the feed (which, over plain HTTP, anyone on the path was):
+    the host, the content type, and the size. The size cap is enforced while
+    streaming rather than from Content-Length, which a server is free to understate.
+    """
+    if not pdf_url_is_allowed(url):
+        logger.error(
+            "Refusing to download %s: not an https URL on %s. The arXiv feed supplies "
+            "this address, so a URL pointing elsewhere means the feed is not what it "
+            "claims to be.",
+            url,
+            " / ".join(ALLOWED_PDF_HOSTS),
+        )
+        return False
+
+    written = 0
     try:
         with requests.get(url, stream=True, timeout=120) as response:
             response.raise_for_status()
+
+            content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
+            if content_type and content_type != "application/pdf":
+                logger.error(
+                    "Refusing %s: served %s, expected application/pdf", url, content_type
+                )
+                return False
+
             with open(save_path, "wb") as f:
                 for chunk in response.iter_content(chunk_size=8192):
+                    written += len(chunk)
+                    if written > MAX_PDF_BYTES:
+                        raise ValueError(
+                            f"exceeded the {MAX_PDF_BYTES // (1024 * 1024)}MB cap"
+                        )
                     f.write(chunk)
+
+        # A PDF starts with %PDF-. Cheap, and it catches an error page saved with the
+        # right content type before pypdf tries to parse it downstream.
+        with open(save_path, "rb") as f:
+            if f.read(5) != b"%PDF-":
+                raise ValueError("response is not a PDF (missing %PDF- header)")
         return True
     except Exception as exc:  # noqa: BLE001
         logger.error("Failed to download %s: %s", url, exc)
+        # Never leave a partial or rejected file where the RAG indexer will find it.
+        try:
+            os.unlink(save_path)
+        except OSError:
+            pass
         return False
 
 

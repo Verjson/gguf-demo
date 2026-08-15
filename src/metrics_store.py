@@ -58,8 +58,11 @@ METRIC_COLUMNS = (
     "n_chunks_retrieved",
     "cpu_threads",
     "cpu_logical",
+    "rss_mb",
     "peak_rss_mb",
     "peak_gpu_mem_mb",
+    # 0 = the engine offloaded nothing and ran on the CPU, whatever device says.
+    "n_gpu_layers",
 )
 
 # Safe to re-run: this is the only migration path, applied on every connect.
@@ -85,8 +88,13 @@ _ENSURE_SCHEMA_STATEMENTS = (
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS rouge1 FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS rouge2 FLOAT",
     'ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS "rougeL" FLOAT',
-    # Unquoted rougeL from older init-db — also ensure lowercase alias column exists for queries
-    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS rougel FLOAT",
+    # `rougel` was added as a lowercase alias "for queries that do not quote the
+    # camelCase name" — but METRIC_COLUMNS only ever wrote "rougeL", so the column
+    # was permanently NULL while looking like a real one. That is worse than not
+    # having it: Postgres folds an unquoted rougeL to this name, so the query it
+    # existed to help returned silence instead of an error. All four dashboards
+    # quote correctly; nothing reads it.
+    "ALTER TABLE evaluation_metrics DROP COLUMN IF EXISTS rougel",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS bert_score FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS domain_relevance FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS context_utilization FLOAT",
@@ -113,6 +121,8 @@ _ENSURE_SCHEMA_STATEMENTS = (
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cpu_threads FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS cpu_logical FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_rss_mb FLOAT",
+    # Live RSS, which unlike peak_rss_mb can go down — the per-question figure.
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS rss_mb FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS peak_gpu_mem_mb FLOAT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS runtime VARCHAR(32)",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS weight_format VARCHAR(32)",
@@ -121,17 +131,38 @@ _ENSURE_SCHEMA_STATEMENTS = (
     # would make them look like they belong to whichever run is being viewed.
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_id TEXT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_started_at TIMESTAMPTZ",
+    # Layers actually offloaded to the GPU; 0 means the engine ran on the CPU no
+    # matter what `device` says. See init-db.sql for why that distinction is load-bearing.
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS n_gpu_layers FLOAT",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, timestamp DESC)",
+    # Target of the ON CONFLICT in insert(): a re-run of a stage replaces its rows
+    # instead of appending a second set. Partial so pre-run_id rows do not collide.
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_cell "
+    "ON evaluation_metrics (run_id, approach, question) WHERE run_id IS NOT NULL",
 )
 
 
 class MetricsStore:
-    """Insert evaluation results into the evaluation_metrics table."""
+    """
+    Insert evaluation results into the evaluation_metrics table.
+
+    Write failures are counted, not just logged. They used to be swallowed into a
+    ``logger.warning`` with nothing propagating, so a pipeline whose database was
+    unreachable for its entire duration finished green, exported a header-only CSV,
+    recorded ``postgres_rows: 0`` and printed DONE. ``failed_writes`` lets a caller
+    assert at the end of a stage that what it thinks it measured was actually stored —
+    see ``raise_if_writes_failed``.
+    """
 
     _schema_ready = False
+
+    #: Rows this process failed to persist, across every instance. Class-scoped
+    #: because eval scripts construct a store per tracker but are one run.
+    failed_writes = 0
+    successful_writes = 0
 
     def __init__(self) -> None:
         self._conn_kwargs = {
@@ -210,20 +241,74 @@ class MetricsStore:
         col_sql = ", ".join(cols)
         sql = f"INSERT INTO evaluation_metrics ({col_sql}) VALUES ({placeholders})"
 
+        # A re-run of a stage replaces its own rows rather than appending a second
+        # set. Without this, dashboards that dedupe (03) and dashboards that do not
+        # (02, 04) disagreed about how many answers a run contained, and the averages
+        # on the latter were weighted toward whichever attempt had been repeated.
+        #
+        # Only when the row carries a run_id: the unique index is partial, so rows
+        # with NULL run_id have no conflict target and must plain-insert.
+        if run_id:
+            updates = ", ".join(
+                f"{col} = EXCLUDED.{col}" for col in cols
+                if col not in ("run_id", "approach", "question")
+            )
+            sql += (
+                " ON CONFLICT (run_id, approach, question) WHERE run_id IS NOT NULL "
+                f"DO UPDATE SET {updates}"
+            )
+
         try:
-            with psycopg2.connect(**self._conn_kwargs) as conn:
-                with conn.cursor() as cur:
-                    cur.execute(sql, vals)
-                conn.commit()
+            self._execute(sql, vals)
+            MetricsStore.successful_writes += 1
         except Exception as exc:  # noqa: BLE001
             logger.warning("Failed to persist metrics to Postgres: %s", exc)
             # Retry once after schema repair (e.g. missing column on old volume)
             try:
                 MetricsStore._schema_ready = False
                 self.ensure_schema()
-                with psycopg2.connect(**self._conn_kwargs) as conn:
-                    with conn.cursor() as cur:
-                        cur.execute(sql, vals)
-                    conn.commit()
+                self._execute(sql, vals)
+                MetricsStore.successful_writes += 1
             except Exception as retry_exc:  # noqa: BLE001
-                logger.warning("Retry insert also failed: %s", retry_exc)
+                MetricsStore.failed_writes += 1
+                logger.error(
+                    "Metric row LOST for approach=%s question=%r — retry after schema "
+                    "repair also failed: %s",
+                    approach,
+                    (question or "")[:60],
+                    retry_exc,
+                )
+
+    def _execute(self, sql: str, vals: list[Any]) -> None:
+        """
+        Run one statement and close the connection.
+
+        `with psycopg2.connect(...)` is a *transaction* context manager: it commits or
+        rolls back, and leaves the connection open for refcounting to collect later.
+        Closing it explicitly is what the `with` block reads as if it does, and it
+        stops a stage from depending on GC timing for its connection budget.
+        """
+        conn = psycopg2.connect(**self._conn_kwargs)
+        try:
+            with conn, conn.cursor() as cur:
+                cur.execute(sql, vals)
+        finally:
+            conn.close()
+
+    @classmethod
+    def raise_if_writes_failed(cls, context: str) -> None:
+        """
+        Fail the step when any row did not reach Postgres.
+
+        Called at the end of a stage. A run that silently persisted nothing is the
+        failure mode this whole class of check exists for: the dashboards read from
+        Postgres, so losing the write loses the result even though the answers were
+        generated and the JSON was written.
+        """
+        if cls.failed_writes:
+            raise RuntimeError(
+                f"{cls.failed_writes} metric row(s) were not persisted to Postgres "
+                f"({context}); {cls.successful_writes} succeeded. The dashboards read "
+                "from this table, so these answers would be invisible. Check that the "
+                "postgres service is up and that scripts/migrate_db.sh has run."
+            )

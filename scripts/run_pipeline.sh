@@ -104,15 +104,24 @@ default_mem_limit_gb() {
 # (${TIMESTAMP}_cpu, ${TIMESTAMP}_cuda) sharing the TIMESTAMP prefix, which is what
 # lets the dashboards group them into one run while keeping the two legs separable.
 # Stamping both with TIMESTAMP would make CPU and GPU rows indistinguishable.
+#
+# `shared` is for the setup steps that run once and belong to neither device. They
+# used to be invoked as `run_app cuda`, and this function's catch-all branch stamped
+# them CUDA_RUN_ID — so on a machine with no GPU at all, downloading papers and
+# building the index reported RUN_ID=<stamp>_cuda. The dashboards group on the stamp,
+# so a device-free id groups correctly and claims nothing untrue.
 run_id_for_device() {
   case "$1" in
-    cpu) echo "$CPU_RUN_ID" ;;
-    *)   echo "$CUDA_RUN_ID" ;;
+    cpu)    echo "$CPU_RUN_ID" ;;
+    shared) echo "$TIMESTAMP" ;;
+    *)      echo "$CUDA_RUN_ID" ;;
   esac
 }
 
 # Run a script inside the app container on a given device.
-# Usage: run_app cpu|cuda scripts/foo.py [args...]
+# Usage: run_app cpu|cuda|shared scripts/foo.py [args...]
+#   shared — a setup step belonging to neither device; uses the GPU when one is
+#            present (indexing embeds faster there) but is stamped device-free.
 run_app() {
   local device="$1"
   shift
@@ -214,6 +223,10 @@ fi
 assert_results_budget "at startup"
 resolve_published_ports
 start_stack
+# Before any step writes a row. An existing volume can be several columns behind —
+# the app used to be the only thing that migrated it, which left the migration path
+# behind whatever was wrong with the app. This needs only the postgres service.
+scripts/migrate_db.sh
 reclaim_outputs
 
 echo "========================================================================"
@@ -254,11 +267,11 @@ fi
 
 echo ""
 echo "==> Step 1: Download papers (once)"
-run_app cuda scripts/01_download_papers.py
+run_app shared scripts/01_download_papers.py
 
 echo ""
 echo "==> Step 1b: Generate QA pairs (once)"
-run_app cuda scripts/01b_generate_qa_pairs.py
+run_app shared scripts/01b_generate_qa_pairs.py
 
 # ---------------------------------------------------------------------------
 # Step 2: Baseline — CPU (optional), then GPU
@@ -296,7 +309,7 @@ fi
 
 echo ""
 echo "==> Step 3: Create RAG database (once)"
-run_app cuda scripts/03_create_rag_db.py
+run_app shared scripts/03_create_rag_db.py
 
 # ---------------------------------------------------------------------------
 # Step 4: RAG eval — CPU (optional), then GPU

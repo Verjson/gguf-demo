@@ -19,13 +19,29 @@ check() { # check <label> <expected> <actual>
   fi
 }
 
-# Pull just the helpers under test out of the pipeline script, so none of its
-# side effects (starting a stack) run.
+# Load the helpers under test.
+#
+# This used to sed the function bodies out of run_pipeline.sh, because sourcing
+# that script would have started a stack. Extracting them into lib/host.sh —
+# which has no side effects at all — is what made that hack unnecessary, and the
+# hack outlived the refactor: the sed kept matching nothing, `eval ""` defined
+# nothing, and every assertion below failed with "command not found" for weeks.
+# A silent no-op is the worst thing a test helper can be, so this sources the
+# file and then proves the functions are actually there.
 helpers() {
-  sed -n '/^available_memory_bytes()/,/^}/p
-          /^first_free_port()/,/^}/p
-          /^port_held_by_this_stack()/,/^}/p
-          /^port_in_use()/,/^}/p' "$ROOT_DIR/scripts/run_pipeline.sh"
+  cat "$ROOT_DIR/scripts/lib/host.sh"
+}
+
+require_defined() {
+  local missing=0 fn
+  for fn in "$@"; do
+    if ! declare -F "$fn" >/dev/null; then
+      echo "FAIL: $fn is not defined after sourcing scripts/lib/host.sh" >&2
+      missing=1
+    fi
+  done
+  (( missing )) && exit 1
+  return 0
 }
 
 mkdir -p "$TEST_TMP/bin"
@@ -43,6 +59,8 @@ EOF
 make_fake_docker 8589934592 ""   # 8GiB Docker Desktop VM
 export PATH="$TEST_TMP/bin:$PATH"
 eval "$(helpers)"
+require_defined available_memory_bytes first_free_port port_held_by_this_stack \
+                port_in_use resolve_published_ports assert_results_budget
 check "docker VM memory wins over the host's" 8589934592 "$(available_memory_bytes)"
 
 # A Docker that cannot answer must not zero the budget: the host reading is the

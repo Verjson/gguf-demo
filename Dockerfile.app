@@ -43,8 +43,14 @@ ARG LLAMA_CPP_VERSION=0.3.34
 # once. Installing it afterwards let a later transaction downgrade numpy underneath an
 # already-built torch, which does not fail the build — it fails at `import torch` with
 # a C ABI error, far from the cause.
+#
+# The floor is 2.1 and there is no ceiling. langchain-community 0.4 requires
+# numpy>=2.1 on Python 3.13+, and this base image is 3.14, so the previous `<2` pin
+# made the install unsatisfiable — `ResolutionImpossible`, every build, with a green
+# test suite (nothing in it resolves anything). Torch 2.13 is built against numpy 2,
+# so the ABI argument the old pin rested on no longer applies.
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir torch "numpy>=1.26.3,<2" \
+    && pip install --no-cache-dir torch "numpy>=2.1" \
         --index-url ${TORCH_INDEX_URL} \
         --extra-index-url https://pypi.org/simple \
     && pip install --no-cache-dir -e . --no-deps \
@@ -64,6 +70,7 @@ RUN pip install --no-cache-dir --upgrade pip \
         "pypdf>=4.2.0" \
         "pdfplumber>=0.10.3" \
         "nltk>=3.8.1" \
+        "defusedxml>=0.7.1" \
         "datasets>=2.16.1" \
         "rouge-score>=0.1.2" \
         "bert-score>=0.3.13" \
@@ -75,11 +82,10 @@ RUN pip install --no-cache-dir --upgrade pip \
         "requests>=2.31.0" \
         "tqdm>=4.66.1" \
         "pandas>=2.1.4" \
-        "numpy>=1.26.3,<2" \
+        "numpy>=2.1" \
         "click>=8.1.7" \
         "rich>=13.7.0" \
         "python-dotenv>=1.0.0" \
-        "packaging>=23.2,<24" \
     && case "$TORCH_INDEX_URL" in \
          */cpu|*/cpu/) echo "Skipping GPU-only bitsandbytes dependency" ;; \
          *) pip install --no-cache-dir "bitsandbytes>=0.41.3" ;; \

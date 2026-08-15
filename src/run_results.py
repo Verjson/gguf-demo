@@ -21,7 +21,7 @@ import yaml
 
 from src.display_metrics import select_summary_metrics
 from src.hardware import HardwareInfo, detect_hardware
-from src.run_id import parse_run_id
+from src.run_id import is_safe_run_id, parse_run_id, run_group_for
 from src.score_colors import html_table, ranked_metric_row
 from src.snapshot import refresh_latest
 
@@ -74,8 +74,13 @@ METRICS_COLUMNS = (
     "n_chunks_retrieved",
     "cpu_threads",
     "cpu_logical",
+    "rss_mb",
     "peak_rss_mb",
     "peak_gpu_mem_mb",
+    # Layers the engine actually offloaded. 0 on a GGUF row means it ran on the
+    # CPU whatever `device` says, which is the fact that decides whether a
+    # Transformers-vs-GGUF comparison built from this CSV means anything.
+    "n_gpu_layers",
 )
 
 
@@ -128,16 +133,24 @@ def _postgres_conn_kwargs() -> dict[str, str]:
 
 def export_metrics_csv(
     dest: Path,
+    run_id: str | None = None,
     device: str | None = None,
     since: datetime | None = None,
     fill: dict[str, Any] | None = None,
 ) -> int:
     """
-    Dump the evaluation_metrics table to CSV; return the row count.
+    Dump this run's evaluation_metrics rows to CSV; return the row count.
 
-    `device` and `since` scope the dump to one run. Without them a run folder ends
-    up holding every row the database ever collected — a "cpu" export carrying the
-    previous GPU run's rows, which is worse than useless when comparing devices.
+    ``run_id`` is the scope. It replaces an earlier ``device`` + ``since`` pair, which
+    approximated "this run" as "rows for this device written after the run started" —
+    close enough most of the time, and wrong whenever anything else wrote a row in the
+    window (an ad-hoc ``docker compose exec`` evaluation, an overlapping run). It also
+    meant the project carried three different definitions of a run at once: this one,
+    the dashboards' ``run_id``, and ``question_view``'s no-filter-at-all. There is now
+    one.
+
+    ``device`` and ``since`` remain as a fallback for rows written before ``run_id``
+    existed, and are only consulted when no ``run_id`` is given.
     """
     from src.metrics_store import MetricsStore
 
@@ -151,16 +164,21 @@ def export_metrics_csv(
                cuda_used, domain_relevance, coherence,
                prompt_chars, response_chars, prompt_tokens, completion_tokens,
                tokens_per_sec, context_chars, n_chunks_retrieved,
-               cpu_threads, cpu_logical, peak_rss_mb, peak_gpu_mem_mb
+               cpu_threads, cpu_logical, rss_mb, peak_rss_mb, peak_gpu_mem_mb,
+               n_gpu_layers
         FROM evaluation_metrics
     """
     where, params = [], []
-    if device:
-        where.append("device = %s")
-        params.append(device)
-    if since:
-        where.append("timestamp >= %s")
-        params.append(since)
+    if run_id:
+        where.append("run_id = %s")
+        params.append(run_id)
+    else:
+        if device:
+            where.append("device = %s")
+            params.append(device)
+        if since:
+            where.append("timestamp >= %s")
+            params.append(since)
     if where:
         sql += " WHERE " + " AND ".join(where)
     sql += " ORDER BY timestamp DESC"
@@ -391,9 +409,22 @@ def export_run(
     if run_id is None:
         run_id = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H%M%S")
 
+    # Checked before the path is built, because the next thing that happens to it is a
+    # recursive delete. `--run-id ../../something` would otherwise resolve outside
+    # results/runs/ and rmtree it.
+    if not is_safe_run_id(run_id):
+        raise ValueError(
+            f"refusing to export to run id {run_id!r}: expected the pipeline's shape, "
+            "e.g. 2026-08-14_181632_cpu (see src/run_id.py)"
+        )
+
     run_device, run_started = _run_scope(run_id)
     hardware = detect_hardware()
+    runs_dir.mkdir(parents=True, exist_ok=True)
     run_dir = runs_dir / run_id
+    # Belt and braces: even a run id that matches the shape must land inside runs_dir.
+    if run_dir.resolve().parent != runs_dir.resolve():
+        raise ValueError(f"run directory {run_dir} escapes {runs_dir}")
     if run_dir.exists():
         shutil.rmtree(run_dir)
     run_dir.mkdir(parents=True)
@@ -428,6 +459,7 @@ def export_run(
 
     n_rows = export_metrics_csv(
         run_dir / "evaluation_metrics.csv",
+        run_id=run_id,
         device=run_device,
         since=run_started,
         fill={
@@ -437,6 +469,17 @@ def export_run(
     )
     if n_rows:
         copied.append("evaluation_metrics.csv")
+    elif copied:
+        # Stage JSON exists but the database has nothing for this run. That is not an
+        # empty run, it is a run whose metric writes did not land — and it used to
+        # export a header-only CSV, record postgres_rows: 0, and print DONE.
+        logger.error(
+            "No evaluation_metrics rows for run_id=%s, but %d stage artifact(s) were "
+            "exported. The metric writes did not reach Postgres — check the app "
+            "container's logs for 'Failed to persist metrics'.",
+            run_id,
+            len(copied),
+        )
 
     llm_model = "unknown"
     if config_path.is_file():
@@ -477,6 +520,10 @@ def export_run(
             out_dir=run_dir,
             processed_dir=processed_dir,
             prefer_postgres=True,
+            # Scope the pivot to this pipeline invocation. Unscoped, it read the whole
+            # table and wrote whichever rows happened to be newest — which is how a
+            # ..._cpu folder came to contain CUDA columns from a different run.
+            run_group=run_group_for(run_id),
         )
         copied.append("by_question.md")
     except Exception as exc:  # noqa: BLE001
