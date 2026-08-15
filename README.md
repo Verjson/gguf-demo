@@ -284,7 +284,9 @@ Add `--no-rag` for baseline. Add `--judge` for LLM groundedness scoring.
 - **`time_to_response`** as primary latency metric; CPU÷GPU speedup in exports and Grafana
 - **Question-centric views** — `by_question.md` / CSV + Grafana **By Question** dashboard
 - **RAG rebuild** clears collections (no duplicate chunks); Postgres connect is lazy
-- **Schema auto-migrate** on metrics write; quoted `"rougeL"` column
+- **Schema migration** via `scripts/migrate_db.sh` (needs only the postgres service, so
+  it still works when the app image does not build) plus the same statements on metrics
+  write; quoted `"rougeL"` column
 - **`results/` volume mount** so exports appear on the host for git
 - **Skip CPU LoRA by default**; PEFT load uses the same 8-bit / dtype policy as the base model
 - **`quality_score`** weighted toward ROUGE / BERT / faithfulness (heuristics are diagnostic only)
@@ -294,6 +296,19 @@ Add `--no-rag` for baseline. Add `--judge` for LLM groundedness scoring.
 ## Metrics
 
 A weighted **`quality_score`** (0–1) blends available metrics for Grafana and summaries.
+
+> **The denominator is the full weight table, not the metrics that were present.**
+> This matters for the comparison the dashboards make on every panel. A RAG row carries
+> `retrieval_hit_at_k` (0.14) and `faithfulness` (0.14); a baseline row carries neither,
+> because there is no retrieval to score. Dividing by "the weights I found" gave the
+> baseline row a denominator 0.28 smaller and scaled its remaining metrics up to
+> compensate — so baseline and RAG scores sat on different scales while dashboard 02
+> subtracted one from the other. An absent metric now contributes 0, which reads
+> correctly: an approach that does no retrieval earns no retrieval quality.
+>
+> Baseline `quality_score` is therefore **lower than in runs exported before this
+> change**, and the two are not comparable. The old number was inflated. `rougeL`
+> remains the metric to use for "did RAG help?" and is unaffected.
 
 ### Tier 1 — Reference-based (primary)
 
@@ -330,9 +345,18 @@ Human summaries (`results/latest/README.md`, `by_question.md`) show `rougeL`,
 `bert_score`, `faithfulness`, `quality_score`, `time_to_response`, and
 `tokens_per_sec`. Device flags, prompt sizes, retrieval microseconds, and
 heuristic scores (`answer_relevancy`, `coherence`, …) stay in the CSV / JSON.
-`quality_score` is a blend that currently **falls** on RAG when
-`retrieval_hit_at_k` is 0 even if `rougeL` improved — use `rougeL` to judge
-"did RAG help?" and `time_to_response` / `tokens_per_sec` to judge devices.
+`quality_score` **falls** on RAG when `retrieval_hit_at_k` is 0 even if `rougeL`
+improved — use `rougeL` to judge "did RAG help?" and `time_to_response` /
+`tokens_per_sec` to judge devices.
+
+**Reading device columns on a GGUF run.** `device` is now taken from what the engine
+actually did, not from what the process could see. That distinction is load-bearing:
+`Dockerfile.app` installs the **CPU** llama.cpp wheel on CUDA 13 hosts, so a GGUF leg
+of a "cuda" run offloads nothing and is correctly labelled `cpu`. The `n_gpu_layers`
+column (0 = CPU, -1 = all layers) records it per row and appears on the runtime
+dashboard. Runs exported before this change labelled those rows `cuda` with
+`cuda_used=1.0`, which made the Transformers-vs-GGUF comparison a GPU-vs-CPU
+comparison in disguise — treat their `*_gguf | cuda` columns as CPU numbers.
 
 `speed_chars_per_sec` and `cuda_used` remain in Postgres for Grafana ops panels
 but are not headline comparison metrics.
@@ -488,7 +512,7 @@ docker compose logs -f app   # expect: metrics_server listening on 0.0.0.0:8000
 | `cuda_available` | gauge | `1` if the last eval process saw CUDA |
 | `cuda_device_count` | gauge | GPU count from the last eval process |
 | `evaluation_requests_total` | counter | Q&A evals finished (labels: `device`, `approach`) |
-| `evaluation_duration_seconds` | histogram | End-to-end latency observations (`device`, `approach`) |
+| `evaluation_duration_seconds` | histogram | End-to-end latency observations (`device`, `approach`). Buckets run 1s → 2500s — see the note under the p50/p95 queries below |
 | `response_quality_score` | gauge | Latest blended quality score (`device`) |
 | `domain_relevance_score` | gauge | Latest heuristic domain score |
 | `context_utilization_score` | gauge | Latest context-overlap score (RAG) |
@@ -530,6 +554,15 @@ histogram_quantile(0.50, sum by (le, approach) (rate(evaluation_duration_seconds
 histogram_quantile(0.95, sum by (le, approach) (rate(evaluation_duration_seconds_bucket[15m])))
 ```
 
+> **Bucket sizing matters here, and it is not the library default.** `prometheus_client`'s
+> default histogram buckets are built for HTTP handlers and stop at 10 seconds. A local
+> Phi-3 answer in this project takes 8–962 seconds, so with the defaults *every*
+> observation landed in the `+Inf` overflow bucket and both queries above returned
+> `+Inf` — for months, including on the Live Ops dashboard that publishes them.
+> `EVALUATION_DURATION_BUCKETS` in `src/mlflow_tracker.py` now runs 1s → 2500s.
+> If you change the ladder, old `evaluation_duration_seconds` data is not comparable
+> across the change: the series set changes with it.
+
 **RAG faithfulness / hit@k (latest gauges):**
 ```promql
 faithfulness_score
@@ -550,7 +583,12 @@ curl -s http://localhost:8000/metrics | head
 curl -s 'http://localhost:9090/api/v1/query?query=evaluation_requests_total'
 ```
 
-Gauges show the **most recent** eval process values (multiprocess `livemostrecent`). Counters / histograms accumulate across eval processes until the app container is recreated.
+Gauges show the **most recent** eval process values (multiprocess `livemostrecent`).
+Counters and histograms accumulate across eval processes *and* across restarts of the
+app container: the exporter keeps the multiproc files written by exited eval scripts
+rather than clearing them at startup, which used to discard the history of every
+completed run on each rebuild. Set `RESET_METRICS=1` on the app service when you
+genuinely want a clean slate.
 
 Grafana **Live Ops** reads the same series during a run; **By Question** / **Quality & Latency** use Postgres, not Prometheus.
 

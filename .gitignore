@@ -48,6 +48,10 @@ data/processed/*
 
 # MLflow local file store (container uses Postgres backend)
 mlruns/
+# Importing src.evaluator pulls in mlflow, which drops a default sqlite backend in
+# the working directory the first time a trace is created — so simply running the
+# test suite leaves one here, owned by root when the run was in a container.
+mlflow.db
 
 # Docker named volumes (not in repo, but ignore if bind-mounted locally)
 postgres_data/
