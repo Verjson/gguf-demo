@@ -12,7 +12,16 @@ import os
 from dataclasses import asdict, dataclass
 from typing import Any
 
-import torch
+# torch is imported inside the functions that need it, not here.
+#
+# HardwareInfo is a plain dataclass, and the modules that consume it — run_results,
+# question_view, metrics_store, the exporters — never touch a tensor. A module-scope
+# `import torch` made all of them depend on a 2GB install: the export step paid
+# seconds of import time for nothing, and the pure-logic tests could not run at all
+# without the full ML stack present.
+#
+# Only detect_hardware() and _cuda_is_usable() actually need it, and both are called
+# from processes that are about to load a model anyway.
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +60,26 @@ class HardwareInfo:
 
     def as_metrics(self) -> dict[str, float]:
         """
-        Numeric metrics so CUDA vs CPU shows up in MLflow charts and CSV exports.
+        Machine facts, as numbers, for MLflow charts and CSV exports.
 
-        `cuda_used` means CUDA was *available* to this process (1.0 / 0.0),
-        not a guarantee that every kernel ran on the GPU. Generation timing
-        still uses cuda.synchronize() when available so wall clocks reflect
-        GPU compute. `cpu_threads` is the budget the process actually configured,
-        which is what a CPU run's seconds are measured against.
+        Deliberately does **not** include ``cuda_used``. It used to, defined as "CUDA
+        was visible to this process" — and because every caller applies these with
+        ``metrics.update(...)`` *after* attaching the engine's own measurement, that
+        ambient definition silently overwrote the measured one.
+
+        That was not a theoretical loss of precision. Dockerfile.app installs the CPU
+        llama.cpp wheel on CUDA 13 hosts, so ``GgufEngine`` correctly reports
+        ``n_gpu_layers=0`` and ``cuda_used=0.0`` — and the row was written as
+        ``cuda_used=1.0, device=cuda`` anyway. Run 2026-08-14_181632_cuda has the
+        contradiction on record: its manifest says ``n_gpu_layers: 0.0`` and
+        ``peak_gpu_mem_mb: 86`` while every GGUF row claims the GPU. The dashboard
+        that compares the two engines was reading a GPU-vs-CPU difference as an
+        engine difference.
+
+        ``cuda_used`` is a property of one generation, so the engine that performed it
+        owns it. This function reports only what is true of the machine.
         """
         return {
-            "cuda_used": 1.0 if self.cuda_available else 0.0,
             "cuda_device_count": float(self.cuda_device_count),
             "cpu_threads": float(self.cpu_threads),
             "cpu_logical": float(self.cpu_logical),
@@ -76,6 +95,25 @@ class HardwareInfo:
             f"CUDA OFF | running on CPU | {self.cpu_model} "
             f"| {self.cpu_threads}/{self.cpu_logical} threads"
         )
+
+
+def device_for_row(measured_cuda_used: float | None, fallback_device: str) -> str:
+    """
+    The device label a metric row should carry.
+
+    ``cuda`` only when the engine reports that this generation actually ran on the
+    GPU. It lives here, next to HardwareInfo, because the whole point is that it is
+    *not* a property of the machine — and because keeping it free of any MLflow or
+    torch import means it can be tested without either.
+
+    ``fallback_device`` is used when no engine measurement reached the row, e.g. an
+    ad-hoc caller that never went through RAGPipeline. Falling back to what the
+    process can see keeps the old behaviour for those; defaulting to ``cpu`` would
+    just be a different wrong answer.
+    """
+    if measured_cuda_used is None:
+        return fallback_device
+    return "cuda" if float(measured_cuda_used) > 0 else "cpu"
 
 
 def _env_forces_cpu() -> bool:
@@ -96,6 +134,11 @@ def _cuda_is_usable() -> bool:
     """Whether this process should load the model on GPU and log device=cuda."""
     if _env_forces_cpu():
         return False
+    try:
+        import torch
+    except ImportError:
+        # A reporting process without torch installed is on the CPU by definition.
+        return False
     if not torch.cuda.is_available():
         return False
     try:
@@ -106,6 +149,8 @@ def _cuda_is_usable() -> bool:
 
 def detect_hardware() -> HardwareInfo:
     """Inspect torch for CUDA availability and return a HardwareInfo snapshot."""
+    import torch
+
     cuda_available = _cuda_is_usable()
     device_name = None
     capability = None

@@ -81,6 +81,19 @@ def llm_tracking_params(config: dict[str, Any] | None = None, runtime: str | Non
         "cpu_dtype": llm.get("cpu_dtype", "bfloat16"),
         "load_in_8bit": bool(llm.get("load_in_8bit", False)),
     }
+    # The sampler is part of the experiment, so it is logged as part of the run.
+    # Both engines are pinned to neutral truncation and no repetition penalty; the
+    # GGUF path had to say so explicitly because llama.cpp's defaults are not neutral
+    # (repeat_penalty=1.1, top_k=40, top_p=0.95) and silently made the two engines
+    # decode differently at temperature 0. Recording them means a future divergence
+    # shows up as a param diff between runs instead of as unexplained quality drift.
+    params.update(
+        {
+            "repetition_penalty": 1.0,
+            "top_k": 0,
+            "top_p": 1.0,
+        }
+    )
     if runtime == RUNTIME_GGUF:
         gguf = gguf_section(config)
         params.update(

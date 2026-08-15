@@ -242,16 +242,31 @@ class TransformersEngine:
         if cuda_live:
             torch.cuda.synchronize()
         elapsed = time.perf_counter() - start
-        if raw.startswith(prompt):
-            text = raw[len(prompt) :].strip()
-        else:
-            text = raw.strip()
+        continuation = raw[len(prompt) :] if raw.startswith(prompt) else raw
+        text = continuation.strip()
+
+        # Count what the model produced, not what survived presentation.
+        #
+        # This used to tokenize `text` — i.e. after stripping — while the GGUF engine
+        # reports llama.cpp's own `usage.completion_tokens`. tokens_per_sec is a
+        # headline column on the runtime dashboard, so the two engines were being
+        # compared on numerators with different definitions. Counting the unstripped
+        # continuation is the closest match available through the pipeline API; it can
+        # still differ from the sampled count by a token where retokenization is not
+        # round-trip exact, which is noise at this scale rather than a systematic bias.
+        completion_tokens = float(self.count_tokens(continuation))
         return GenerationResult(
             text=text,
             elapsed_seconds=elapsed,
             prompt_tokens=float(self.count_tokens(prompt)),
-            completion_tokens=float(self.count_tokens(text)),
-            extra={"cuda_used": 1.0 if cuda_live else 0.0},
+            completion_tokens=float(completion_tokens),
+            extra={
+                "cuda_used": 1.0 if cuda_live else 0.0,
+                # Transformers offloads whole-model or not at all, so "all layers"
+                # is the honest answer here. Reported for the same reason the GGUF
+                # engine reports it: the comparison table needs both sides.
+                "n_gpu_layers": -1.0 if cuda_live else 0.0,
+            },
         )
 
     def load_meta(self) -> dict[str, Any]:

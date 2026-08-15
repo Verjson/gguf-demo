@@ -167,6 +167,17 @@ class GgufEngine:
         kwargs: dict[str, Any] = {
             "max_tokens": int(settings.max_new_tokens),
             "stop": self._stop,
+            # Every sampler knob is stated, because llama.cpp's defaults are not
+            # neutral and are not the same as Hugging Face's. Leaving them unset meant
+            # GGUF decoded with repeat_penalty=1.1, top_k=40 and top_p=0.95 while the
+            # Transformers engine used repetition_penalty=1.0 and no truncation — so
+            # "same weights, two engines" was also two different samplers, at
+            # temperature 0, where both are supposed to be deterministic and identical.
+            # These values are the neutral ones; changing them is now a visible edit.
+            "repeat_penalty": 1.0,
+            "top_k": 0,
+            "top_p": 1.0,
+            "min_p": 0.0,
         }
         if settings.do_sample:
             kwargs["temperature"] = max(float(settings.temperature), 1e-5)
@@ -185,7 +196,14 @@ class GgufEngine:
             elapsed_seconds=elapsed,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
-            extra={"cuda_used": 1.0 if self.n_gpu_layers != 0 else 0.0},
+            extra={
+                "cuda_used": 1.0 if self.n_gpu_layers != 0 else 0.0,
+                # Carried per row, not just in load_meta, because this is the number
+                # that decides whether a Transformers-vs-GGUF comparison means
+                # anything. It lived only in the manifest, so a run could record
+                # n_gpu_layers=0 in one file and device=cuda in every other.
+                "n_gpu_layers": float(self.n_gpu_layers),
+            },
         )
 
     def load_meta(self) -> dict[str, Any]:
