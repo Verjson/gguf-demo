@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
-from src.run_results import refresh_latest
+from src.snapshot import refresh_latest
 
 PAIRS = (
     ("baseline", "baseline_gguf"),
