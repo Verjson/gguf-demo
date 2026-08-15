@@ -1,5 +1,7 @@
 {
-  "annotations": { "list": [] },
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -10,7 +12,9 @@
       "icon": "dashboard",
       "includeVars": false,
       "keepTime": true,
-      "tags": ["gguf-demo"],
+      "tags": [
+        "gguf-demo"
+      ],
       "title": "gguf-demo dashboards",
       "type": "dashboards"
     }
@@ -19,58 +23,129 @@
     {
       "type": "text",
       "title": "",
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 100,
       "options": {
         "mode": "markdown",
-        "content": "## Live ops\nPrometheus scrapes the **persistent** app metrics server (`:8000/metrics`, always on). Evaluation scripts write metrics via multiprocess files; values appear here within ~15s. For question-level comparison after a run, open **Quality & Latency** or **By Question**. MLflow UI: http://localhost:5000 → **Experiments → gguf-demo**."
+        "content": "## Live ops\nPrometheus scrapes the **persistent** app metrics server (`:8000/metrics`, always on). Evaluation scripts write metrics via multiprocess files; values appear here within ~15s. For question-level comparison after a run, open **Quality & Latency** or **By Question**. MLflow UI: http://localhost:5000 \u2192 **Experiments \u2192 gguf-demo**."
       }
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
       "fieldConfig": {
         "defaults": {
           "mappings": [
-            { "options": { "0": { "text": "CPU only", "color": "orange" }, "1": { "text": "CUDA ON", "color": "green" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "text": "CPU only",
+                  "color": "orange"
+                },
+                "1": {
+                  "text": "CUDA ON",
+                  "color": "green"
+                }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "orange", "value": null },
-              { "color": "green", "value": 1 }
+              {
+                "color": "orange",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 3 },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 3
+      },
       "id": 10,
       "options": {
         "colorMode": "background",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
-      "targets": [{ "expr": "cuda_available", "legendFormat": "cuda", "refId": "A" }],
+      "targets": [
+        {
+          "expr": "cuda_available",
+          "legendFormat": "cuda",
+          "refId": "A"
+        }
+      ],
       "title": "CUDA available",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 3 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 4,
+        "y": 3
+      },
       "id": 11,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
-      "targets": [{ "expr": "cuda_device_count", "refId": "A" }],
+      "targets": [
+        {
+          "expr": "cuda_device_count",
+          "refId": "A"
+        }
+      ],
       "title": "GPU count",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
@@ -79,38 +154,89 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "yellow", "value": 0.3 },
-              { "color": "green", "value": 0.5 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.3
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 3 },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 8,
+        "y": 3
+      },
       "id": 13,
       "options": {
         "orientation": "horizontal",
         "displayMode": "gradient",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
-        { "expr": "response_quality_score", "legendFormat": "quality [{{device}}]", "refId": "A" },
-        { "expr": "faithfulness_score", "legendFormat": "faithfulness [{{device}}]", "refId": "B" },
-        { "expr": "retrieval_hit_at_k", "legendFormat": "hit@k [{{device}}]", "refId": "C" }
+        {
+          "expr": "response_quality_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "A"
+        },
+        {
+          "expr": "faithfulness_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "B"
+        },
+        {
+          "expr": "retrieval_hit_at_k",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "C"
+        }
       ],
       "title": "Latest quality gauges (by device)",
       "type": "bargauge"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
-      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 3 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 16,
+        "y": 3
+      },
       "id": 14,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
       },
       "targets": [
         {
@@ -123,11 +249,30 @@
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
-      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 7 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
       "id": 12,
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
       "targets": [
         {
           "expr": "histogram_quantile(0.5, sum by (le, device, approach) (rate(evaluation_duration_seconds_bucket[5m])))",
@@ -140,15 +285,34 @@
           "refId": "B"
         }
       ],
-      "title": "Time-to-response latency (p50 / p95) — CPU vs GPU",
+      "title": "Time-to-response latency (p50 / p95) \u2014 CPU vs GPU",
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 7 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
       "id": 2,
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
       "targets": [
         {
           "expr": "sum by (device, approach) (rate(evaluation_requests_total[5m]))",
@@ -160,27 +324,74 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "Prometheus" },
-      "fieldConfig": { "defaults": { "unit": "short", "min": 0, "max": 1 }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "Prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
       "id": 1,
-      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true } },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
       "targets": [
-        { "expr": "response_quality_score", "legendFormat": "quality [{{device}}]", "refId": "A" },
-        { "expr": "domain_relevance_score", "legendFormat": "domain [{{device}}]", "refId": "B" },
-        { "expr": "context_utilization_score", "legendFormat": "context util [{{device}}]", "refId": "C" },
-        { "expr": "faithfulness_score", "legendFormat": "faithfulness [{{device}}]", "refId": "D" }
+        {
+          "expr": "response_quality_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "A"
+        },
+        {
+          "expr": "domain_relevance_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "B"
+        },
+        {
+          "expr": "context_utilization_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "C"
+        },
+        {
+          "expr": "faithfulness_score",
+          "legendFormat": "{{approach}} \u00b7 {{device}}",
+          "refId": "D"
+        }
       ],
       "title": "Live quality stream (last values as evals complete)",
       "type": "timeseries"
     }
   ],
   "schemaVersion": 39,
-  "tags": ["gguf-demo", "live", "prometheus"],
-  "templating": { "list": [] },
-  "time": { "from": "now-1h", "to": "now" },
+  "tags": [
+    "gguf-demo",
+    "live",
+    "prometheus"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
   "timezone": "browser",
-  "title": "gguf-demo · Live Ops",
+  "title": "gguf-demo \u00b7 Live Ops",
   "uid": "gguf-live-ops",
-  "version": 1
+  "version": 1,
+  "refresh": "10s"
 }
