@@ -16,9 +16,9 @@ from typing import Dict, List, Optional
 import mlflow
 import torch
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import PGVector
 from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_postgres import PGVector
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from mlflow.entities import SpanType
 
@@ -110,7 +110,7 @@ class RAGPipeline:
         password = os.getenv("POSTGRES_PASSWORD", "ragpass")
         host = os.getenv("POSTGRES_HOST", "postgres")
         db = os.getenv("POSTGRES_DB", "rag_eval")
-        return f"postgresql+psycopg2://{user}:{password}@{host}/{db}"
+        return f"postgresql+psycopg://{user}:{password}@{host}/{db}"
 
     @mlflow.trace(name="process_pdf", span_type=SpanType.PARSER)
     def process_pdf(self, pdf_path: str) -> List[Document]:
@@ -139,8 +139,8 @@ class RAGPipeline:
         name = self.config["vector_store"]["collection_name"]
         try:
             store = PGVector(
-                connection_string=self._postgres_connection_string(),
-                embedding_function=self.embeddings,
+                connection=self._postgres_connection_string(),
+                embeddings=self.embeddings,
                 collection_name=name,
             )
             store.delete_collection()
@@ -174,7 +174,7 @@ class RAGPipeline:
             self.vector_store = PGVector.from_documents(
                 documents=all_documents,
                 embedding=self.embeddings,
-                connection_string=self._postgres_connection_string(),
+                connection=self._postgres_connection_string(),
                 collection_name=self.config["vector_store"]["collection_name"],
                 pre_delete_collection=replace,
             )
@@ -192,8 +192,8 @@ class RAGPipeline:
     def load_vector_store(self) -> None:
         """Attach to an existing pgvector collection without re-embedding."""
         self.vector_store = PGVector(
-            connection_string=self._postgres_connection_string(),
-            embedding_function=self.embeddings,
+            connection=self._postgres_connection_string(),
+            embeddings=self.embeddings,
             collection_name=self.config["vector_store"]["collection_name"],
         )
         logger.info(

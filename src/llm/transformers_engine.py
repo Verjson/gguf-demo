@@ -20,14 +20,32 @@ logger = logging.getLogger(__name__)
 
 
 def _sdpa_available() -> bool:
+    """
+    Whether Phi-3 can use SDPA attention, patching the old flag when it must.
+
+    transformers 4.44 shipped Phi3SdpaAttention but left ``_supports_sdpa`` off, so the
+    loader silently fell back to eager attention — which dominates CPU prefill on RAG
+    prompts (a 440-token prompt generating 64 tokens went from 75s to 36s once enabled).
+    That flag had to be forced on.
+
+    4.48 removed ``PHI3_ATTENTION_CLASSES`` and made SDPA support native, so the old
+    probe now reports False on a version where SDPA is not merely available but the
+    default — and the caller stopped asking for it explicitly, leaving the choice to a
+    library default that could change again. Ask the class what it supports instead.
+    """
     try:
         from transformers.models.phi3 import modeling_phi3
     except ImportError:
         return False
-    if "sdpa" not in getattr(modeling_phi3, "PHI3_ATTENTION_CLASSES", {}):
-        return False
-    modeling_phi3.Phi3PreTrainedModel._supports_sdpa = True
-    return True
+
+    legacy_classes = getattr(modeling_phi3, "PHI3_ATTENTION_CLASSES", None)
+    if legacy_classes is not None:
+        if "sdpa" not in legacy_classes:
+            return False
+        modeling_phi3.Phi3PreTrainedModel._supports_sdpa = True
+        return True
+
+    return bool(getattr(modeling_phi3.Phi3PreTrainedModel, "_supports_sdpa", False))
 
 
 def _cpu_dtype(config: dict) -> torch.dtype:
