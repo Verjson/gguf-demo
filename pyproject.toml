@@ -58,7 +58,7 @@ dependencies = [
   "tqdm>=4.66.1",
   "pandas>=2.1.4",
   # <2 matches Dockerfile.app: numpy 2 breaks the C ABI of the torch build installed there.
-  "numpy>=1.26.3,<2",
+  "numpy>=2.5.2,<3",
   "click>=8.1.7",
   "rich>=13.7.0",
   "python-dotenv>=1.0.0",
