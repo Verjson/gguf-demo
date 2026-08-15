@@ -37,7 +37,7 @@ dependencies = [
   "mlflow>=3.1.0,<3.16",
   "prometheus-client>=0.19.0",
   # Fine-tuning
-  "peft>=0.7.1,<0.12",
+  "peft>=0.20,<0.21",
   # GGUF / llama.cpp Python bindings (CPU wheels from PyPI). Pinned exactly to match
   # Dockerfile.app: the image installs prebuilt wheels from an --extra-index-url that
   # is not hash-verified, so the version must be a reviewed choice, not "whatever is
