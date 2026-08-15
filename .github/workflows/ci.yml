@@ -63,15 +63,17 @@ jobs:
       # stack at all. If this step ever starts needing torch, that regression is
       # itself the bug — it means a module-scope import crept back in.
       #
-      # test_evaluator_scoring is excluded because it exercises the real scorers,
-      # which import bert_score and mlflow. It runs in the `image` job below,
-      # against the built container, where those genuinely exist.
+      # These integration tests import the real ML/PDF stack. They run in the
+      # `image` job below against the built container, where those dependencies
+      # genuinely exist; installing that stack here would duplicate the slow job.
       - run: pip install pytest==9.1.1 pyyaml==6.0.3 psycopg2-binary==2.9.12
       - run: >-
           python -m pytest tests/ -q
           --ignore=tests/test_evaluator_scoring.py
           --ignore=tests/test_mlflow_tracker.py
           --ignore=tests/test_download_papers.py
+          --ignore=tests/test_llm_runtime.py
+          --ignore=tests/test_pdf_loader.py
         env:
           PYTHONPATH: ${{ github.workspace }}
 
