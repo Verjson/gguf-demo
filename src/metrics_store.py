@@ -62,7 +62,9 @@ METRIC_COLUMNS = (
     "peak_gpu_mem_mb",
 )
 
-# Safe to re-run; matches scripts/migrate_metrics_table.sql
+# Safe to re-run: this is the only migration path, applied on every connect.
+# It must stay in step with init-db.sql, which builds a fresh volume —
+# tests/test_schema_parity.py fails when the two drift.
 _ENSURE_SCHEMA_STATEMENTS = (
     'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
     """

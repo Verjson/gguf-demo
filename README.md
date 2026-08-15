@@ -640,7 +640,7 @@ PRELOAD_MODELS=true docker compose build app   # bake models into image
 |-------|-----|
 | `cuda: False` in container | Confirm `nvidia-smi -L` and the Docker NVIDIA runtime, then rerun with `COMPUTE_DEVICE=cuda` |
 | No eval prompts | Run `01b_generate_qa_pairs.py` |
-| Old Postgres schema | Auto-migrates on insert; or apply `scripts/migrate_metrics_table.sql` |
+| Old Postgres schema | Auto-migrates on connect — every eval step adds any missing columns |
 | Empty host `results/` | Confirm `./results:/app/results` mount; re-export |
 | OOM during CPU LoRA | Keep `SKIP_CPU_FINETUNE=1` (default) |
 | Grafana empty | `docker compose up -d prometheus grafana` then open **By Question** |
