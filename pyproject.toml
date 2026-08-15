@@ -12,7 +12,7 @@ license = { text = "MIT" }
 authors = [{ name = "gguf-demo" }]
 dependencies = [
   # LLM and embeddings
-  "transformers>=4.36.2,<4.45",
+  "transformers>=4.57.6,<4.58",
   "torch>=2.1.2",
   "accelerate>=0.25.0",
   "sentence-transformers>=2.2.2,<3",
