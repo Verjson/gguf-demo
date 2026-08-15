@@ -30,8 +30,8 @@ from src.display_metrics import select_summary_metrics
 from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
 from src.question_view import build_question_view
-from src.run_results import refresh_latest
 from src.score_colors import html_table, ranked_metric_row
+from src.snapshot import refresh_latest
 
 
 def load_comparison(run_dir: Path) -> dict:
