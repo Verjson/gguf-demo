@@ -17,6 +17,11 @@ from src.metrics_store import _ENSURE_SCHEMA_STATEMENTS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 INIT_DB = REPO_ROOT / "init-db.sql"
+# The two definitions this file exists to keep in step. Anything else that declares
+# columns on evaluation_metrics is a third one, and a third one drifts unnoticed:
+# scripts/migrate_metrics_table.sql sat at 22 columns while these two reached 43,
+# and metrics_store still claimed to match it.
+SCHEMA_AUTHORITIES = {"init-db.sql", "metrics_store.py"}
 
 _CREATE_TABLE = re.compile(
     r"CREATE TABLE IF NOT EXISTS evaluation_metrics\s*\((.*?)\n\);", re.DOTALL | re.IGNORECASE
@@ -95,4 +100,34 @@ def test_both_definitions_create_the_run_id_index():
     assert sql_indexes == python_indexes, (
         f"index definitions differ: only in init-db.sql {sorted(sql_indexes - python_indexes)}, "
         f"only in metrics_store {sorted(python_indexes - sql_indexes)}"
+    )
+
+
+def test_no_third_definition_of_the_table_exists():
+    """
+    Only init-db.sql and metrics_store.py may declare evaluation_metrics columns.
+
+    ensure_schema() runs on every connect, so a standalone migration script has no job
+    left to do — which is exactly why the last one drifted for so long without anyone
+    noticing. A new file matching here means the parity test above no longer covers
+    every definition.
+    """
+    this_file = Path(__file__).resolve()
+    offenders = []
+    for path in REPO_ROOT.rglob("*"):
+        if path.name in SCHEMA_AUTHORITIES or not path.is_file():
+            continue
+        if path.resolve() == this_file:  # the checker names the pattern it looks for
+            continue
+        if path.suffix not in (".sql", ".py") or ".git" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if "evaluation_metrics" in text and (
+            "ADD COLUMN" in text.upper() or "CREATE TABLE" in text.upper()
+        ):
+            offenders.append(str(path.relative_to(REPO_ROOT)))
+
+    assert not offenders, (
+        "a third definition of evaluation_metrics has appeared, which the parity test "
+        f"above does not cover: {sorted(offenders)}"
     )
