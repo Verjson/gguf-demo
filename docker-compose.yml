@@ -40,12 +40,23 @@ services:
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Read by grafana/provisioning/datasources/prometheus.yml. The dashboards only
+      # ever SELECT, so the datasource connects as a role that can only SELECT — not
+      # as the database owner, which is what it used to do while executing raw SQL
+      # typed into the query editor.
+      GRAFANA_DB_USER: ${GRAFANA_DB_USER:-grafana_ro}
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-grafanaro}
+      POSTGRES_DB: rag_eval
+      POSTGRES_HOST_PORT: postgres:5432
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
-      - prometheus
+      postgres:
+        condition: service_healthy
+      prometheus:
+        condition: service_started
 
   mlflow:
     build:

@@ -7,15 +7,24 @@ datasources:
     url: http://prometheus:9090
     isDefault: true
     uid: Prometheus
+  # Grafana runs raw SQL from every panel through this datasource, so it connects as
+  # a role that can only read the one table the dashboards use. It used to connect as
+  # raguser — the owner of rag_eval — which meant anyone who reached the Grafana UI
+  # could DROP TABLE from the query editor. init-db.sql and scripts/migrate_db.sh
+  # create grafana_ro with SELECT on evaluation_metrics and nothing else.
+  #
+  # Credentials come from the environment rather than from this committed file.
+  # docker-compose.yml supplies GRAFANA_DB_* with the same demo defaults as the rest
+  # of the stack; setting them to something real does not require editing provisioning.
   - name: Postgres
     type: postgres
     access: proxy
-    url: postgres:5432
-    user: raguser
+    url: ${POSTGRES_HOST_PORT}
+    user: ${GRAFANA_DB_USER}
     uid: Postgres
     jsonData:
-      database: rag_eval
+      database: ${POSTGRES_DB}
       sslmode: disable
       postgresVersion: 1500
     secureJsonData:
-      password: ragpass
+      password: ${GRAFANA_DB_PASSWORD}
