@@ -80,17 +80,36 @@ fi
 expect "measurement can be switched off" "$(fixed_budget)" "$(fixed_budget)"
 
 # The answer is cached per machine, so only the first run pays for the probe.
+#
+# Only when there is a probe to pay for. cpu_budget() calibrates when the ceiling
+# reaches MIN_CORES_TO_CALIBRATE (8) and takes the heuristic below that, and only
+# calibration writes the cache — so on a smaller machine "no cache file" is the
+# documented behaviour, not a failure. This assertion sat outside the `visible >= 8`
+# guard that the measurement assertions above already use, so it passed on a
+# 32-thread laptop and failed on a 4-core CI runner: a test that only held on the
+# machine it was written on.
 cache_dir="$(mktemp -d)"
 trap 'rm -rf "$cache_dir"' EXIT
 first="$(budget -v "$cache_dir:/cache" -e CPU_BUDGET_CACHE=/cache/cpu_budget.json)"
 start=$SECONDS
 second="$(budget -v "$cache_dir:/cache" -e CPU_BUDGET_CACHE=/cache/cpu_budget.json)"
 elapsed=$((SECONDS - start))
-expect "cached budget matches the measured one" "$first" "$second"
-if [[ ! -s "$cache_dir/cpu_budget.json" ]]; then
-  echo "FAIL: no cache file written" >&2
-  exit 1
+expect "budget is stable across runs" "$first" "$second"
+
+if (( visible >= 8 )); then
+  if [[ ! -s "$cache_dir/cpu_budget.json" ]]; then
+    echo "FAIL: no cache file written on a machine large enough to calibrate" >&2
+    exit 1
+  fi
+  echo "ok: budget cached and reused in ${elapsed}s"
+else
+  # Assert the other half of the contract rather than skipping silently: below the
+  # threshold nothing is measured, so nothing should be cached either.
+  if [[ -s "$cache_dir/cpu_budget.json" ]]; then
+    echo "FAIL: cache written on a ${visible}-CPU machine, which should not calibrate" >&2
+    exit 1
+  fi
+  echo "ok: ${visible} CPUs is below the calibration threshold — heuristic used, nothing cached"
 fi
-echo "ok: budget cached and reused in ${elapsed}s"
 
 echo "cpu budget tests passed"
