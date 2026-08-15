@@ -46,7 +46,18 @@ read -r -d '' MIGRATION <<'SQL' || true
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS evaluation_runs (
+  run_id TEXT NOT NULL, approach VARCHAR(50) NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), completed_at TIMESTAMPTZ,
+  status VARCHAR(16) NOT NULL DEFAULT 'running', expected_samples INTEGER NOT NULL,
+  recorded_samples INTEGER NOT NULL DEFAULT 0, requested_device VARCHAR(16),
+  actual_device VARCHAR(16), runtime VARCHAR(32), weight_format VARCHAR(32),
+  model_name TEXT, mlflow_run_id TEXT, error TEXT,
+  PRIMARY KEY (run_id, approach)
+);
+
 ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_id TEXT;
+ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS sample_id TEXT;
 ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_started_at TIMESTAMPTZ;
 ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS runtime VARCHAR(32);
 ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS weight_format VARCHAR(32);
@@ -59,19 +70,65 @@ ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS rss_mb FLOAT;
 -- folds to this name and returns silence instead of an error.
 ALTER TABLE evaluation_metrics DROP COLUMN IF EXISTS rougel;
 
--- One row per (run, approach, question). Re-running a stage used to append a second
+-- One row per (run, approach, sample). Re-running a stage used to append a second
 -- row for the same cell; dashboard 03 defended with DISTINCT ON while 02 and 04 used
 -- plain AVG(), so after one re-run the same run reported n=15 on one dashboard and
 -- n=30 on another. Historic rows have no run_id and are excluded from the constraint
 -- rather than deleted.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_cell
-    ON evaluation_metrics (run_id, approach, question)
-    WHERE run_id IS NOT NULL;
+UPDATE evaluation_metrics SET sample_id = id::text
+WHERE run_id IS NOT NULL AND sample_id IS NULL;
+DROP INDEX IF EXISTS uq_eval_metrics_run_cell;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_sample
+ON evaluation_metrics (run_id, approach, sample_id)
+WHERE run_id IS NOT NULL AND sample_id IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics ("timestamp" DESC);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, "timestamp" DESC);
+CREATE INDEX IF NOT EXISTS idx_evaluation_runs_started ON evaluation_runs (started_at DESC);
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_run_identity') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_run_identity
+    CHECK (run_id IS NULL OR (sample_id IS NOT NULL AND approach IS NOT NULL AND question IS NOT NULL)) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_device_known') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_device_known
+    CHECK (device IS NULL OR device IN ('cpu', 'cuda')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_runtime_known') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_runtime_known
+    CHECK (runtime IS NULL OR runtime IN ('transformers', 'gguf')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_weight_format_known') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_weight_format_known
+    CHECK (weight_format IS NULL OR weight_format IN ('safetensors', 'gguf')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_quality_score_ranged') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_quality_score_ranged
+    CHECK (quality_score IS NULL OR quality_score BETWEEN 0 AND 1) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_durations_nonnegative') THEN
+    ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_durations_nonnegative
+    CHECK ((generation_time IS NULL OR generation_time >= 0)
+      AND (retrieval_time IS NULL OR retrieval_time >= 0)
+      AND (time_to_response IS NULL OR time_to_response >= 0)) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_status_known') THEN
+    ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_status_known
+    CHECK (status IN ('running', 'completed', 'failed')) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_counts_valid') THEN
+    ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_counts_valid
+    CHECK (expected_samples >= 0 AND recorded_samples >= 0) NOT VALID;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_devices_known') THEN
+    ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_devices_known
+    CHECK ((requested_device IS NULL OR requested_device IN ('cpu', 'cuda'))
+      AND (actual_device IS NULL OR actual_device IN ('cpu', 'cuda', 'mixed'))) NOT VALID;
+  END IF;
+END $$;
 
 -- Grafana's read-only role. Existing volumes were provisioned before this existed
 -- and had the datasource connecting as the database owner.
@@ -85,19 +142,38 @@ $$;
 GRANT CONNECT ON DATABASE rag_eval TO grafana_ro;
 GRANT USAGE ON SCHEMA public TO grafana_ro;
 GRANT SELECT ON evaluation_metrics TO grafana_ro;
+GRANT SELECT ON evaluation_runs TO grafana_ro;
 SQL
 
 # Columns and indexes the current code depends on. Checked by name so a partial
 # migration is reported rather than assumed.
-REQUIRED_COLUMNS=(run_id run_started_at runtime weight_format n_gpu_layers rss_mb)
-REQUIRED_INDEXES=(idx_eval_metrics_run_id uq_eval_metrics_run_cell)
+REQUIRED_COLUMNS=(run_id sample_id run_started_at runtime weight_format n_gpu_layers rss_mb)
+REQUIRED_INDEXES=(idx_eval_metrics_run_id uq_eval_metrics_run_sample)
+REQUIRED_CONSTRAINTS=(
+  eval_metrics_run_identity
+  eval_metrics_device_known
+  eval_metrics_runtime_known
+  eval_metrics_weight_format_known
+  eval_metrics_quality_score_ranged
+  eval_metrics_durations_nonnegative
+  evaluation_runs_status_known
+  evaluation_runs_counts_valid
+  evaluation_runs_devices_known
+)
 
 report_drift() {
-  local drift=0 col idx
+  local drift=0 col idx constraint
   for col in "${REQUIRED_COLUMNS[@]}"; do
     if ! "${PSQL[@]}" -tAc "SELECT 1 FROM information_schema.columns
          WHERE table_name='evaluation_metrics' AND column_name='${col}'" | grep -q 1; then
       echo "  missing column: ${col}"
+      drift=1
+    fi
+  done
+  for constraint in "${REQUIRED_CONSTRAINTS[@]}"; do
+    if ! "${PSQL[@]}" -tAc "SELECT 1 FROM pg_constraint
+         WHERE conname='${constraint}'" | grep -q 1; then
+      echo "  missing constraint: ${constraint}"
       drift=1
     fi
   done
@@ -136,27 +212,6 @@ fi
 
 echo "==> Migrating evaluation_metrics"
 before="$("${PSQL[@]}" -tAc 'SELECT count(*) FROM evaluation_metrics')"
-
-# A duplicate cell would make the unique index fail to build, which should be a clear
-# message rather than a psql constraint error mid-script.
-duplicates="$("${PSQL[@]}" -tAc "
-  SELECT count(*) FROM (
-    SELECT run_id, approach, question FROM evaluation_metrics
-    WHERE run_id IS NOT NULL
-    GROUP BY 1,2,3 HAVING count(*) > 1
-  ) d")"
-if [[ "$duplicates" != "0" ]]; then
-  echo "ERROR: ${duplicates} (run_id, approach, question) cell(s) already have more than" >&2
-  echo "       one row, so the unique index cannot be created. These are re-runs that" >&2
-  echo "       were appended rather than replaced. Keep the newest of each with:" >&2
-  echo "" >&2
-  echo "         DELETE FROM evaluation_metrics a USING evaluation_metrics b" >&2
-  echo "          WHERE a.run_id = b.run_id AND a.approach = b.approach" >&2
-  echo "            AND a.question = b.question AND a.timestamp < b.timestamp;" >&2
-  echo "" >&2
-  echo "       Review before running it — it deletes rows." >&2
-  exit 1
-fi
 
 printf '%s\n' "$MIGRATION" | "${PSQL[@]}" -f - >/dev/null
 

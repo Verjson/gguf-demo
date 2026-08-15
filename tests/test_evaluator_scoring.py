@@ -1,6 +1,15 @@
+import pytest
+
 import src.evaluator as ev
 from src.evaluator import Evaluator
 from src.genai_scorers import build_metric_scorers
+
+
+@pytest.fixture(autouse=True)
+def disable_external_mlflow_tracing(monkeypatch):
+    """Unit scoring tests must not initialize MLflow's filesystem/SQL trace store."""
+    monkeypatch.setattr(Evaluator, "evaluate_response", Evaluator.evaluate_response.__wrapped__)
+    monkeypatch.setattr(Evaluator, "_judge_uncached", Evaluator._judge_uncached.__wrapped__)
 
 
 class CountingScorer:
@@ -68,6 +77,22 @@ def test_distinct_answers_are_scored_separately(monkeypatch):
     evaluator.bert_score("first answer", "a different truth")
 
     assert counter.calls == 3
+
+
+def test_llm_judge_scores_once_then_uses_the_cached_result():
+    calls = []
+
+    def judge(prompt: str) -> str:
+        calls.append(prompt)
+        return "4"
+
+    evaluator = Evaluator(judge_fn=judge, enable_bertscore=False)
+
+    first = evaluator._llm_judge_groundedness("question", "answer", "context")
+    second = evaluator._llm_judge_groundedness("question", "answer", "context")
+
+    assert first == second == 0.75
+    assert len(calls) == 1
 
 
 def test_bert_score_disabled_never_loads_the_model(monkeypatch):

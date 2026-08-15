@@ -16,7 +16,58 @@ import pytest
 
 DASHBOARDS = Path(__file__).resolve().parent.parent / "grafana" / "provisioning" / "dashboards"
 # 01 is Prometheus-backed: a live scrape is a genuine time series and stays time-scoped.
-RUN_SCOPED = ("02-quality-latency.json", "03-by-question.json", "04-runtime.json")
+RUN_SCOPED = (
+    "02-quality-latency.json",
+    "03-by-question.json",
+    "04-runtime.json",
+    "05-run-integrity.json",
+)
+
+
+def test_run_integrity_dashboard_exposes_lifecycle_and_sink_evidence():
+    dashboard = _load("05-run-integrity.json")
+    sql = "\n".join(raw_sql for _, raw_sql in _sql_targets(dashboard))
+    for field in (
+        "status",
+        "expected_samples",
+        "recorded_samples",
+        "mlflow_run_id",
+        "error",
+    ):
+        assert field in sql
+
+
+def test_by_question_device_choices_are_scoped_to_the_selected_run():
+    dashboard = _load("03-by-question.json")
+    device = next(variable for variable in dashboard["templating"]["list"] if variable["name"] == "device")
+    assert "${run:sqlstring}" in device["query"]
+
+
+def test_runtime_dashboard_reports_live_and_peak_memory_separately():
+    dashboard = _load("04-runtime.json")
+    summary = next(sql for panel, sql in _sql_targets(dashboard) if panel["id"] == 4)
+    assert "AVG(rss_mb)" in summary
+    assert "MAX(peak_rss_mb)" in summary
+    assert "AVG(peak_rss_mb)" not in summary
+
+
+@pytest.mark.parametrize(
+    "name", ("02-quality-latency.json", "03-by-question.json", "04-runtime.json")
+)
+def test_aggregate_dashboards_preserve_duplicate_question_samples(name: str):
+    dashboard = _load(name)
+    sql = "\n".join(raw_sql for _, raw_sql in _sql_targets(dashboard))
+    assert "DISTINCT ON (run_id, approach, question" not in sql
+    assert "DISTINCT ON (question, approach" not in sql
+    assert "sample_id" in sql
+
+
+@pytest.mark.parametrize("name", ("02-quality-latency.json", "04-runtime.json"))
+def test_run_headers_do_not_hide_mixed_models_or_runtimes(name: str):
+    dashboard = _load(name)
+    header = next(sql for panel, sql in _sql_targets(dashboard) if panel["title"].startswith("Run —"))
+    assert "string_agg(DISTINCT COALESCE(runtime" in header
+    assert "string_agg(DISTINCT model_name" in header
 
 
 def _load(name: str) -> dict:

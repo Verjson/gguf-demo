@@ -71,6 +71,25 @@ METRIC_COLUMNS = (
 _ENSURE_SCHEMA_STATEMENTS = (
     'CREATE EXTENSION IF NOT EXISTS "uuid-ossp"',
     """
+    CREATE TABLE IF NOT EXISTS evaluation_runs (
+        run_id TEXT NOT NULL,
+        approach VARCHAR(50) NOT NULL,
+        started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        completed_at TIMESTAMPTZ,
+        status VARCHAR(16) NOT NULL DEFAULT 'running',
+        expected_samples INTEGER NOT NULL,
+        recorded_samples INTEGER NOT NULL DEFAULT 0,
+        requested_device VARCHAR(16),
+        actual_device VARCHAR(16),
+        runtime VARCHAR(32),
+        weight_format VARCHAR(32),
+        model_name TEXT,
+        mlflow_run_id TEXT,
+        error TEXT,
+        PRIMARY KEY (run_id, approach)
+    )
+    """,
+    """
     CREATE TABLE IF NOT EXISTS evaluation_metrics (
         id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
         timestamp TIMESTAMPTZ DEFAULT NOW(),
@@ -130,18 +149,85 @@ _ENSURE_SCHEMA_STATEMENTS = (
     # written before this column existed genuinely have no run, and inventing one
     # would make them look like they belong to whichever run is being viewed.
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_id TEXT",
+    "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS sample_id TEXT",
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS run_started_at TIMESTAMPTZ",
     # Layers actually offloaded to the GPU; 0 means the engine ran on the CPU no
     # matter what `device` says. See init-db.sql for why that distinction is load-bearing.
     "ALTER TABLE evaluation_metrics ADD COLUMN IF NOT EXISTS n_gpu_layers FLOAT",
+    "UPDATE evaluation_metrics SET sample_id = id::text "
+    "WHERE run_id IS NOT NULL AND sample_id IS NULL",
+    """
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_run_identity') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_run_identity
+        CHECK (run_id IS NULL OR (sample_id IS NOT NULL AND approach IS NOT NULL AND question IS NOT NULL))
+        NOT VALID;
+      END IF;
+    END $$
+    """,
+    """
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_device_known') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_device_known
+        CHECK (device IS NULL OR device IN ('cpu', 'cuda')) NOT VALID;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_runtime_known') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_runtime_known
+        CHECK (runtime IS NULL OR runtime IN ('transformers', 'gguf')) NOT VALID;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_weight_format_known') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_weight_format_known
+        CHECK (weight_format IS NULL OR weight_format IN ('safetensors', 'gguf')) NOT VALID;
+      END IF;
+    END $$
+    """,
+    """
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_quality_score_ranged') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_quality_score_ranged
+        CHECK (quality_score IS NULL OR quality_score BETWEEN 0 AND 1) NOT VALID;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'eval_metrics_durations_nonnegative') THEN
+        ALTER TABLE evaluation_metrics ADD CONSTRAINT eval_metrics_durations_nonnegative
+        CHECK (
+          (generation_time IS NULL OR generation_time >= 0)
+          AND (retrieval_time IS NULL OR retrieval_time >= 0)
+          AND (time_to_response IS NULL OR time_to_response >= 0)
+        ) NOT VALID;
+      END IF;
+    END $$
+    """,
+    """
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_status_known') THEN
+        ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_status_known
+        CHECK (status IN ('running', 'completed', 'failed')) NOT VALID;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_counts_valid') THEN
+        ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_counts_valid
+        CHECK (expected_samples >= 0 AND recorded_samples >= 0) NOT VALID;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'evaluation_runs_devices_known') THEN
+        ALTER TABLE evaluation_runs ADD CONSTRAINT evaluation_runs_devices_known
+        CHECK (
+          (requested_device IS NULL OR requested_device IN ('cpu', 'cuda'))
+          AND (actual_device IS NULL OR actual_device IN ('cpu', 'cuda', 'mixed'))
+        ) NOT VALID;
+      END IF;
+    END $$
+    """,
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_approach ON evaluation_metrics (approach)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC)",
     "CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, timestamp DESC)",
     # Target of the ON CONFLICT in insert(): a re-run of a stage replaces its rows
     # instead of appending a second set. Partial so pre-run_id rows do not collide.
-    "CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_cell "
-    "ON evaluation_metrics (run_id, approach, question) WHERE run_id IS NOT NULL",
+    "DROP INDEX IF EXISTS uq_eval_metrics_run_cell",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_sample "
+    "ON evaluation_metrics (run_id, approach, sample_id) "
+    "WHERE run_id IS NOT NULL AND sample_id IS NOT NULL",
+    "CREATE INDEX IF NOT EXISTS idx_evaluation_runs_started "
+    "ON evaluation_runs (started_at DESC)",
 )
 
 
@@ -201,6 +287,7 @@ class MetricsStore:
         weight_format: str | None = None,
         run_id: str | None = None,
         run_started_at: str | None = None,
+        sample_id: str | None = None,
     ) -> None:
         cols = ["approach", "question", "response", "device", "cuda_available", "model_name"]
         vals: list[Any] = [
@@ -226,6 +313,9 @@ class MetricsStore:
         if run_id:
             cols.append("run_id")
             vals.append(run_id)
+            if sample_id is not None:
+                cols.append("sample_id")
+                vals.append(sample_id)
             started = run_started_at or os.getenv("RUN_STARTED_AT") or run_started_from_id(run_id)
             if started:
                 cols.append("run_started_at")
@@ -254,9 +344,10 @@ class MetricsStore:
                 if col not in ("run_id", "approach", "question")
             )
             sql += (
-                " ON CONFLICT (run_id, approach, question) WHERE run_id IS NOT NULL "
+                " ON CONFLICT (run_id, approach, sample_id) "
+                "WHERE run_id IS NOT NULL AND sample_id IS NOT NULL "
                 f"DO UPDATE SET {updates}"
-            )
+            ) if sample_id is not None else ""
 
         try:
             self._execute(sql, vals)
@@ -278,6 +369,64 @@ class MetricsStore:
                     (question or "")[:60],
                     retry_exc,
                 )
+
+    def start_run(
+        self,
+        *,
+        run_id: str,
+        approach: str,
+        expected_samples: int,
+        requested_device: str,
+        runtime: str | None,
+        weight_format: str | None,
+        model_name: str | None,
+        mlflow_run_id: str | None,
+    ) -> None:
+        self._execute(
+            """
+            INSERT INTO evaluation_runs (
+                run_id, approach, expected_samples, requested_device, runtime,
+                weight_format, model_name, mlflow_run_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (run_id, approach) DO UPDATE SET
+                started_at = NOW(), completed_at = NULL, status = 'running',
+                expected_samples = EXCLUDED.expected_samples, recorded_samples = 0,
+                requested_device = EXCLUDED.requested_device, actual_device = NULL,
+                runtime = EXCLUDED.runtime, weight_format = EXCLUDED.weight_format,
+                model_name = EXCLUDED.model_name, mlflow_run_id = EXCLUDED.mlflow_run_id,
+                error = NULL
+            """,
+            [
+                run_id,
+                approach,
+                expected_samples,
+                requested_device,
+                runtime,
+                weight_format,
+                model_name,
+                mlflow_run_id,
+            ],
+        )
+
+    def finish_run(
+        self,
+        *,
+        run_id: str,
+        approach: str,
+        status: str,
+        recorded_samples: int,
+        actual_device: str | None,
+        error: str | None = None,
+    ) -> None:
+        self._execute(
+            """
+            UPDATE evaluation_runs
+            SET completed_at = NOW(), status = %s, recorded_samples = %s,
+                actual_device = %s, error = %s
+            WHERE run_id = %s AND approach = %s
+            """,
+            [status, recorded_samples, actual_device, error, run_id, approach],
+        )
 
     def _execute(self, sql: str, vals: list[Any]) -> None:
         """

@@ -59,6 +59,7 @@ run_pipeline() {
     FAKE_NVIDIA_RUNTIME="$runtime" \
     FAKE_CUDA_AVAILABLE="$cuda_available" \
     FAKE_GPU_START_FAIL="$gpu_start_fail" \
+    GRAFANA_ADMIN_PASSWORD=test-only \
     MLFLOW_PORT=5000 GRAFANA_PORT=3000 PROMETHEUS_PORT=9090 \
     POSTGRES_PORT=5432 APP_PORT=8000 \
     "$ROOT_DIR/scripts/run_pipeline.sh" > "$output_file"
@@ -104,7 +105,7 @@ grep -q 'CUDA not available — eval steps will run on CPU only.' "$FALLBACK_OUT
 budget_direct() {
   local when="$1" max="$2"
   ( cd "$ROOT_DIR" \
-    && RESULTS_MAX_MB="$max" \
+    && export RESULTS_MAX_MB="$max" \
     && source scripts/lib/host.sh \
     && assert_results_budget "$when" ) 2>"$TEST_TMP/budget.err"
 }

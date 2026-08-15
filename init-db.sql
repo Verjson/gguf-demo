@@ -4,6 +4,33 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+CREATE TABLE IF NOT EXISTS evaluation_runs (
+    run_id TEXT NOT NULL,
+    approach VARCHAR(50) NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    status VARCHAR(16) NOT NULL DEFAULT 'running',
+    expected_samples INTEGER NOT NULL,
+    recorded_samples INTEGER NOT NULL DEFAULT 0,
+    requested_device VARCHAR(16),
+    actual_device VARCHAR(16),
+    runtime VARCHAR(32),
+    weight_format VARCHAR(32),
+    model_name TEXT,
+    mlflow_run_id TEXT,
+    error TEXT,
+    PRIMARY KEY (run_id, approach),
+    CONSTRAINT evaluation_runs_status_known
+        CHECK (status IN ('running', 'completed', 'failed')),
+    CONSTRAINT evaluation_runs_counts_valid
+        CHECK (expected_samples >= 0 AND recorded_samples >= 0),
+    CONSTRAINT evaluation_runs_devices_known
+        CHECK (
+            (requested_device IS NULL OR requested_device IN ('cpu', 'cuda'))
+            AND (actual_device IS NULL OR actual_device IN ('cpu', 'cuda', 'mixed'))
+        )
+);
+
 -- This table is defined twice: here, for a fresh volume, and as
 -- _ENSURE_SCHEMA_STATEMENTS in src/metrics_store.py, which runs on every connect and
 -- migrates existing volumes. They converge on an existing volume but a fresh one shows
@@ -18,6 +45,7 @@ CREATE TABLE IF NOT EXISTS evaluation_metrics (
     -- default — rows predating this column belong to no run and must not be
     -- attributed to one.
     run_id TEXT,
+    sample_id TEXT,
     run_started_at TIMESTAMPTZ,
     approach VARCHAR(50),
     question TEXT,
@@ -87,6 +115,11 @@ CREATE TABLE IF NOT EXISTS evaluation_metrics (
             (generation_time IS NULL OR generation_time >= 0)
             AND (retrieval_time IS NULL OR retrieval_time >= 0)
             AND (time_to_response IS NULL OR time_to_response >= 0)
+        ),
+    CONSTRAINT eval_metrics_run_identity
+        CHECK (
+            run_id IS NULL
+            OR (sample_id IS NOT NULL AND approach IS NOT NULL AND question IS NOT NULL)
         )
 );
 
@@ -95,7 +128,8 @@ CREATE INDEX IF NOT EXISTS idx_eval_metrics_device ON evaluation_metrics (device
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_ts ON evaluation_metrics (timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id, timestamp DESC);
 
--- One row per (run, approach, question).
+-- One row per (run, approach, sample). Question text is not an identity: evaluation
+-- sets can legitimately ask the same question against different expectations.
 --
 -- Re-running a stage used to append a second row for the same cell. Dashboard 03
 -- defended against that with DISTINCT ON; dashboards 02 and 04 used plain AVG() and
@@ -105,9 +139,12 @@ CREATE INDEX IF NOT EXISTS idx_eval_metrics_run_id ON evaluation_metrics (run_id
 --
 -- Partial, because rows written before run_id existed all have NULL there and would
 -- otherwise collide with each other.
-CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_cell
-    ON evaluation_metrics (run_id, approach, question)
-    WHERE run_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_eval_metrics_run_sample
+ON evaluation_metrics (run_id, approach, sample_id)
+WHERE run_id IS NOT NULL AND sample_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_evaluation_runs_started
+ON evaluation_runs (started_at DESC);
 
 -- Least privilege for Grafana.
 --
@@ -125,3 +162,4 @@ $$;
 GRANT CONNECT ON DATABASE rag_eval TO grafana_ro;
 GRANT USAGE ON SCHEMA public TO grafana_ro;
 GRANT SELECT ON evaluation_metrics TO grafana_ro;
+GRANT SELECT ON evaluation_runs TO grafana_ro;

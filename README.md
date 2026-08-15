@@ -2,7 +2,12 @@
 
 Local, containerized demo that compares **baseline LLM**, **RAG (Postgres/pgvector)**, and **LoRA fine-tuning** on a small arXiv paper corpus — with **MLflow**, **Prometheus**, **Postgres**, and **Grafana**.
 
-Packaging uses **`pyproject.toml`**. Exported metrics land in **`results/`** (safe to commit).
+Direct dependencies live in **`pyproject.toml`**; **`requirements.lock`** freezes the
+reviewed transitive graph used by both Python containers. Exported metrics land in
+**`results/`** (safe to commit).
+
+Security and architecture rationale: [2026-08-15 adversarial review](docs/security-review-2026-08-15.md)
+and [ADR 0001](docs/decisions/0001-required-run-observability/README.md).
 
 ---
 
@@ -12,6 +17,7 @@ From a machine with Docker (an NVIDIA GPU is optional):
 
 ```bash
 chmod +x scripts/run_pipeline.sh
+export GRAFANA_ADMIN_PASSWORD='replace-with-a-strong-local-secret'
 ./scripts/run_pipeline.sh
 ```
 
@@ -26,7 +32,7 @@ Then open:
 |------|--------|
 | **Results (start here)** | locally `results/latest/README.md`; on GitHub the newest folder in [`results/runs/`](results/runs/) |
 | Per-question table | `results/latest/by_question.md`, or `by_question.md` in that run folder |
-| Grafana | http://localhost:3000 (admin / admin) → **By Question** |
+| Grafana | http://localhost:3000 (`admin` / `$GRAFANA_ADMIN_PASSWORD`) → **Run Integrity**, then **By Question** |
 | MLflow GenAI traces | http://localhost:5000 → **GenAI** → **gguf-demo** → Traces |
 | MLflow Model Registry | http://localhost:5000 → **Model Training** → **Models** → `phi-3-mini-gguf-demo` |
 | Prometheus | http://localhost:9090/graph (see queries below) |
@@ -417,7 +423,7 @@ git commit -m "results: Phi-3 RAG eval on arXiv corpus"
 |---------|-----|---------|
 | MLflow | http://localhost:5000 | Experiment tracking (all stages → **gguf-demo**) |
 | Prometheus | http://localhost:9090 | Scrapes persistent app `:8000/metrics` |
-| Grafana | http://localhost:3000 | Dashboards (admin / admin) |
+| Grafana | http://localhost:3000 | Dashboards (`admin` / `$GRAFANA_ADMIN_PASSWORD`) |
 | Postgres | localhost:5432 | pgvector + metrics |
 
 ### MLflow — GenAI vs Model Training
@@ -435,7 +441,7 @@ MLflow 3’s UI toggle:
 Experiment: gguf-demo
 └── Evaluation run  (baseline@cuda | rag@cuda | fine_tuned@cuda | …)
     ├── Aggregated metrics: mean rougeL, bert_score, quality_score, latency, …
-    ├── Tags: registered_model, model_version, approach, device
+    ├── Tags: run_id/group, source Git SHA/dirty state, model lineage, approach, device
     └── Traces (one per question)  ← GenAI UI
          ├── retrieve / generate (live @mlflow.trace on RAGPipeline)
          └── Assessments: rougeL, faithfulness, quality_score, …
@@ -583,12 +589,11 @@ curl -s http://localhost:8000/metrics | head
 curl -s 'http://localhost:9090/api/v1/query?query=evaluation_requests_total'
 ```
 
-Gauges show the **most recent** eval process values (multiprocess `livemostrecent`).
-Counters and histograms accumulate across eval processes *and* across restarts of the
-app container: the exporter keeps the multiproc files written by exited eval scripts
-rather than clearing them at startup, which used to discard the history of every
-completed run on each rebuild. Set `RESET_METRICS=1` on the app service when you
-genuinely want a clean slate.
+Every evaluation series carries `run_id`, `approach`, and actual execution `device`;
+quality gauges no longer let a later baseline overwrite the apparent RAG value. The app
+exporter keeps one stack invocation's multiprocess shards and clears dead shards at its next
+start. Prometheus's persistent TSDB owns cross-run history, avoiding unbounded scrape work
+from stale process files.
 
 Grafana **Live Ops** reads the same series during a run; **By Question** / **Quality & Latency** use Postgres, not Prometheus.
 
@@ -596,12 +601,13 @@ Grafana **Live Ops** reads the same series during a run; **By Question** / **Qua
 
 | Dashboard | When | Scope |
 |-----------|------|-------|
+| **gguf-demo · Run Integrity** | First stop after or during a run — lifecycle, expected/recorded samples, MLflow IDs, failures | Run picker |
 | **gguf-demo · By Question** | After a run — same layout as `by_question.md` | Run picker |
 | **gguf-demo · Quality & Latency** | Aggregates + GPU speedup, and A/B against an earlier run | Run picker |
 | **gguf-demo · Live Ops** | While the pipeline is running (Prometheus) | Time picker |
 | **gguf-demo · Transformers vs GGUF** | Same model, two engines (`baseline` vs `baseline_gguf`) | Run picker |
 
-The three Postgres dashboards are scoped by a **Run** picker, not the time picker — these
+The four Postgres dashboards are scoped by a **Run** picker, not the time picker — these
 are discrete benchmark runs, not a time series, and the Postgres volume outlives them. Pick
 the run at the top; every panel follows it, and the run header names the `run_id` and the
 `results/runs/<run_id>/` folder the same numbers were exported to. The time picker is hidden
@@ -625,8 +631,10 @@ docker compose restart grafana   # if panels missing
 | Key | Default | Notes |
 |-----|---------|-------|
 | `llm.model` | `microsoft/Phi-3-mini-4k-instruct` | Transformers Hub id (safetensors) |
+| `llm.revision` | immutable commit SHA | Reviewed model snapshot; update with the model ID |
 | `llm.do_sample` | `false` | Greedy eval |
 | `gguf.repo_id` | `microsoft/Phi-3-mini-4k-instruct-gguf` | Official GGUF package |
+| `gguf.revision` | immutable commit SHA | Reviewed GGUF snapshot |
 | `gguf.filename` | `Phi-3-mini-4k-instruct-q4.gguf` | Q4_K_M (~2.2 GB) |
 | `gguf.n_gpu_layers` | `-1` | Offload all layers if llama.cpp has CUDA |
 | `evaluation.llm_judge` | `false` | Slower groundedness judge |
@@ -649,12 +657,20 @@ docker compose restart grafana   # if panels missing
 ├── grafana/provisioning/
 ├── docker-compose.yml
 ├── Dockerfile.app
-└── pyproject.toml
+├── pyproject.toml           # direct dependency authority
+└── requirements.lock        # generated transitive constraints for Python 3.14
 ```
 
 ---
 
 ## Packaging & build args
+
+Regenerate the lock after changing a dependency:
+
+```bash
+uv pip compile pyproject.toml --python-version 3.14 --all-extras \
+  --output-file requirements.lock --no-emit-package gguf-demo
+```
 
 ```bash
 pip install -e .                    # local Python (optional)

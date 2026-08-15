@@ -16,6 +16,8 @@
 #   SKIP_GGUF=1          — Transformers-only (skip GGUF download + llama.cpp)
 set -euo pipefail
 
+: "${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD to a strong local secret before running}"
+
 cd "$(dirname "$0")/.."
 
 # Host/port/budget helpers, also driven directly by the tests.
@@ -29,6 +31,15 @@ SKIP_CPU_FINETUNE="${SKIP_CPU_FINETUNE:-1}"
 SKIP_CPU_EVAL="${SKIP_CPU_EVAL:-0}"
 SKIP_GGUF="${SKIP_GGUF:-0}"
 COMPUTE_DEVICE="${COMPUTE_DEVICE:-auto}"
+SOURCE_GIT_SHA="${SOURCE_GIT_SHA:-$(git rev-parse --verify HEAD 2>/dev/null || printf unknown)}"
+if [[ -z "${SOURCE_GIT_DIRTY+x}" ]]; then
+  if [[ -n "$(git status --porcelain --untracked-files=normal 2>/dev/null | head -n 1)" ]]; then
+    SOURCE_GIT_DIRTY=true
+  else
+    SOURCE_GIT_DIRTY=false
+  fi
+fi
+export SOURCE_GIT_SHA SOURCE_GIT_DIRTY
 CPU_TORCH_INDEX_URL="https://download.pytorch.org/whl/cpu"
 CUDA_TORCH_INDEX_URL="https://download.pytorch.org/whl/cu130"
 COMPOSE=(docker compose -f docker-compose.yml)
@@ -232,7 +243,7 @@ reclaim_outputs
 echo "========================================================================"
 echo "gguf-demo pipeline — one step at a time"
 echo "  App budget: ${APP_MEM_LIMIT} RAM, ${APP_CPUS:-auto-detected} CPUs, uid ${APP_UID}"
-echo "  UIs: MLflow http://localhost:${MLFLOW_PORT}  Grafana http://localhost:${GRAFANA_PORT}"
+echo "  UIs: MLflow http://localhost:${MLFLOW_PORT}  Grafana http://localhost:${GRAFANA_PORT} (admin)"
 if [[ "$SKIP_CPU_EVAL" == "1" ]]; then
   echo "  Mode: GPU-only evals (SKIP_CPU_EVAL=1)"
 else
