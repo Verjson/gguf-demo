@@ -49,13 +49,15 @@ RUN pip install --no-cache-dir --upgrade pip \
         --extra-index-url https://pypi.org/simple \
     && pip install --no-cache-dir -e . --no-deps \
     && pip install --no-cache-dir \
-        "transformers>=4.36.2,<4.45" \
+        "transformers>=4.57.6,<4.58" \
         "accelerate>=0.25.0" \
-        "sentence-transformers>=2.2.2,<3" \
-        "langchain>=0.1.0,<0.2" \
-        "langchain-community>=0.0.10,<0.1" \
-        "langchain-text-splitters>=0.0.1,<0.1" \
-        "langchain-core>=0.1.10,<0.2" \
+        "sentence-transformers>=5.2,<6" \
+        "langchain-community>=0.4.2,<0.5" \
+        "langchain-core>=1.0,<2" \
+        "langchain-text-splitters>=1.0,<2" \
+        "langchain-huggingface>=1.2,<2" \
+        "langchain-postgres>=0.0.17,<0.1" \
+        "psycopg[binary]>=3.1,<4" \
         "pgvector>=0.2.3" \
         "psycopg2-binary>=2.9.9" \
         "sqlalchemy>=2.0.23" \
@@ -65,10 +67,9 @@ RUN pip install --no-cache-dir --upgrade pip \
         "datasets>=2.16.1" \
         "rouge-score>=0.1.2" \
         "bert-score>=0.3.13" \
-        "ragas>=0.1.0,<0.2" \
         "mlflow>=3.1.0,<3.16" \
         "prometheus-client>=0.19.0" \
-        "peft>=0.7.1,<0.12" \
+        "peft>=0.20,<0.21" \
         "huggingface_hub>=0.20.0" \
         "pyyaml>=6.0.1" \
         "requests>=2.31.0" \

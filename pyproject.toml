@@ -12,14 +12,23 @@ license = { text = "MIT" }
 authors = [{ name = "gguf-demo" }]
 dependencies = [
   # LLM and embeddings
-  "transformers>=4.36.2,<4.45",
+  "transformers>=4.57.6,<4.58",
   "torch>=2.1.2",
   "accelerate>=0.25.0",
-  "sentence-transformers>=2.2.2,<3",
-  "langchain>=0.3.30,<0.4",
-  "langchain-community>=0.0.10,<0.1",
-  "langchain-text-splitters>=0.0.1,<0.1",
-  "langchain-core>=0.1.10,<0.2",
+  "sentence-transformers>=5.2,<6",
+  # LangChain: core + text-splitters are on the v1 line, which langchain-community 0.4
+  # requires. The `langchain` umbrella is deliberately absent — nothing imports it, and
+  # declaring it forced an unsatisfiable set (it pins langchain-core>=0.3.85 while this
+  # project used <0.2). community is sunset upstream, so the two integrations that moved
+  # out are taken from their standalone packages instead; only PyPDFLoader still comes
+  # from it.
+  "langchain-community>=0.4.2,<0.5",
+  "langchain-core>=1.0,<2",
+  "langchain-text-splitters>=1.0,<2",
+  "langchain-huggingface>=1.2,<2",
+  "langchain-postgres>=0.0.17,<0.1",
+  # langchain-postgres speaks psycopg 3; psycopg2 stays for the direct metrics writes.
+  "psycopg[binary]>=3.1,<4",
   # Vector database
   "pgvector>=0.2.3",
   "psycopg2-binary>=2.9.9",
@@ -32,12 +41,11 @@ dependencies = [
   "datasets>=2.16.1",
   "rouge-score>=0.1.2",
   "bert-score>=0.3.13",
-  "ragas>=0.1.0,<0.2",
   # Tracking / monitoring
   "mlflow>=3.1.0,<3.16",
   "prometheus-client>=0.19.0",
   # Fine-tuning
-  "peft>=0.7.1,<0.12",
+  "peft>=0.20,<0.21",
   # GGUF / llama.cpp Python bindings (CPU wheels from PyPI). Pinned exactly to match
   # Dockerfile.app: the image installs prebuilt wheels from an --extra-index-url that
   # is not hash-verified, so the version must be a reviewed choice, not "whatever is
@@ -49,7 +57,8 @@ dependencies = [
   "requests>=2.31.0",
   "tqdm>=4.66.1",
   "pandas>=2.1.4",
-  "numpy>=1.26.3",
+  # <2 matches Dockerfile.app: numpy 2 breaks the C ABI of the torch build installed there.
+  "numpy>=1.26.3,<2",
   "click>=8.1.7",
   "rich>=13.7.0",
   "python-dotenv>=1.0.0",
