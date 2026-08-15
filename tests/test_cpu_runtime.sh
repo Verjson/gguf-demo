@@ -6,8 +6,16 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGE="${APP_IMAGE:-gguf-demo-app:latest}"
 
+# A missing image is a reasonable skip on a laptop and an unacceptable one in CI.
+# This suite is the only test that runs anything inside the app image, so while it
+# skipped itself the image sat unbuildable for weeks with the suite reporting green.
+# Under CI the absence of the image is the failure.
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
-  echo "SKIP: $IMAGE not built" >&2
+  if [[ "${CI:-}" == "true" ]]; then
+    echo "FAIL: $IMAGE is not built — CI must build it before running this suite" >&2
+    exit 1
+  fi
+  echo "SKIP: $IMAGE not built (set CI=true to make this a failure)" >&2
   exit 0
 fi
 
