@@ -131,12 +131,14 @@ def main() -> None:
             }
         )
 
-        tokenizer = AutoTokenizer.from_pretrained(base_model)
+        base_revision = ft.get("base_revision")
+        tokenizer = AutoTokenizer.from_pretrained(base_model, revision=base_revision)
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
 
         model = AutoModelForCausalLM.from_pretrained(
             base_model,
+            revision=base_revision,
             # bf16 on Ampere+ GPUs: half memory vs fp32, better numerical range than fp16
             # for training. fp32 on CPU so we do not need CUDA AMP there.
             torch_dtype=torch.bfloat16 if use_cuda else torch.float32,

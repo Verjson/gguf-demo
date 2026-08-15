@@ -68,9 +68,14 @@ def _generation_kwargs(settings: DecodeSettings) -> dict:
     return kwargs
 
 
-def _model_load_kwargs(config: dict, hardware: HardwareInfo) -> dict:
+def _model_load_kwargs(
+    config: dict, hardware: HardwareInfo, *, revision: str | None = None
+) -> dict:
     use_cuda = hardware.cuda_available
-    kwargs: dict = {"low_cpu_mem_usage": True}
+    kwargs: dict = {
+        "low_cpu_mem_usage": True,
+        "revision": revision or config.get("llm", {}).get("revision"),
+    }
     if _sdpa_available():
         kwargs["attn_implementation"] = "sdpa"
     if use_cuda:
@@ -85,8 +90,14 @@ def _model_load_kwargs(config: dict, hardware: HardwareInfo) -> dict:
     return kwargs
 
 
-def _from_pretrained(model_id: str, config: dict, hardware: HardwareInfo):
-    model_kwargs = _model_load_kwargs(config, hardware)
+def _from_pretrained(
+    model_id: str,
+    config: dict,
+    hardware: HardwareInfo,
+    *,
+    revision: str | None = None,
+):
+    model_kwargs = _model_load_kwargs(config, hardware, revision=revision)
     try:
         return AutoModelForCausalLM.from_pretrained(model_id, **model_kwargs)
     except ValueError as exc:
@@ -100,6 +111,7 @@ def _from_pretrained(model_id: str, config: dict, hardware: HardwareInfo):
         logger.warning("Quantized load failed (%s); falling back to float16", exc)
         return AutoModelForCausalLM.from_pretrained(
             model_id,
+            revision=revision or config.get("llm", {}).get("revision"),
             torch_dtype=torch.float16,
             device_map={"": 0},
             low_cpu_mem_usage=True,
@@ -136,7 +148,7 @@ class TransformersEngine:
     @classmethod
     def _load_base(cls, config: dict, hardware: HardwareInfo) -> TransformersEngine:
         model_id = config["llm"]["model"]
-        tokenizer = load_instruct_tokenizer(model_id)
+        tokenizer = load_instruct_tokenizer(model_id, revision=config["llm"].get("revision"))
         from src.llm.runtime import decode_settings
 
         settings = decode_settings(config)
@@ -185,7 +197,12 @@ class TransformersEngine:
 
             base_id = config["fine_tuning"]["base_model"]
             tokenizer = AutoTokenizer.from_pretrained(model_path)
-            base = _from_pretrained(base_id, config, hardware)
+            base = _from_pretrained(
+                base_id,
+                config,
+                hardware,
+                revision=(config.get("fine_tuning") or {}).get("base_revision"),
+            )
             model = PeftModel.from_pretrained(base, model_path)
             # Evaluation only ever does a forward pass, and an unmerged adapter makes
             # every one of them compute base and delta separately. Folding the

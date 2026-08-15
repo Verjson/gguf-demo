@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
-from src.snapshot import refresh_latest
+from src.snapshot import refresh_latest, resolve_results_output
 
 PAIRS = (
     ("baseline", "baseline_gguf"),
@@ -130,9 +130,7 @@ def main() -> None:
     runs = root / "results" / "runs"
     cpu_dir = runs / args.cpu_run_id if args.cpu_run_id else None
     cuda_dir = runs / args.cuda_run_id if args.cuda_run_id else None
-    out_dir = Path(args.out)
-    if not out_dir.is_absolute():
-        out_dir = root / out_dir
+    out_dir = resolve_results_output(root, args.out)
 
     with optional_mlflow_run("transformers_vs_gguf"):
         write_report(out_dir, cpu_dir=cpu_dir, cuda_dir=cuda_dir)

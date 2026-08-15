@@ -78,12 +78,19 @@ def test_run_id_from_the_environment_round_trips_into_the_insert(captured_sql, m
     monkeypatch.delenv("RUN_STARTED_AT", raising=False)
 
     MetricsStore().insert(
-        approach="baseline", question="q", response="a", metrics={"rougeL": 0.5}, device="cpu"
+        approach="baseline",
+        question="q",
+        response="a",
+        metrics={"rougeL": 0.5},
+        device="cpu",
+        sample_id="0",
     )
 
     sql, vals = _insert_call(captured_sql)
     assert _column_value(sql, vals, "run_id") == "2026-08-14_181632_cpu"
+    assert _column_value(sql, vals, "sample_id") == "0"
     assert _column_value(sql, vals, "run_started_at") == "2026-08-14T18:16:32+00:00"
+    assert "ON CONFLICT (run_id, approach, sample_id)" in sql
 
 
 def test_explicit_run_id_beats_the_environment(captured_sql, monkeypatch):
@@ -97,6 +104,7 @@ def test_explicit_run_id_beats_the_environment(captured_sql, monkeypatch):
         device="cuda",
         run_id="2026-08-14_181632_cuda",
         run_started_at="2026-08-14T18:16:32+00:00",
+        sample_id="1",
     )
 
     sql, vals = _insert_call(captured_sql)
@@ -107,7 +115,9 @@ def test_a_step_run_by_hand_writes_no_run_id(captured_sql, monkeypatch):
     """No RUN_ID means the row belongs to no pipeline run, and must say so with NULL."""
     monkeypatch.delenv("RUN_ID", raising=False)
 
-    MetricsStore().insert(approach="baseline", question="q", response="a", metrics={})
+    MetricsStore().insert(
+        approach="baseline", question="q", response="a", metrics={}, sample_id="0"
+    )
 
     sql, _ = _insert_call(captured_sql)
     assert "run_id" not in sql
@@ -118,11 +128,38 @@ def test_run_started_at_is_omitted_when_the_id_has_no_parsable_stamp(captured_sq
     monkeypatch.setenv("RUN_ID", "adhoc-smoke-test")
     monkeypatch.delenv("RUN_STARTED_AT", raising=False)
 
-    MetricsStore().insert(approach="baseline", question="q", response="a", metrics={})
+    MetricsStore().insert(
+        approach="baseline", question="q", response="a", metrics={}, sample_id="0"
+    )
 
     sql, vals = _insert_call(captured_sql)
     assert _column_value(sql, vals, "run_id") == "adhoc-smoke-test"
     assert "run_started_at" not in sql
+
+
+def test_run_lifecycle_records_expected_and_recorded_samples(captured_sql):
+    store = MetricsStore()
+    store.start_run(
+        run_id="2026-08-14_181632_cpu",
+        approach="baseline",
+        expected_samples=2,
+        requested_device="cpu",
+        runtime="transformers",
+        weight_format="safetensors",
+        model_name="model",
+        mlflow_run_id="mlflow-1",
+    )
+    store.finish_run(
+        run_id="2026-08-14_181632_cpu",
+        approach="baseline",
+        status="completed",
+        recorded_samples=2,
+        actual_device="cpu",
+    )
+
+    lifecycle_sql = "\n".join(sql for sql, _ in captured_sql)
+    assert "INSERT INTO evaluation_runs" in lifecycle_sql
+    assert "UPDATE evaluation_runs" in lifecycle_sql
 
 
 @pytest.mark.parametrize(

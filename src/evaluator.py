@@ -301,7 +301,7 @@ class Evaluator:
         BERTScore both are. Keying on the triple collapses them to one call without
         any of the three callers needing to know about the others.
         """
-        cached = self._judge_cache.get((question, response, context))
+        cached = self._judge_cache.get((question, response, context), _MISSING)
         if cached is not _MISSING:
             return cached
         scored = self._judge_uncached(question, response, context)

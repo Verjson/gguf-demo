@@ -40,7 +40,7 @@ if _MULTIPROC_DIR:
 EVALUATION_REQUESTS = Counter(
     "evaluation_requests_total",
     "Total evaluation requests",
-    ["device", "approach"],
+    ["run_id", "device", "approach"],
 )
 # Buckets sized to this workload, and they have to be stated.
 #
@@ -62,25 +62,25 @@ EVALUATION_DURATION_BUCKETS = (
 EVALUATION_DURATION = Histogram(
     "evaluation_duration_seconds",
     "Evaluation / generation duration",
-    ["device", "approach"],
+    ["run_id", "device", "approach"],
     buckets=EVALUATION_DURATION_BUCKETS,
 )
 RESPONSE_QUALITY = Gauge(
     "response_quality_score",
     "Overall response quality score",
-    ["device"],
+    ["run_id", "device", "approach"],
     multiprocess_mode="livemostrecent",
 )
 DOMAIN_RELEVANCE = Gauge(
     "domain_relevance_score",
     "Domain relevance score",
-    ["device"],
+    ["run_id", "device", "approach"],
     multiprocess_mode="livemostrecent",
 )
 CONTEXT_UTILIZATION = Gauge(
     "context_utilization_score",
     "Context utilization score",
-    ["device"],
+    ["run_id", "device", "approach"],
     multiprocess_mode="livemostrecent",
 )
 CUDA_AVAILABLE = Gauge(
@@ -101,23 +101,51 @@ CPU_THREADS = Gauge(
 PEAK_RSS_MB = Gauge(
     "peak_rss_mb",
     "Peak resident set size in MiB",
-    ["device"],
+    ["run_id", "device", "approach"],
     multiprocess_mode="livemostrecent",
 )
 RETRIEVAL_HIT = Gauge(
     "retrieval_hit_at_k",
     "Retrieval hit@k for last RAG eval",
-    ["device"],
+    ["run_id", "device", "approach"],
     multiprocess_mode="livemostrecent",
 )
 FAITHFULNESS = Gauge(
     "faithfulness_score",
     "Faithfulness proxy for last RAG eval",
-    ["device"],
+    ["run_id", "device", "approach"],
+    multiprocess_mode="livemostrecent",
+)
+EVALUATION_RUN_COMPLETE = Gauge(
+    "evaluation_run_complete",
+    "1 when all samples reached required sinks, 0 while running or failed",
+    ["run_id", "approach"],
+    multiprocess_mode="livemostrecent",
+)
+EVALUATION_RUN_SAMPLES = Gauge(
+    "evaluation_run_samples",
+    "Expected and recorded samples for a pipeline stage",
+    ["run_id", "approach", "kind"],
     multiprocess_mode="livemostrecent",
 )
 
 _PROMETHEUS_HTTP_STARTED = False
+
+
+def _tracking_required() -> bool:
+    return bool(os.getenv("RUN_ID")) or os.getenv("MLFLOW_STRICT", "").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+
+
+def _source_revision_tags() -> dict[str, str]:
+    """Source identity passed in by the host, which owns the Git checkout."""
+    return {
+        "source_git_sha": os.getenv("SOURCE_GIT_SHA", "unknown"),
+        "source_git_dirty": os.getenv("SOURCE_GIT_DIRTY", "unknown"),
+    }
 
 # Metrics surfaced as GenAI assessments (skip bulky hardware gauges).
 _ASSESSMENT_KEYS = (
@@ -274,6 +302,7 @@ class MLflowTracker:
         self._parent_run_id: str | None = None
         self._question_metrics: List[Dict[str, float]] = []
         self._lineage: Dict[str, str] = {}
+        self._actual_devices: set[str] = set()
 
         tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
         mlflow.set_tracking_uri(tracking_uri)
@@ -309,9 +338,11 @@ class MLflowTracker:
                 self.experiment_name,
             )
         except Exception as exc:  # noqa: BLE001
-            logger.error("MLflow unavailable (%s) — continuing with Prometheus/Postgres only", exc)
             self.experiment_id = None
             self._mlflow_ok = False
+            if _tracking_required():
+                raise RuntimeError(f"MLflow is required for pipeline runs but unavailable: {exc}") from exc
+            logger.error("MLflow unavailable (%s) — continuing with Prometheus/Postgres only", exc)
 
     def log_run_metrics(self, metrics: dict[str, Any] | None) -> None:
         """Log numeric metrics on the active parent run (not per-question averages)."""
@@ -321,6 +352,8 @@ class MLflowTracker:
         try:
             mlflow.log_metrics(numeric)
         except Exception as exc:  # noqa: BLE001
+            if _tracking_required():
+                raise RuntimeError(f"MLflow metric write failed: {exc}") from exc
             logger.debug("log_run_metrics failed: %s", exc)
 
     @contextmanager
@@ -339,8 +372,19 @@ class MLflowTracker:
         ``mlflow.genai.evaluate`` reuses this active run when called inside the block.
         """
         self._question_metrics = []
+        self._actual_devices = set()
         self._lineage = dict(lineage or {})
         name = run_name or f"{approach}@{self.hardware.device}"
+        pipeline_run_id = os.getenv("RUN_ID")
+        expected_samples = int((params or {}).get("n_prompts") or 0)
+        if pipeline_run_id:
+            EVALUATION_RUN_COMPLETE.labels(run_id=pipeline_run_id, approach=approach).set(0)
+            EVALUATION_RUN_SAMPLES.labels(
+                run_id=pipeline_run_id, approach=approach, kind="expected"
+            ).set(expected_samples)
+            EVALUATION_RUN_SAMPLES.labels(
+                run_id=pipeline_run_id, approach=approach, kind="recorded"
+            ).set(0)
 
         if not self._mlflow_ok or self.experiment_id is None:
             logger.warning("stage_run without MLflow — ops metrics only")
@@ -352,6 +396,17 @@ class MLflowTracker:
 
         with mlflow.start_run(experiment_id=self.experiment_id, run_name=name) as run:
             self._parent_run_id = run.info.run_id
+            if pipeline_run_id:
+                self.metrics_store.start_run(
+                    run_id=pipeline_run_id,
+                    approach=approach,
+                    expected_samples=expected_samples,
+                    requested_device=self.hardware.device,
+                    runtime=str((params or {}).get("runtime") or "") or None,
+                    weight_format=str((params or {}).get("weight_format") or "") or None,
+                    model_name=model_name,
+                    mlflow_run_id=self._parent_run_id,
+                )
             mlflow.set_tag("stage", self.stage)
             mlflow.set_tag("approach", approach)
             mlflow.set_tag("device", self.hardware.device)
@@ -362,12 +417,13 @@ class MLflowTracker:
                     mlflow.set_tag("weight_format", str(params["weight_format"]))
             mlflow.set_tag("cuda_available", str(self.hardware.cuda_available))
             mlflow.set_tag("mlflow.ui.mode", "evaluation_parent")
+            for key, value in _source_revision_tags().items():
+                mlflow.set_tag(key, value)
             # The third leg of the same story. Postgres rows carry RUN_ID, the results
             # folder is named after it and the dashboards filter on it — but the MLflow
             # run recorded stage/approach/device only, so with several runs a day on one
             # device there was no way back from a run in the UI to the rows or the
             # artifacts it produced.
-            pipeline_run_id = os.getenv("RUN_ID")
             if pipeline_run_id:
                 mlflow.set_tag("run_id", pipeline_run_id)
                 mlflow.set_tag("run_group", run_group_for(pipeline_run_id) or "")
@@ -399,8 +455,26 @@ class MLflowTracker:
 
             try:
                 yield self
-            finally:
                 self._log_parent_aggregates()
+            except BaseException as exc:
+                if pipeline_run_id:
+                    self._finish_pipeline_run(
+                        pipeline_run_id,
+                        approach,
+                        "failed",
+                        str(exc),
+                        expected_samples=expected_samples,
+                    )
+                raise
+            else:
+                if pipeline_run_id:
+                    self._finish_pipeline_run(
+                        pipeline_run_id,
+                        approach,
+                        "completed",
+                        expected_samples=expected_samples,
+                    )
+            finally:
                 self._parent_run_id = None
 
     def log_evaluation(
@@ -414,6 +488,7 @@ class MLflowTracker:
         context: str | None = None,
         *,
         skip_assessments: bool = False,
+        sample_id: str | None = None,
     ) -> None:
         """
         Log one Q&A to Prometheus, Postgres, and (when under a parent run) GenAI assessments.
@@ -432,27 +507,30 @@ class MLflowTracker:
         # and made the Transformers-vs-GGUF dashboard a GPU-vs-CPU comparison in
         # disguise. The engine measured it; believe the engine.
         device = self._device_for_row(merged)
-        EVALUATION_REQUESTS.labels(device=device, approach=approach).inc()
+        self._actual_devices.add(device)
+        run_id = os.getenv("RUN_ID") or "adhoc"
+        prom_labels = {"run_id": run_id, "device": device, "approach": approach}
+        EVALUATION_REQUESTS.labels(**prom_labels).inc()
         quality_score = calculate_quality_score(merged)
         merged["quality_score"] = quality_score
         numeric = _numeric_metrics(merged)
         self._question_metrics.append(numeric)
 
-        RESPONSE_QUALITY.labels(device=device).set(quality_score)
+        RESPONSE_QUALITY.labels(**prom_labels).set(quality_score)
         if "domain_relevance" in merged:
-            DOMAIN_RELEVANCE.labels(device=device).set(merged["domain_relevance"])
+            DOMAIN_RELEVANCE.labels(**prom_labels).set(merged["domain_relevance"])
         if "context_utilization" in merged:
-            CONTEXT_UTILIZATION.labels(device=device).set(merged["context_utilization"])
+            CONTEXT_UTILIZATION.labels(**prom_labels).set(merged["context_utilization"])
         if "retrieval_hit_at_k" in merged:
-            RETRIEVAL_HIT.labels(device=device).set(merged["retrieval_hit_at_k"])
+            RETRIEVAL_HIT.labels(**prom_labels).set(merged["retrieval_hit_at_k"])
         if "faithfulness" in merged:
-            FAITHFULNESS.labels(device=device).set(merged["faithfulness"])
+            FAITHFULNESS.labels(**prom_labels).set(merged["faithfulness"])
         if "generation_time" in merged or "time_to_response" in merged:
             duration = merged.get("time_to_response") or merged.get("generation_time")
             if duration is not None:
-                EVALUATION_DURATION.labels(device=device, approach=approach).observe(duration)
+                EVALUATION_DURATION.labels(**prom_labels).observe(duration)
         if "peak_rss_mb" in merged:
-            PEAK_RSS_MB.labels(device=device).set(merged["peak_rss_mb"])
+            PEAK_RSS_MB.labels(**prom_labels).set(merged["peak_rss_mb"])
 
         if self._mlflow_ok:
             if not skip_assessments:
@@ -486,7 +564,50 @@ class MLflowTracker:
             model_name=model_name,
             runtime=str((params or {}).get("runtime") or "") or None,
             weight_format=str((params or {}).get("weight_format") or "") or None,
+            sample_id=sample_id,
         )
+
+    def _finish_pipeline_run(
+        self,
+        run_id: str,
+        approach: str,
+        status: str,
+        error: str | None = None,
+        *,
+        expected_samples: int | None = None,
+    ) -> None:
+        if len(self._actual_devices) > 1:
+            actual_device = "mixed"
+        else:
+            actual_device = next(iter(self._actual_devices), None)
+        recorded = len(self._question_metrics)
+        incomplete = (
+            status == "completed"
+            and expected_samples is not None
+            and recorded != expected_samples
+        )
+        if incomplete:
+            status = "failed"
+            error = (
+                f"stage recorded {recorded} of {expected_samples} expected samples; "
+                "a partial run cannot be marked completed"
+            )
+        self.metrics_store.finish_run(
+            run_id=run_id,
+            approach=approach,
+            status=status,
+            recorded_samples=recorded,
+            actual_device=actual_device,
+            error=error[:2000] if error else None,
+        )
+        EVALUATION_RUN_SAMPLES.labels(
+            run_id=run_id, approach=approach, kind="recorded"
+        ).set(recorded)
+        EVALUATION_RUN_COMPLETE.labels(run_id=run_id, approach=approach).set(
+            1 if status == "completed" else 0
+        )
+        if incomplete:
+            raise RuntimeError(error)
 
     def _device_for_row(self, merged: Dict[str, float]) -> str:
         """The device this row belongs to; see ``src.hardware.device_for_row``."""
@@ -633,6 +754,8 @@ class MLflowTracker:
                 f"{aggregates['rougeL']:.4f}" if "rougeL" in aggregates else "n/a",
             )
         except Exception as exc:  # noqa: BLE001
+            if _tracking_required():
+                raise RuntimeError(f"MLflow parent aggregate write failed: {exc}") from exc
             logger.error("Failed to log parent aggregates: %s", exc)
 
     def _calculate_quality_score(self, metrics: Dict[str, float]) -> float:
@@ -654,14 +777,31 @@ def init_mlflow_experiment() -> bool:
         return False
 
 
+@contextmanager
 def optional_mlflow_run(run_name: str):
-    """Return ``mlflow.start_run`` or a no-op context if tracking is down."""
+    """Open a run when available; pipeline runs fail if required tracking is down."""
     from contextlib import nullcontext
 
     if not init_mlflow_experiment():
-        return nullcontext()
+        if _tracking_required():
+            raise RuntimeError(f"MLflow is required for pipeline run {os.getenv('RUN_ID')}")
+        with nullcontext() as run:
+            yield run
+        return
     try:
-        return mlflow.start_run(run_name=run_name)
+        run_context = mlflow.start_run(run_name=run_name)
     except Exception as exc:  # noqa: BLE001
+        if _tracking_required():
+            raise
         logger.warning("Could not open MLflow run %s: %s", run_name, exc)
-        return nullcontext()
+        with nullcontext() as run:
+            yield run
+        return
+    with run_context as run:
+        run_id = os.getenv("RUN_ID")
+        if run_id:
+            mlflow.set_tag("run_id", run_id)
+            mlflow.set_tag("run_group", run_group_for(run_id) or "")
+        for key, value in _source_revision_tags().items():
+            mlflow.set_tag(key, value)
+        yield run

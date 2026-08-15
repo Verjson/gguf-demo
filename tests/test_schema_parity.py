@@ -66,7 +66,7 @@ def _sql_file_columns() -> set[str]:
 def _python_columns() -> set[str]:
     columns = set()
     for stmt in _ENSURE_SCHEMA_STATEMENTS:
-        if "CREATE TABLE" in stmt.upper():
+        if "CREATE TABLE IF NOT EXISTS EVALUATION_METRICS" in stmt.upper():
             inner = stmt[stmt.index("(") + 1 : stmt.rindex(")")]
             for line in inner.splitlines():
                 line = line.strip().rstrip(",")
@@ -103,7 +103,31 @@ def test_both_schema_definitions_declare_the_same_columns():
 def test_run_identity_columns_are_present_in_both():
     for definition, columns in (("init-db.sql", _sql_file_columns()), ("metrics_store", _python_columns())):
         assert "run_id" in columns, f"{definition} has no run_id column"
+        assert "sample_id" in columns, f"{definition} has no sample_id column"
         assert "run_started_at" in columns, f"{definition} has no run_started_at column"
+
+
+def test_fresh_and_existing_schema_paths_enforce_run_integrity():
+    init_sql = INIT_DB.read_text(encoding="utf-8")
+    migrations = "\n".join(_ENSURE_SCHEMA_STATEMENTS)
+    shell_migration = (REPO_ROOT / "scripts" / "migrate_db.sh").read_text(encoding="utf-8")
+
+    for token in (
+        "evaluation_runs",
+        "eval_metrics_run_identity",
+        "eval_metrics_device_known",
+        "eval_metrics_runtime_known",
+        "eval_metrics_weight_format_known",
+        "eval_metrics_quality_score_ranged",
+        "eval_metrics_durations_nonnegative",
+        "evaluation_runs_status_known",
+        "evaluation_runs_counts_valid",
+        "evaluation_runs_devices_known",
+        "uq_eval_metrics_run_sample",
+    ):
+        assert token in init_sql
+        assert token in migrations
+        assert token in shell_migration
 
 
 def test_both_definitions_create_the_run_id_index():

@@ -1,24 +1,15 @@
-FROM python:3.14-slim
+FROM python:3.14.7-slim-trixie@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
 
-# Install system dependencies for PDF parsing and builds
+# libgomp is the only runtime library required by the prebuilt ML wheels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    cmake \
-    ninja-build \
-    curl \
-    git \
-    poppler-utils \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 # Install project from pyproject.toml (editable so mounted src/scripts pick up changes)
-COPY pyproject.toml README.md ./
-COPY src/ ./src/
-COPY scripts/ ./scripts/
-COPY prompts/ ./prompts/
-COPY config/ ./config/
+COPY pyproject.toml requirements.lock README.md ./
+COPY src/__init__.py ./src/__init__.py
 
 # Install CPU or CUDA torch first (build-arg), then the rest of the project without
 # letting pip replace torch from the default PyPI index.
@@ -49,84 +40,64 @@ ARG LLAMA_CPP_VERSION=0.3.34
 # made the install unsatisfiable — `ResolutionImpossible`, every build, with a green
 # test suite (nothing in it resolves anything). Torch 2.13 is built against numpy 2,
 # so the ABI argument the old pin rested on no longer applies.
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir torch "numpy>=2.1" \
+RUN pip install --no-cache-dir "pip==26.2.1" \
+    && pip install --no-cache-dir -c requirements.lock "torch==2.13.0" "numpy==2.5.2" \
         --index-url ${TORCH_INDEX_URL} \
         --extra-index-url https://pypi.org/simple \
-    && pip install --no-cache-dir -e . --no-deps \
-    && pip install --no-cache-dir \
-        "transformers>=4.57.6,<4.58" \
-        "accelerate>=0.25.0" \
-        "sentence-transformers>=5.2,<6" \
-        "langchain-community>=0.4.2,<0.5" \
-        "langchain-core>=1.0,<2" \
-        "langchain-text-splitters>=1.0,<2" \
-        "langchain-huggingface>=1.2,<2" \
-        "langchain-postgres>=0.0.17,<0.1" \
-        "psycopg[binary]>=3.1,<4" \
-        "pgvector>=0.2.3" \
-        "psycopg2-binary>=2.9.9" \
-        "sqlalchemy>=2.0.23" \
-        "pypdf>=4.2.0" \
-        "pdfplumber>=0.10.3" \
-        "nltk>=3.8.1" \
-        "defusedxml>=0.7.1" \
-        "datasets>=2.16.1" \
-        "rouge-score>=0.1.2" \
-        "bert-score>=0.3.13" \
-        "mlflow>=3.1.0,<3.16" \
-        "prometheus-client>=0.19.0" \
-        "peft>=0.20,<0.21" \
-        "huggingface_hub>=0.20.0" \
-        "pyyaml>=6.0.1" \
-        "requests>=2.31.0" \
-        "tqdm>=4.66.1" \
-        "pandas>=2.1.4" \
-        "numpy>=2.1" \
-        "click>=8.1.7" \
-        "rich>=13.7.0" \
-        "python-dotenv>=1.0.0" \
+    && pip install --no-cache-dir -c requirements.lock -e . \
     && case "$TORCH_INDEX_URL" in \
          */cpu|*/cpu/) echo "Skipping GPU-only bitsandbytes dependency" ;; \
-         *) pip install --no-cache-dir "bitsandbytes>=0.41.3" ;; \
+         *) pip install --no-cache-dir -c requirements.lock "bitsandbytes==0.50.1" ;; \
        esac \
     && case "$TORCH_INDEX_URL" in \
          */cpu|*/cpu/) \
-           pip install --no-cache-dir llama-cpp-python==${LLAMA_CPP_VERSION} \
+           pip install --no-cache-dir -c requirements.lock llama-cpp-python==${LLAMA_CPP_VERSION} \
              --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu ;; \
          *cu12*) \
-           pip install --no-cache-dir llama-cpp-python==${LLAMA_CPP_VERSION} \
+           pip install --no-cache-dir -c requirements.lock llama-cpp-python==${LLAMA_CPP_VERSION} \
              --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124 \
            && python -c "from llama_cpp import Llama" \
-           || pip install --no-cache-dir --force-reinstall llama-cpp-python==${LLAMA_CPP_VERSION} \
+           || pip install --no-cache-dir --force-reinstall -c requirements.lock llama-cpp-python==${LLAMA_CPP_VERSION} \
              --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu ;; \
          *) \
            echo "torch is newer than CUDA 12: llama.cpp GPU wheels need libcudart.so.12, using the CPU wheel" \
-           && pip install --no-cache-dir llama-cpp-python==${LLAMA_CPP_VERSION} \
+           && pip install --no-cache-dir -c requirements.lock llama-cpp-python==${LLAMA_CPP_VERSION} \
              --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu ;; \
        esac
+
+# Source changes no longer invalidate the multi-gigabyte dependency layer above.
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+COPY prompts/ ./prompts/
+COPY config/ ./config/
 
 # Optionally bake models into the image so first run is offline-friendly
 ARG PRELOAD_MODELS=false
 ARG LLM_MODEL=microsoft/Phi-3-mini-4k-instruct
+ARG LLM_REVISION=f39ac1d28e925b323eae81227eaba4464caced4e
 ARG EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
+ARG EMBED_REVISION=1110a243fdf4706b3f48f1d95db1a4f5529b4d41
 RUN if [ "$PRELOAD_MODELS" = "true" ]; then \
-      python -c "from transformers import AutoTokenizer, AutoModelForCausalLM; \
-AutoTokenizer.from_pretrained('${LLM_MODEL}'); \
-AutoModelForCausalLM.from_pretrained('${LLM_MODEL}')"; \
-      python -c "from sentence_transformers import SentenceTransformer; \
-SentenceTransformer('${EMBED_MODEL}')"; \
+      LLM_MODEL="$LLM_MODEL" LLM_REVISION="$LLM_REVISION" python -c "import os; from transformers import AutoTokenizer, AutoModelForCausalLM; \
+AutoTokenizer.from_pretrained(os.environ['LLM_MODEL'], revision=os.environ['LLM_REVISION']); \
+AutoModelForCausalLM.from_pretrained(os.environ['LLM_MODEL'], revision=os.environ['LLM_REVISION'])"; \
+      EMBED_MODEL="$EMBED_MODEL" EMBED_REVISION="$EMBED_REVISION" python -c "import os; from sentence_transformers import SentenceTransformer; \
+SentenceTransformer(os.environ['EMBED_MODEL'], revision=os.environ['EMBED_REVISION'])"; \
     fi
 
 RUN mkdir -p /app/data/papers /app/data/processed /app/models \
         /app/.cache/huggingface /tmp/prometheus_multiproc /tmp/home /mlflow-artifacts \
-    && chmod 1777 /tmp/prometheus_multiproc /tmp/home /mlflow-artifacts
+    && chmod 1777 /tmp/prometheus_multiproc /tmp/home /mlflow-artifacts \
+    && useradd --create-home --uid 1000 --shell /usr/sbin/nologin app \
+    && chown -R app:app /app
 
 ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV HF_HOME=/app/.cache/huggingface
 ENV PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus_multiproc
 ENV MLFLOW_EXPERIMENT_NAME=gguf-demo
+
+USER app
 
 # Persistent Prometheus /metrics; run scripts via `docker compose exec app python scripts/...`
 CMD ["python", "scripts/metrics_server.py"]

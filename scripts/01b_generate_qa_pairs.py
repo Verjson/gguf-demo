@@ -21,7 +21,6 @@ import re
 import sys
 
 import yaml
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from mlflow.entities import SpanType
 
@@ -30,6 +29,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import mlflow
 
 from src.mlflow_tracker import optional_mlflow_run
+from src.pdf_loader import PyPDFLoader
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)

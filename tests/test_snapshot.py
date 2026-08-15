@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from src import snapshot
-from src.snapshot import refresh_latest
+from src.snapshot import refresh_latest, resolve_results_output
 
 
 def _run_dir(results: Path, name: str = "2026-08-14_181632_cpu") -> Path:
@@ -22,6 +22,17 @@ def _run_dir(results: Path, name: str = "2026-08-14_181632_cpu") -> Path:
     (source / "summary.md").write_text("# Run summary — demo\n\nok\n", encoding="utf-8")
     (source / "manifest.json").write_text('{"run_id": "snapshot content"}', encoding="utf-8")
     return source
+
+
+def test_comparison_output_must_stay_inside_results_runs(tmp_path):
+    expected = tmp_path / "results" / "runs" / "comparison"
+    assert resolve_results_output(tmp_path, "results/runs/comparison") == expected
+
+    with pytest.raises(ValueError, match="must be a child"):
+        resolve_results_output(tmp_path, "../../host")
+
+    with pytest.raises(ValueError, match="must be a child"):
+        resolve_results_output(tmp_path, tmp_path / "README.md")
 
 
 def test_refresh_latest_writes_readme_and_drops_summary(tmp_path):

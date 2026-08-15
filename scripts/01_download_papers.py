@@ -75,7 +75,7 @@ def search_arxiv_papers(
     url = f"{ARXIV_API}?{urlencode(params)}"
     for attempt in range(1, attempts + 1):
         try:
-            response = requests.get(url, timeout=60)
+            response = requests.get(url, timeout=60, allow_redirects=False)
             response.raise_for_status()
             break
         except requests.RequestException as exc:
@@ -139,8 +139,13 @@ def download_pdf(url: str, save_path: str) -> bool:
 
     written = 0
     try:
-        with requests.get(url, stream=True, timeout=120) as response:
+        with requests.get(url, stream=True, timeout=120, allow_redirects=False) as response:
             response.raise_for_status()
+
+            if response.is_redirect or response.is_permanent_redirect:
+                raise ValueError("redirects are refused; the redirect target was not allowlisted")
+            if not pdf_url_is_allowed(response.url):
+                raise ValueError(f"final response URL is not an allowed arXiv host: {response.url}")
 
             content_type = response.headers.get("Content-Type", "").split(";")[0].strip()
             if content_type and content_type != "application/pdf":

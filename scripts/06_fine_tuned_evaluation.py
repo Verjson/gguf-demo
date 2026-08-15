@@ -159,7 +159,7 @@ def main() -> None:
 
     print("\nReport:", report_path)
     print("MLflow UI: http://localhost:5000")
-    print("Grafana:   http://localhost:3000 (admin/admin)")
+    print("Grafana:   http://localhost:3000 (admin / $GRAFANA_ADMIN_PASSWORD)")
 
     # Pipeline sets SKIP_AUTO_EXPORT=1 and calls 07_export_results.py itself
     if os.environ.get("SKIP_AUTO_EXPORT", "").lower() in {"1", "true", "yes"}:

@@ -473,12 +473,11 @@ def export_run(
         # Stage JSON exists but the database has nothing for this run. That is not an
         # empty run, it is a run whose metric writes did not land — and it used to
         # export a header-only CSV, record postgres_rows: 0, and print DONE.
-        logger.error(
+        raise RuntimeError(
             "No evaluation_metrics rows for run_id=%s, but %d stage artifact(s) were "
             "exported. The metric writes did not reach Postgres — check the app "
-            "container's logs for 'Failed to persist metrics'.",
-            run_id,
-            len(copied),
+            "container's logs for 'Failed to persist metrics'."
+            % (run_id, len(copied))
         )
 
     llm_model = "unknown"

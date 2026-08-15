@@ -124,7 +124,7 @@ def run_stage_evaluation(
             row.setdefault("context_chars", float(len(context)))
         return row
 
-    def predict_fn(question: str) -> dict[str, Any]:
+    def predict_fn(question: str, sample_id: str) -> dict[str, Any]:
         from mlflow.entities import SpanType
 
         with mlflow.start_span(name=f"eval.{approach}", span_type=SpanType.CHAIN) as root:
@@ -139,6 +139,7 @@ def run_stage_evaluation(
                 question, context=context if use_rag else None
             )
             row = _row_from_pipeline(question, response, context, retrieval_time)
+            row["sample_id"] = sample_id
             root.set_outputs(
                 {
                     "answer": response,
@@ -152,15 +153,16 @@ def run_stage_evaluation(
 
     data = [
         {
-            "inputs": {"question": p["question"]},
+            "inputs": {"question": p["question"], "sample_id": str(index)},
             "expectations": {"ground_truth": p["ground_truth"]},
             "tags": {
                 "approach": approach,
                 "device": hardware.device,
                 "runtime": resolve_runtime(cfg),
+                "sample_id": str(index),
             },
         }
-        for p in test_prompts
+        for index, p in enumerate(test_prompts)
     ]
 
     run_params = {
@@ -201,7 +203,7 @@ def run_stage_evaluation(
                 "mlflow.genai.evaluate failed (%s); falling back to manual loop",
                 exc,
             )
-            return _manual_fallback(
+            results = _manual_fallback(
                 approach=approach,
                 pipeline=pipeline,
                 hardware=hardware,
@@ -213,20 +215,30 @@ def run_stage_evaluation(
                 resolved_model=str(resolved_model),
                 params=run_params,
             )
+            tracker.log_run_metrics(
+                {
+                    "n_prompts": float(len(test_prompts)),
+                    "n_answers": float(len(results)),
+                    "n_prompts_missing": float(len(test_prompts) - len(results)),
+                }
+            )
+            MetricsStore.raise_if_writes_failed(f"approach={approach} fallback")
+            if len(results) != len(test_prompts):
+                raise RuntimeError(
+                    f"Manual fallback produced {len(results)} of {len(test_prompts)} answers"
+                )
+            return results
 
         # Ops dual-write + parent aggregates (scorers already attached assessments)
         #
         # Keyed by index, not by question text: two prompts sharing a question string
         # used to collapse onto one row, and the loop below then wrote the same answer
         # twice under different expectations.
-        by_question: dict[str, dict] = {}
-        for row in side_channel:
-            by_question.setdefault(str(row.get("question") or ""), row)
-
+        by_sample = {str(row.get("sample_id")): row for row in side_channel}
         missing: list[str] = []
-        for prompt in test_prompts:
+        for sample_index, prompt in enumerate(test_prompts):
             q = prompt["question"]
-            row = by_question.get(q)
+            row = by_sample.get(str(sample_index))
             if not row:
                 # predict_fn raised for this prompt, or returned nothing. Previously a
                 # bare `continue`: no Postgres row, no Prometheus increment, no log —
@@ -275,6 +287,7 @@ def run_stage_evaluation(
                 model_name=str(resolved_model),
                 context=context,
                 skip_assessments=True,  # scorers already wrote GenAI assessments
+                sample_id=str(sample_index),
             )
             out: dict[str, Any] = {
                 "question": q,
@@ -301,6 +314,9 @@ def run_stage_evaluation(
                 len(test_prompts),
                 approach,
                 ", ".join(repr(q[:40]) for q in missing[:5]),
+            )
+            raise RuntimeError(
+                f"{len(missing)} of {len(test_prompts)} prompts produced no answer for {approach}"
             )
         # A stage whose rows never reached Postgres has not produced results, however
         # many answers it generated — the dashboards and every export read that table.
@@ -377,6 +393,7 @@ def _manual_fallback(
                 params=params,
                 model_name=resolved_model,
                 context=context if use_rag else None,
+                sample_id=str(i),
             )
 
         item: dict[str, Any] = {
