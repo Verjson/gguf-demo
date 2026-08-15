@@ -17,7 +17,6 @@ from urllib.parse import quote_plus
 
 import mlflow
 import torch
-from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_postgres import PGVector
@@ -30,6 +29,7 @@ from src.llm.factory import build_engine
 from src.llm.port import LlmEngine
 from src.llm.prompting import strip_control_tokens
 from src.llm.runtime import decode_settings, resolve_runtime
+from src.pdf_loader import PyPDFLoader
 from src.resource_metrics import memory_snapshot
 
 logger = logging.getLogger(__name__)
@@ -81,7 +81,10 @@ class RAGPipeline:
         with mlflow.start_span(name="load_pipeline", span_type=SpanType.CHAIN) as span:
             self.embeddings = HuggingFaceEmbeddings(
                 model_name=self.config["embeddings"]["model"],
-                model_kwargs={"device": "cuda" if use_cuda else "cpu"},
+                model_kwargs={
+                    "device": "cuda" if use_cuda else "cpu",
+                    "revision": self.config["embeddings"].get("revision"),
+                },
             )
             if self.engine is None:
                 self.engine = build_engine(self.config, self.hardware, runtime=self.runtime)

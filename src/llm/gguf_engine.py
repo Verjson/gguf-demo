@@ -51,6 +51,7 @@ def resolve_gguf_path(config: dict) -> Path:
     downloaded = hf_hub_download(
         repo_id=str(gguf["repo_id"]),
         filename=str(gguf["filename"]),
+        revision=str(gguf["revision"]),
         local_dir=str(dest),
     )
     return Path(downloaded)
@@ -124,7 +125,9 @@ class GgufEngine:
         n_threads_batch = int(gguf.get("n_threads_batch") or n_threads)
         n_gpu_layers = _n_gpu_layers(config, hardware)
         instruct_id = (config.get("llm") or {}).get("model") or "microsoft/Phi-3-mini-4k-instruct"
-        tokenizer = load_instruct_tokenizer(str(instruct_id))
+        tokenizer = load_instruct_tokenizer(
+            str(instruct_id), revision=(config.get("llm") or {}).get("revision")
+        )
         stop = list(gguf.get("chat_stop") or ["<|end|>", "<|user|>", "<|endoftext|>"])
 
         logger.info(

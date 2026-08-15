@@ -31,7 +31,7 @@ from src.latency import speedup_factor
 from src.mlflow_tracker import optional_mlflow_run
 from src.question_view import build_question_view
 from src.score_colors import html_table, ranked_metric_row
-from src.snapshot import refresh_latest
+from src.snapshot import refresh_latest, resolve_results_output
 
 
 def load_comparison(run_dir: Path) -> dict:
@@ -141,7 +141,7 @@ def main() -> None:
     root = Path(args.repo_root)
     cpu_dir = root / "results" / "runs" / args.cpu_run_id
     cuda_dir = root / "results" / "runs" / args.cuda_run_id
-    out_dir = root / args.out
+    out_dir = resolve_results_output(root, args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if not cpu_dir.is_dir():

@@ -1,8 +1,18 @@
-FROM python:3.14-slim
+FROM python:3.14.7-slim-trixie@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
 
-RUN pip install --no-cache-dir "mlflow==3.15.1" psycopg2-binary
+COPY requirements.lock /tmp/requirements.lock
+
+RUN pip install --no-cache-dir "pip==26.2.1" \
+    && pip install --no-cache-dir -c /tmp/requirements.lock \
+        "mlflow==3.15.1" "psycopg2-binary==2.9.12"
 
 WORKDIR /mlflow
+
+RUN useradd --create-home --uid 1000 --shell /usr/sbin/nologin mlflow \
+    && mkdir -p /mlflow-artifacts \
+    && chown -R mlflow:mlflow /mlflow /mlflow-artifacts
+
+USER mlflow
 
 EXPOSE 5000
 

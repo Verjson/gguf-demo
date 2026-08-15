@@ -44,10 +44,10 @@ def strip_control_tokens(text: str) -> str:
     return _CONTROL_TOKEN.sub("[control-token removed]", text)
 
 
-def load_instruct_tokenizer(model_id: str):
+def load_instruct_tokenizer(model_id: str, *, revision: str | None = None):
     from transformers import AutoTokenizer
 
-    return AutoTokenizer.from_pretrained(model_id)
+    return AutoTokenizer.from_pretrained(model_id, revision=revision)
 
 
 def apply_chat_template(tokenizer: Any, user_text: str) -> str:

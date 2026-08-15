@@ -80,6 +80,19 @@ SNAPSHOT_PRIORITY = ("manifest.json", "summary.md") + tuple(
 )
 
 
+def resolve_results_output(repo_root: Path, output: str | Path) -> Path:
+    """Resolve a comparison output while keeping writes inside ``results/runs``."""
+    root = Path(repo_root).resolve()
+    candidate = Path(output)
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    resolved = candidate.resolve()
+    runs = (root / "results" / "runs").resolve()
+    if resolved == runs or not resolved.is_relative_to(runs):
+        raise ValueError(f"Output must be a child of {runs}, got {output}")
+    return resolved
+
+
 def _snapshot_order(source_dir: Path) -> list[Path]:
     """`source_dir` entries, most worth keeping first, then the rest alphabetically."""
     remaining = {entry.name: entry for entry in sorted(source_dir.iterdir())}

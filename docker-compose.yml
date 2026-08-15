@@ -1,13 +1,13 @@
 services:
   postgres:
-    image: ankane/pgvector:latest
+    image: pgvector/pgvector:0.8.6-pg15-trixie@sha256:ffc303247d1e0135de6bc116a178d3c75c6d7f530c39d91d30d480cd4d03a9cb
     container_name: rag-postgres
     environment:
       POSTGRES_DB: rag_eval
       POSTGRES_USER: raguser
       POSTGRES_PASSWORD: ragpass
     # Loopback only. Every service in this stack ships demo credentials or none at
-    # all (raguser/ragpass here, admin/admin for Grafana, unauthenticated MLflow and
+    # all (raguser/ragpass here, authenticated Grafana, unauthenticated MLflow and
     # Prometheus), so a 0.0.0.0 bind hands the LAN an open database and an open
     # metrics store. Containers still reach each other on the compose network, which
     # is unaffected: Prometheus scrapes app:8000, MLflow talks to postgres:5432.
@@ -23,7 +23,7 @@ services:
       retries: 5
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.13.2@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
     container_name: rag-prometheus
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
@@ -35,12 +35,14 @@ services:
       - '--storage.tsdb.path=/prometheus'
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.1.3@sha256:ab5cb380e3ff3172d6c8bd2e7cfd31cce977d2881b260e1f5bc089bf0b759b43
     container_name: rag-grafana
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD to a strong local secret}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
       # Read by grafana/provisioning/datasources/prometheus.yml. The dashboards only
       # ever SELECT, so the datasource connects as a role that can only SELECT — not
       # as the database owner, which is what it used to do while executing raw SQL
@@ -74,17 +76,28 @@ services:
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow-artifacts
     volumes:
       - mlflow_data:/mlflow-artifacts
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
       --backend-store-uri postgresql://raguser:ragpass@postgres:5432/rag_eval
       --default-artifact-root /mlflow-artifacts
-      --allowed-hosts '*'
-      --cors-allowed-origins '*'
+      --allowed-hosts mlflow:5000,rag-mlflow:5000,mlflow,rag-mlflow,localhost,127.0.0.1
 
   app:
     build:
@@ -95,19 +108,21 @@ services:
         TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
         PRELOAD_MODELS: ${PRELOAD_MODELS:-false}
         LLM_MODEL: ${LLM_MODEL:-microsoft/Phi-3-mini-4k-instruct}
+        LLM_REVISION: ${LLM_REVISION:-f39ac1d28e925b323eae81227eaba4464caced4e}
         EMBED_MODEL: ${EMBED_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+        EMBED_REVISION: ${EMBED_REVISION:-1110a243fdf4706b3f48f1d95db1a4f5529b4d41}
     container_name: rag-app
     ports:
       - "127.0.0.1:${APP_PORT:-8000}:8000"
     volumes:
       - ./data:/app/data
-      - ./scripts:/app/scripts
-      - ./src:/app/src
+      - ./scripts:/app/scripts:ro
+      - ./src:/app/src:ro
       - ./models:/app/models
-      - ./config:/app/config
-      - ./prompts:/app/prompts
+      - ./config:/app/config:ro
+      - ./prompts:/app/prompts:ro
       - ./results:/app/results
-      - ./pyproject.toml:/app/pyproject.toml
+      - ./pyproject.toml:/app/pyproject.toml:ro
       - huggingface_cache:/app/.cache/huggingface
       # Same artifact store the MLflow server uses. The tracking server advertises
       # a file:// root, so the app writes artifacts itself rather than uploading.
@@ -122,6 +137,9 @@ services:
       POSTGRES_PASSWORD: ragpass
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
+      # Keep one pipeline's exporter shards. Prometheus itself retains historical
+      # samples; carrying dead process files across stack starts only slows scrapes.
+      RESET_METRICS: "1"
       METRICS_PORT: "8000"
       # HF_HOME must stay on the huggingface_cache named volume below. It must never
       # resolve under /app/results, which is bind-mounted to the host: a 17GB cache
@@ -143,6 +161,13 @@ services:
       # measured about 2x slower than letting idle threads spin. Limit CPU with
       # APP_CPUS rather than by making threads sleep.
       TOKENIZERS_PARALLELISM: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+      # The runtime image intentionally has no git executable or .git mount. The
+      # host pipeline supplies these two values so MLflow still records exactly
+      # which source tree produced the run without widening the container surface.
+      SOURCE_GIT_SHA: ${SOURCE_GIT_SHA:-unknown}
+      SOURCE_GIT_DIRTY: ${SOURCE_GIT_DIRTY:-unknown}
+      GIT_PYTHON_REFRESH: quiet
     # Guardrails so a CPU run can never exhaust the host. Without these, a Phi-3
     # load inside a 24GB WSL2 VM drives the whole VM into swap death rather than
     # failing one container. memswap_limit == mem_limit disables container swap,
@@ -156,11 +181,18 @@ services:
       postgres:
         condition: service_healthy
       mlflow:
-        condition: service_started
+        condition: service_healthy
       prometheus:
         condition: service_started
     stdin_open: true
     tty: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     # Persistent Prometheus exporter (eval scripts are ephemeral `exec` processes)
     command: ["python", "scripts/metrics_server.py"]
 
