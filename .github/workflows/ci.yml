@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       - run: pip install "ruff>=0.1.0"
       # The rule set is pinned in pyproject.toml precisely so this count is
       # reproducible across versions — see the comment there before widening it.
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
       # Deliberately import-light. src/__init__.py no longer re-exports from
       # src.hardware and src.hardware no longer imports torch at module scope, so
       # the pure-logic modules (run_id, snapshot, metrics_store, question_view,
