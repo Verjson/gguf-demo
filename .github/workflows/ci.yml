@@ -1,0 +1,157 @@
+name: CI
+
+# The gap this closes: for several weeks the app image did not build at all —
+# python:3.14 (Renovate #7) plus langchain-community 0.4 (#21) made numpy
+# unsatisfiable — while every test in the repo passed, because nothing in the
+# suite ever performed a dependency resolve. Renovate was merging dependency
+# bumps into a repository with no CI. The `image` job below is the one that
+# would have caught it, so it runs on every push and every pull request.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Tests that would otherwise skip themselves must fail instead. A suite that
+  # skips the one thing that broke is worse than no suite: it reports green.
+  CI: "true"
+
+jobs:
+  lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "ruff>=0.1.0"
+      # The rule set is pinned in pyproject.toml precisely so this count is
+      # reproducible across versions — see the comment there before widening it.
+      - run: ruff check .
+
+  unit:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Deliberately import-light. src/__init__.py no longer re-exports from
+      # src.hardware and src.hardware no longer imports torch at module scope, so
+      # the pure-logic modules (run_id, snapshot, metrics_store, question_view,
+      # display_metrics, score_colors, run_results) test in seconds with no ML
+      # stack at all. If this step ever starts needing torch, that regression is
+      # itself the bug — it means a module-scope import crept back in.
+      #
+      # test_evaluator_scoring is excluded because it exercises the real scorers,
+      # which import bert_score and mlflow. It runs in the `image` job below,
+      # against the built container, where those genuinely exist.
+      - run: pip install pytest pyyaml psycopg2-binary
+      - run: python -m pytest tests/ -q --ignore=tests/test_evaluator_scoring.py
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+
+  shell:
+    name: shell suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y shellcheck
+      # warning and above. The two info-level notes in host_guard.sh are SC2015
+      # ("A && B || C is not if-then-else"), and there both branches are the
+      # intended behaviour — an emit() on either path. Failing the build on notes
+      # would mean either silencing them individually or rewriting working code, so
+      # the threshold is set once, here, deliberately. Raise it to `info` in its own
+      # PR with the resulting finding count stated, the way the ruff rule set is
+      # pinned in pyproject.toml.
+      - run: shellcheck --severity=warning scripts/*.sh scripts/lib/*.sh tests/*.sh
+      - name: run shell tests
+        run: |
+          set -e
+          for t in tests/test_host_guard.sh tests/test_host_portability.sh \
+                   tests/test_run_pipeline.sh; do
+            echo "==> $t"
+            bash "$t"
+          done
+
+  image:
+    name: build images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The CPU build is the portable default and the one every contributor
+      # gets. The CUDA overlay only changes TORCH_INDEX_URL, which the
+      # dependency-parity test covers statically.
+      - name: build app image (CPU)
+        run: docker compose build app
+      - name: build mlflow image
+        run: docker compose build mlflow
+      # Importing the stack is what turns "pip resolved it" into "it loads".
+      # A satisfiable set that fails at `import torch` is the failure mode the
+      # numpy pin was originally written for.
+      - name: import the whole stack
+        run: |
+          docker compose run --rm --no-deps --entrypoint python app -c "
+          import torch, numpy, transformers, sentence_transformers, mlflow
+          import langchain_community, langchain_postgres, peft, llama_cpp
+          print('torch', torch.__version__, '| numpy', numpy.__version__)
+          print('transformers', transformers.__version__, '| mlflow', mlflow.__version__)
+          "
+      # The full suite, inside the image, where bert_score / mlflow / torch exist.
+      # This is the only place test_evaluator_scoring can run.
+      - name: full pytest inside the image
+        run: |
+          docker compose run --rm --no-deps --entrypoint sh app -c \
+            'pip install -q pytest && PYTHONPATH=/app python -m pytest tests/ -q'
+
+      - name: run the container test suite
+        run: bash tests/test_cpu_runtime.sh
+
+  stack:
+    name: smoke the stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Postgres, Prometheus, Grafana and MLflow start without the app image,
+      # so this job stays fast and still exercises init-db.sql, the Grafana
+      # provisioning, and every dashboard query.
+      - name: start observability services
+        run: docker compose up -d postgres prometheus grafana mlflow
+      - name: wait for postgres
+        run: |
+          for _ in $(seq 1 30); do
+            docker compose exec -T postgres pg_isready -U raguser -d rag_eval && exit 0
+            sleep 2
+          done
+          echo "postgres never became ready" >&2
+          docker compose logs postgres
+          exit 1
+      # init-db.sql only runs on a fresh volume, so this asserts the fresh-volume
+      # schema directly rather than trusting that it matches the migration list.
+      - name: assert the fresh-volume schema
+        run: |
+          docker compose exec -T postgres psql -U raguser -d rag_eval -v ON_ERROR_STOP=1 -c "
+            SELECT run_id, run_started_at FROM evaluation_metrics WHERE false;
+          "
+      - name: every dashboard query must parse and run
+        run: |
+          pip install pyyaml
+          python tests/check_dashboard_queries.py
+      - name: grafana answers
+        run: |
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:3000/api/health && exit 0
+            sleep 2
+          done
+          docker compose logs grafana
+          exit 1
+      - if: always()
+        run: docker compose down -v
