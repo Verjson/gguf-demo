@@ -98,18 +98,28 @@ grep -q '^https://download.pytorch.org/whl/cpu|compose -f docker-compose.yml up 
 grep -q 'GPU-enabled startup failed — retrying with the CPU stack.' "$FALLBACK_OUTPUT"
 grep -q 'CUDA not available — eval steps will run on CPU only.' "$FALLBACK_OUTPUT"
 
-# results/ is bind-mounted onto the host disk, so the pipeline must refuse to start
-# when a snapshot has already blown past its budget or nested results/ inside itself.
-BUDGET_OUTPUT="$TEST_TMP/budget.out"
-budget_status=0
-export RESULTS_MAX_MB=0
-run_pipeline 0 "$TEST_TMP/budget.log" "$BUDGET_OUTPUT" 2>"$TEST_TMP/budget.err" || budget_status=$?
-unset RESULTS_MAX_MB
-if (( budget_status == 0 )); then
-  echo "Pipeline started with results/ over the size budget" >&2
+# The budget guard is called directly rather than through a whole pipeline run: it is
+# arithmetic over a directory, and reaching it via `docker compose up` meant standing up
+# a fake docker to test it. This is what extracting scripts/lib/host.sh bought.
+budget_direct() {
+  local when="$1" max="$2"
+  ( cd "$ROOT_DIR" \
+    && RESULTS_MAX_MB="$max" \
+    && source scripts/lib/host.sh \
+    && assert_results_budget "$when" ) 2>"$TEST_TMP/budget.err"
+}
+
+if budget_direct "unit" 0; then
+  echo "assert_results_budget accepted results/ over the size budget" >&2
   exit 1
 fi
 grep -q 'over the 0MB budget' "$TEST_TMP/budget.err"
+
+if ! budget_direct "unit" 100000; then
+  echo "assert_results_budget rejected a results/ that is well inside its budget" >&2
+  cat "$TEST_TMP/budget.err" >&2
+  exit 1
+fi
 
 # Run the pipeline expecting it to abort, and to say why on stderr.
 # Usage: expect_abort <label> <stderr-pattern>
