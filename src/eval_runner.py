@@ -26,6 +26,7 @@ from src.latency import (
     attach_retrieval_meta,
 )
 from src.llm.runtime import llm_tracking_params, resolve_runtime
+from src.metrics_store import MetricsStore
 from src.mlflow_tracker import MLflowTracker, calculate_quality_score
 from src.model_registry import resolve_model_lineage
 from src.rag_pipeline import RAGPipeline
@@ -214,11 +215,29 @@ def run_stage_evaluation(
             )
 
         # Ops dual-write + parent aggregates (scorers already attached assessments)
-        by_question = {row["question"]: row for row in side_channel}
+        #
+        # Keyed by index, not by question text: two prompts sharing a question string
+        # used to collapse onto one row, and the loop below then wrote the same answer
+        # twice under different expectations.
+        by_question: dict[str, dict] = {}
+        for row in side_channel:
+            by_question.setdefault(str(row.get("question") or ""), row)
+
+        missing: list[str] = []
         for prompt in test_prompts:
             q = prompt["question"]
             row = by_question.get(q)
             if not row:
+                # predict_fn raised for this prompt, or returned nothing. Previously a
+                # bare `continue`: no Postgres row, no Prometheus increment, no log —
+                # the run just quietly reported fewer answers than it had prompts.
+                missing.append(q)
+                logger.warning(
+                    "No generated row for prompt %r (approach=%s) — it will be absent "
+                    "from Postgres, Prometheus and the exported results",
+                    q[:80],
+                    approach,
+                )
                 continue
             response = str(row.get("answer") or row.get("response") or "")
             context = str(row.get("context") or "") if use_rag else None
@@ -229,6 +248,13 @@ def run_stage_evaluation(
                 context=context,
                 k=top_k,
             )
+            # Machine facts first, engine measurements second. The order is the fix:
+            # hardware.as_metrics() used to also emit cuda_used ("a GPU is visible")
+            # and, applied last, overwrote the engine's cuda_used ("this generation
+            # ran on the GPU"). Attaching the measurements after the ambient facts
+            # means a future key added to either side cannot silently win again.
+            metrics.update(hardware.as_metrics())
+            metrics.update(memory_snapshot())
             attach_latency_metrics(
                 metrics,
                 generation_time=float(row.get("generation_time") or 0.0),
@@ -238,8 +264,6 @@ def run_stage_evaluation(
             attach_generation_meta(metrics, row)
             if use_rag:
                 attach_retrieval_meta(metrics, row)
-            metrics.update(hardware.as_metrics())
-            metrics.update(memory_snapshot())
             metrics["quality_score"] = calculate_quality_score(metrics)
 
             tracker.log_evaluation(
@@ -260,6 +284,27 @@ def run_stage_evaluation(
             if use_rag and context:
                 out["context"] = context
             results.append(out)
+
+        # Recorded on the parent run so an incomplete stage is visible in MLflow
+        # rather than only in whichever log scrolled past.
+        tracker.log_run_metrics(
+            {
+                "n_prompts": float(len(test_prompts)),
+                "n_answers": float(len(results)),
+                "n_prompts_missing": float(len(missing)),
+            }
+        )
+        if missing:
+            logger.error(
+                "%d of %d prompts produced no answer for approach=%s: %s",
+                len(missing),
+                len(test_prompts),
+                approach,
+                ", ".join(repr(q[:40]) for q in missing[:5]),
+            )
+        # A stage whose rows never reached Postgres has not produced results, however
+        # many answers it generated — the dashboards and every export read that table.
+        MetricsStore.raise_if_writes_failed(f"approach={approach}")
 
     return results
 
@@ -308,6 +353,9 @@ def _manual_fallback(
                 context=context if use_rag else None,
                 k=top_k,
             )
+            # Same ordering rule as the primary path above.
+            metrics.update(hardware.as_metrics())
+            metrics.update(memory_snapshot())
             attach_latency_metrics(
                 metrics,
                 generation_time=gen,
@@ -317,8 +365,10 @@ def _manual_fallback(
             attach_generation_meta(metrics, pipeline.last_generation_meta)
             if use_rag:
                 attach_retrieval_meta(metrics, pipeline.last_retrieval_meta)
-            metrics.update(hardware.as_metrics())
-            metrics.update(memory_snapshot())
+            # The primary path sets this before logging and the fallback did not, so a
+            # fallback run wrote stage JSON with no quality_score at all — log_evaluation
+            # computes it on a copy, which never reaches the caller's dict.
+            metrics["quality_score"] = calculate_quality_score(metrics)
             tracker.log_evaluation(
                 approach=approach,
                 question=question,

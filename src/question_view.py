@@ -53,10 +53,20 @@ def _postgres_conn_kwargs() -> dict[str, str]:
     }
 
 
-def fetch_latest_cells_from_postgres() -> list[dict[str, Any]]:
+def fetch_latest_cells_from_postgres(run_group: str | None = None) -> list[dict[str, Any]]:
     """
-    One row per (question, approach, device) — latest timestamp wins.
-    Returns flat cells ready to pivot.
+    One row per (question, approach, device) for a run — latest timestamp wins.
+
+    ``run_group`` is a run id's shared stamp (``2026-08-14_181632``), which is what
+    ties the ``_cpu`` and ``_cuda`` legs of one pipeline invocation together; the
+    dashboards group on exactly the same expression.
+
+    It is optional only so an ad-hoc caller can still ask "everything". Every export
+    passes it, and must: without a scope this query returned the newest row for each
+    cell *in the entire table*, so a folder named ``..._cpu`` was written with CUDA
+    columns belonging to some other run, and re-exporting the same run later produced
+    different numbers. Two committed run folders disagree about the same cell for this
+    reason (``baseline|cuda`` = 1.503556 in one, 1.439418 in the other).
     """
     sql = """
         SELECT DISTINCT ON (question, approach, COALESCE(device, 'unknown'))
@@ -83,12 +93,27 @@ def fetch_latest_cells_from_postgres() -> list[dict[str, Any]]:
             timestamp
         FROM evaluation_metrics
         WHERE question IS NOT NULL AND approach IS NOT NULL
+        {run_filter}
         ORDER BY question, approach, COALESCE(device, 'unknown'), timestamp DESC
     """
+    params: list[Any] = []
+    if run_group:
+        # Same grouping expression the dashboards use: a run id is <stamp>_<device>,
+        # and the stamp is the run.
+        sql = sql.format(
+            run_filter=(
+                "AND run_id IS NOT NULL "
+                "AND split_part(run_id, '_', 1) || '_' || split_part(run_id, '_', 2) = %s"
+            )
+        )
+        params.append(run_group)
+    else:
+        sql = sql.format(run_filter="")
+
     try:
         with psycopg2.connect(**_postgres_conn_kwargs()) as conn:
             with conn.cursor() as cur:
-                cur.execute(sql)
+                cur.execute(sql, params)
                 cols = [d[0] for d in cur.description]
                 return [dict(zip(cols, row)) for row in cur.fetchall()]
     except Exception as exc:  # noqa: BLE001
@@ -450,14 +475,18 @@ def build_question_view(
     cuda_run_dir: Path | None = None,
     processed_dir: Path | None = None,
     prefer_postgres: bool = True,
+    run_group: str | None = None,
 ) -> dict[str, Any]:
     """
     Assemble pivot from Postgres (preferred) and/or exported run folders.
     Writes by_question.json, by_question.md, by_question_quality.csv into out_dir.
+
+    ``run_group`` scopes the Postgres half to one pipeline invocation. Callers that
+    are exporting a run must pass it — see ``fetch_latest_cells_from_postgres``.
     """
     pg_cells: list[dict[str, Any]] = []
     if prefer_postgres:
-        pg_cells = fetch_latest_cells_from_postgres()
+        pg_cells = fetch_latest_cells_from_postgres(run_group)
 
     json_cells: list[dict[str, Any]] = []
     if processed_dir:
