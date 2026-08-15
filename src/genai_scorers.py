@@ -232,7 +232,18 @@ def build_metric_scorers(
 
     @scorer(name="quality_score", aggregations=["mean"])
     def quality_score(inputs, outputs, expectations):
-        """Same weighted blend used by Grafana / historical tracker."""
+        """
+        The same weighted blend Grafana and the tracker use — literally the same
+        function, imported here rather than reimplemented.
+
+        The inline copy this replaces was justified by "avoid circular import with
+        tracker", but the import is only circular at module scope; deferring it into
+        the call site is enough. Two copies had already drifted apart by two keys,
+        and a scorer that computes a *slightly* different quality_score than the one
+        written to Postgres is the kind of discrepancy nobody finds for months.
+        """
+        from src.mlflow_tracker import calculate_quality_score
+
         question = ""
         if isinstance(inputs, dict):
             question = str(inputs.get("question") or "")
@@ -242,27 +253,7 @@ def build_metric_scorers(
             ground_truth=_ground_truth(expectations),
             context=_context(outputs) or None,
         )
-        # Inline blend (avoid circular import with tracker)
-        weights = {
-            "rouge1": 0.10,
-            "rouge2": 0.10,
-            "rougeL": 0.18,
-            "bert_score": 0.18,
-            "retrieval_hit_at_k": 0.14,
-            "faithfulness": 0.14,
-            "judge_groundedness": 0.08,
-            "answer_relevancy": 0.04,
-            "domain_relevance": 0.02,
-            "context_utilization": 0.01,
-            "coherence": 0.01,
-        }
-        score = 0.0
-        total = 0.0
-        for key, weight in weights.items():
-            if key in metrics and weight > 0:
-                score += metrics[key] * weight
-                total += weight
-        return score / total if total else 0.0
+        return calculate_quality_score(metrics)
 
     scorers.append(quality_score)
     return scorers
