@@ -31,13 +31,35 @@ case "${1:-}" in
 esac
 
 COMPOSE=(docker compose)
-PSQL=("${COMPOSE[@]}" exec -T postgres psql -U "${POSTGRES_USER:-raguser}" \
+PSQL=("${COMPOSE[@]}" exec -T postgres env \
+      'PGOPTIONS=-c client_min_messages=error' psql -U "${POSTGRES_USER:-raguser}" \
       -d "${POSTGRES_DB:-rag_eval}" -v ON_ERROR_STOP=1)
 
 if ! "${PSQL[@]}" -c 'SELECT 1' >/dev/null 2>&1; then
   echo "ERROR: cannot reach the postgres service. Start it first:" >&2
   echo "         docker compose up -d postgres" >&2
   exit 1
+fi
+
+# Named volumes survive image upgrades. When the image's libc collation changes,
+# PostgreSQL requires collation-dependent indexes to be rebuilt before the database's
+# recorded version is refreshed. Repair it once here instead of emitting a warning on
+# every one of the many connections made by migration and evaluation steps.
+collation_mismatch="$("${PSQL[@]}" -tAc \
+  'SELECT datcollversion IS DISTINCT FROM pg_database_collation_actual_version(oid)
+   FROM pg_database WHERE datname = current_database()')"
+if [[ "$collation_mismatch" == "t" ]]; then
+  if [[ "$MODE" == check ]]; then
+    echo "database collation version is stale; run scripts/migrate_db.sh to repair it" >&2
+    exit 1
+  fi
+
+  echo "==> Rebuilding indexes for the current PostgreSQL collation"
+  database_identifier="$("${PSQL[@]}" -tAc 'SELECT quote_ident(current_database())')"
+  "${PSQL[@]}" -c "REINDEX DATABASE ${database_identifier}" >/dev/null
+  "${PSQL[@]}" -c \
+    "ALTER DATABASE ${database_identifier} REFRESH COLLATION VERSION" >/dev/null
+  echo "    collation version refreshed"
 fi
 
 # Kept deliberately in step with init-db.sql and with _ENSURE_SCHEMA_STATEMENTS in

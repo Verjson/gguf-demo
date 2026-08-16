@@ -390,6 +390,16 @@ def _stamp_copied_json(run_dir: Path, hardware: dict[str, Any]) -> dict[str, Any
     return resources
 
 
+def _prompt_snapshot_source(repo_root: Path, processed_dir: Path) -> Path:
+    configured = os.environ.get("PROMPTS_PATH")
+    if configured:
+        return Path(configured)
+    generated = processed_dir / "evaluation_prompts.txt"
+    if generated.is_file():
+        return generated
+    return repo_root / "prompts" / "evaluation_prompts.txt"
+
+
 def export_run(
     run_id: str | None = None,
     repo_root: str | Path | None = None,
@@ -452,7 +462,7 @@ def export_run(
         shutil.copy2(config_path, run_dir / "config.yaml")
         copied.append("config.yaml")
 
-    prompts_src = repo_root / "prompts" / "evaluation_prompts.txt"
+    prompts_src = _prompt_snapshot_source(repo_root, processed_dir)
     if prompts_src.is_file():
         shutil.copy2(prompts_src, run_dir / "evaluation_prompts.txt")
         copied.append("evaluation_prompts.txt")

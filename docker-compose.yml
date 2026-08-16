@@ -137,6 +137,9 @@ services:
       POSTGRES_PASSWORD: ragpass
       PROMETHEUS_URL: http://prometheus:9090
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
+      # Step 1b generates this file. Keep runtime output on the writable data mount;
+      # /app/prompts is a read-only source/configuration mount by design.
+      PROMPTS_PATH: /app/data/processed/evaluation_prompts.txt
       # Keep one pipeline's exporter shards. Prometheus itself retains historical
       # samples; carrying dead process files across stack starts only slows scrapes.
       RESET_METRICS: "1"

@@ -95,7 +95,7 @@ jobs:
         run: |
           set -e
           for t in tests/test_host_guard.sh tests/test_host_portability.sh \
-                   tests/test_run_pipeline.sh; do
+                   tests/test_migrate_db.sh tests/test_run_pipeline.sh; do
             echo "==> $t"
             bash "$t"
           done

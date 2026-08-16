@@ -318,7 +318,7 @@ A weighted **`quality_score`** (0–1) blends available metrics for Grafana and 
 
 ### Tier 1 — Reference-based (primary)
 
-Ground truth from `prompts/evaluation_prompts.txt` (`question|answer`, from step 1b).
+Ground truth from `data/processed/evaluation_prompts.txt` (`question|answer`, from step 1b).
 
 | Metric | Meaning | Higher = better? |
 |--------|---------|------------------|
