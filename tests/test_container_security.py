@@ -28,6 +28,13 @@ def test_app_code_and_configuration_mounts_are_read_only():
         assert mount.endswith(":ro")
 
 
+def test_generated_prompts_are_written_to_the_writable_data_mount():
+    app = COMPOSE["services"]["app"]
+    assert app["environment"]["PROMPTS_PATH"] == "/app/data/processed/evaluation_prompts.txt"
+    data_mount = next(value for value in app["volumes"] if ":/app/data" in value)
+    assert not data_mount.endswith(":ro")
+
+
 def test_all_published_ports_are_bound_to_loopback():
     for name, service in COMPOSE["services"].items():
         for port in service.get("ports", []):

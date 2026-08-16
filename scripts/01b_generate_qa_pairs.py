@@ -114,7 +114,7 @@ def main() -> None:
         "--update-prompts",
         action="store_true",
         default=True,
-        help="Rewrite prompts/evaluation_prompts.txt from the test split",
+        help="Rewrite evaluation_prompts.txt in the processed-data directory",
     )
     args = parser.parse_args()
     random.seed(args.seed)
@@ -124,7 +124,9 @@ def main() -> None:
 
     papers_dir = config.get("paths", {}).get("papers_dir", "/app/data/papers")
     processed_dir = config.get("paths", {}).get("processed_dir", "/app/data/processed")
-    prompts_path = os.environ.get("PROMPTS_PATH", "/app/prompts/evaluation_prompts.txt")
+    prompts_path = os.environ.get(
+        "PROMPTS_PATH", os.path.join(processed_dir, "evaluation_prompts.txt")
+    )
     os.makedirs(processed_dir, exist_ok=True)
 
     pdfs = sorted(f for f in os.listdir(papers_dir) if f.endswith(".pdf"))

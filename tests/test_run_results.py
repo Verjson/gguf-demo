@@ -7,6 +7,7 @@ import json
 from src.hardware import HardwareInfo
 from src.run_results import (
     _hardware_for_run,
+    _prompt_snapshot_source,
     _run_scope,
     _stamp_copied_json,
 )
@@ -69,3 +70,20 @@ def test_stamp_copied_json_overwrites_hardware_and_collects_resources(tmp_path):
     written = json.loads((run_dir / "baseline_results.json").read_text(encoding="utf-8"))
     assert written["hardware"]["device"] == "cpu"
     assert resources["peak_rss_mb"] == 9600.0
+
+
+def test_prompt_snapshot_prefers_generated_runtime_data(tmp_path, monkeypatch):
+    monkeypatch.delenv("PROMPTS_PATH", raising=False)
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True)
+    generated = processed_dir / "evaluation_prompts.txt"
+    generated.write_text("generated", encoding="utf-8")
+
+    assert _prompt_snapshot_source(tmp_path, processed_dir) == generated
+
+
+def test_prompt_snapshot_honors_configured_path(tmp_path, monkeypatch):
+    configured = tmp_path / "custom" / "evaluation_prompts.txt"
+    monkeypatch.setenv("PROMPTS_PATH", str(configured))
+
+    assert _prompt_snapshot_source(tmp_path, tmp_path / "data" / "processed") == configured
